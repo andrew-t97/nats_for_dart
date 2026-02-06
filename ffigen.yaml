@@ -1,0 +1,217 @@
+name: NatsBindings
+description: FFI bindings to the NATS C client library (Phase 1-4)
+output: 'lib/src/nats_bindings.g.dart'
+headers:
+  entry-points:
+    - '/opt/homebrew/opt/cnats/include/nats/nats.h'
+  include-directives:
+    - '/opt/homebrew/opt/cnats/include/nats/nats.h'
+    - '/opt/homebrew/opt/cnats/include/nats/status.h'
+compiler-opts:
+  - '-I/opt/homebrew/opt/cnats/include'
+functions:
+  include:
+    # Phase 1 — library lifecycle & sync pub/sub
+    - 'nats_Open'
+    - 'nats_CloseAndWait'
+    - 'nats_GetLastError'
+    - 'natsConnection_ConnectTo'
+    - 'natsConnection_Publish'
+    - 'natsConnection_PublishString'
+    - 'natsConnection_SubscribeSync'
+    - 'natsConnection_Close'
+    - 'natsConnection_Destroy'
+    - 'natsSubscription_NextMsg'
+    - 'natsSubscription_Unsubscribe'
+    - 'natsSubscription_Destroy'
+    - 'natsMsg_Create'
+    - 'natsMsg_GetSubject'
+    - 'natsMsg_GetData'
+    - 'natsMsg_GetDataLength'
+    - 'natsMsg_GetReply'
+    - 'natsMsg_Destroy'
+    - 'natsConnection_Flush'
+    - 'natsConnection_FlushTimeout'
+    # Phase 2 — async subscriptions, options & lifecycle callbacks
+    - 'natsConnection_Subscribe'
+    - 'natsConnection_QueueSubscribe'
+    - 'natsConnection_SubscribeTimeout'
+    - 'natsConnection_Connect'
+    - 'natsSubscription_SetPendingLimits'
+    - 'natsSubscription_GetPending'
+    - 'natsSubscription_IsValid'
+    - 'natsOptions_Create'
+    - 'natsOptions_SetURL'
+    - 'natsOptions_SetServers'
+    - 'natsOptions_SetUserInfo'
+    - 'natsOptions_SetToken'
+    - 'natsOptions_SetMaxReconnect'
+    - 'natsOptions_SetReconnectWait'
+    - 'natsOptions_SetDisconnectedCB'
+    - 'natsOptions_SetReconnectedCB'
+    - 'natsOptions_SetClosedCB'
+    - 'natsOptions_SetErrorHandler'
+    - 'natsOptions_Destroy'
+    # Phase 3 — expanded options
+    - 'natsOptions_SetName'
+    - 'natsOptions_SetVerbose'
+    - 'natsOptions_SetPedantic'
+    - 'natsOptions_SetNoRandomize'
+    - 'natsOptions_SetTimeout'
+    - 'natsOptions_SetPingInterval'
+    - 'natsOptions_SetMaxPingsOut'
+    - 'natsOptions_SetIOBufSize'
+    - 'natsOptions_SetReconnectBufSize'
+    - 'natsOptions_SetUserCredentialsFromFiles'
+    # Phase 4 — JetStream context
+    - 'jsOptions_Init'
+    - 'natsConnection_JetStream'
+    - 'jsCtx_Destroy'
+    # Phase 4 — JetStream publishing
+    - 'jsPubOptions_Init'
+    - 'js_Publish'
+    - 'js_PublishMsg'
+    - 'jsPubAck_Destroy'
+    - 'js_PublishAsync'
+    - 'js_PublishAsyncComplete'
+    # Phase 4 — JetStream subscriptions
+    - 'jsSubOptions_Init'
+    - 'js_Subscribe'
+    - 'js_SubscribeSync'
+    - 'js_PullSubscribe'
+    - 'natsSubscription_Fetch'
+    # Phase 4 — JetStream message ack
+    - 'natsMsg_Ack'
+    - 'natsMsg_AckSync'
+    - 'natsMsg_Nak'
+    - 'natsMsg_NakWithDelay'
+    - 'natsMsg_InProgress'
+    - 'natsMsg_Term'
+    - 'natsMsg_GetMetaData'
+    - 'natsMsg_GetSequence'
+    - 'natsMsg_GetTime'
+    - 'jsMsgMetaData_Destroy'
+    # Phase 4 — Stream management
+    - 'jsStreamConfig_Init'
+    - 'js_AddStream'
+    - 'js_UpdateStream'
+    - 'js_DeleteStream'
+    - 'js_PurgeStream'
+    - 'js_GetStreamInfo'
+    - 'jsStreamInfo_Destroy'
+    # Phase 4 — Consumer management
+    - 'jsConsumerConfig_Init'
+    - 'js_AddConsumer'
+    - 'js_UpdateConsumer'
+    - 'js_DeleteConsumer'
+    - 'js_GetConsumerInfo'
+    - 'jsConsumerInfo_Destroy'
+    # Phase 4 — KeyValue store
+    - 'kvConfig_Init'
+    - 'js_CreateKeyValue'
+    - 'js_KeyValue'
+    - 'js_DeleteKeyValue'
+    - 'kvStore_Destroy'
+    - 'kvStore_Bucket'
+    # Phase 4 — KeyValue operations
+    - 'kvStore_Get'
+    - 'kvStore_GetRevision'
+    - 'kvStore_Put'
+    - 'kvStore_PutString'
+    - 'kvStore_Create'
+    - 'kvStore_CreateString'
+    - 'kvStore_Update'
+    - 'kvStore_UpdateString'
+    - 'kvStore_Delete'
+    - 'kvStore_Purge'
+    - 'kvStore_Keys'
+    - 'kvKeysList_Destroy'
+    - 'kvStore_History'
+    - 'kvEntryList_Destroy'
+    # Phase 4 — KeyValue entry
+    - 'kvEntry_Key'
+    - 'kvEntry_Value'
+    - 'kvEntry_ValueLen'
+    - 'kvEntry_ValueString'
+    - 'kvEntry_Revision'
+    - 'kvEntry_Created'
+    - 'kvEntry_Operation'
+    - 'kvEntry_Delta'
+    - 'kvEntry_Bucket'
+    - 'kvEntry_Destroy'
+    # Phase 4 — KeyValue watcher
+    - 'kvWatchOptions_Init'
+    - 'kvStore_Watch'
+    - 'kvStore_WatchAll'
+    - 'kvWatcher_Next'
+    - 'kvWatcher_Stop'
+    - 'kvWatcher_Destroy'
+    - 'kvPurgeOptions_Init'
+    # Phase 5 — Request-Reply
+    - 'natsConnection_PublishRequest'
+    - 'natsConnection_PublishRequestString'
+    - 'natsInbox_Create'
+    - 'natsInbox_Destroy'
+    - 'natsMsg_IsNoResponders'
+enums:
+  include:
+    - 'natsStatus'
+    - 'natsConnStatus'
+    # Phase 4 — JetStream enums
+    - 'jsRetentionPolicy'
+    - 'jsDiscardPolicy'
+    - 'jsStorageType'
+    - 'jsStorageCompression'
+    - 'jsDeliverPolicy'
+    - 'jsAckPolicy'
+    - 'jsReplayPolicy'
+    - 'jsErrCode'
+    # Phase 4 — KeyValue enums
+    - 'kvOperation'
+structs:
+  include:
+    - 'natsConnection'
+    - 'natsSubscription'
+    - 'natsMsg'
+    - 'natsOptions'
+    # Phase 4 — JetStream structs (regex to capture all js* and kv* types)
+    - 'js.*'
+    - 'kv.*'
+    - 'natsMsgList'
+    - 'natsMetadata'
+unions:
+  include:
+    - '__none__'
+globals:
+  include:
+    - '__none__'
+macros:
+  include:
+    - 'NATS_DEFAULT_URL'
+typedefs:
+  include:
+    - 'natsStatus'
+    - 'natsConnStatus'
+    - 'natsConnection'
+    - 'natsSubscription'
+    - 'natsMsg'
+    - 'natsOptions'
+    # Phase 2 — callback typedefs
+    - 'natsMsgHandler'
+    - 'natsConnectionHandler'
+    - 'natsErrHandler'
+    # Phase 4 — JetStream & KeyValue typedefs
+    - 'js.*'
+    - 'kv.*'
+    - 'natsMsgList'
+    - 'natsMetadata'
+unnamed-enums:
+  include:
+    - '__none__'
+preamble: |
+  // AUTO-GENERATED by ffigen — do not hand-edit.
+  // ignore_for_file: type=lint
+comments:
+  style: any
+  length: full
+silence-enum-warning: true

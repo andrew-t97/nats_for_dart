@@ -1,0 +1,36 @@
+/// NATS FFI Experiment — Dart bindings to the NATS C client library.
+///
+/// Provides synchronous and asynchronous pub/sub, JetStream, and KeyValue
+/// via a Dart-friendly wrapper around the native `libnats` shared library.
+library;
+
+export 'src/nats_async_subscription.dart' show NatsAsyncSubscription;
+export 'src/nats_client.dart';
+export 'src/nats_exceptions.dart';
+export 'src/nats_options.dart' show NatsOptions, NatsError;
+export 'src/nats_bindings.g.dart'
+    show
+        natsStatus,
+        jsRetentionPolicy,
+        jsDiscardPolicy,
+        jsStorageType,
+        jsDeliverPolicy,
+        jsAckPolicy,
+        jsReplayPolicy,
+        kvOperation;
+// Phase 4 — JetStream
+export 'src/js_message.dart'
+    show JsMessage, JsMessageMetadata, JsPubAckResult;
+export 'src/jetstream_context.dart'
+    show
+        JetStreamContext,
+        JsStreamConfig,
+        JsConsumerConfig,
+        JsStreamInfoResult,
+        JsConsumerInfoResult,
+        JsSyncSubscription,
+        JsAsyncSubscription,
+        JsPullSubscription;
+// Phase 4 — KeyValue
+export 'src/kv_store.dart'
+    show KeyValueStore, KvConfig, KvEntry, JetStreamKeyValue;

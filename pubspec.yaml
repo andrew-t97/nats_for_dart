@@ -1,0 +1,16 @@
+name: nats_ffi_experiment
+description: A starting point for Dart libraries or applications.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.10.8
+
+dependencies:
+  ffi: ^2.0.0
+  meta: ^1.10.0
+
+dev_dependencies:
+  ffigen: ^18.0.0
+  lints: ^6.0.0
+  test: ^1.25.6
