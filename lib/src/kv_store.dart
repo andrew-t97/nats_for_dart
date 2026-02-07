@@ -7,7 +7,6 @@ import 'package:meta/meta.dart';
 
 import 'jetstream_context.dart';
 import 'nats_bindings.g.dart';
-import 'nats_bindings_loader.dart';
 import 'nats_exceptions.dart';
 
 // ── Dart-friendly KV data classes ───────────────────────────────────────
@@ -81,18 +80,17 @@ final class KvEntry {
   /// Eagerly copies fields from a native `kvEntry` pointer without
   /// destroying it. Caller is responsible for native memory cleanup.
   static KvEntry _copyFromNativePtr(Pointer<kvEntry> entryPtr) {
-    final b = bindings;
-    final bucket = b.kvEntry_Bucket(entryPtr).cast<Utf8>().toDartString();
-    final key = b.kvEntry_Key(entryPtr).cast<Utf8>().toDartString();
-    final valueLen = b.kvEntry_ValueLen(entryPtr);
-    final valuePtr = b.kvEntry_Value(entryPtr);
+    final bucket = kvEntry_Bucket(entryPtr).cast<Utf8>().toDartString();
+    final key = kvEntry_Key(entryPtr).cast<Utf8>().toDartString();
+    final valueLen = kvEntry_ValueLen(entryPtr);
+    final valuePtr = kvEntry_Value(entryPtr);
     final value = valueLen > 0
         ? Uint8List.fromList(valuePtr.cast<Uint8>().asTypedList(valueLen))
         : Uint8List(0);
-    final revision = b.kvEntry_Revision(entryPtr);
-    final created = b.kvEntry_Created(entryPtr);
-    final operation = kvOperation.fromValue(b.kvEntry_Operation(entryPtr).value);
-    final delta = b.kvEntry_Delta(entryPtr);
+    final revision = kvEntry_Revision(entryPtr);
+    final created = kvEntry_Created(entryPtr);
+    final operation = kvOperation.fromValue(kvEntry_Operation(entryPtr).value);
+    final delta = kvEntry_Delta(entryPtr);
 
     return KvEntry._(
       bucket: bucket,
@@ -109,7 +107,7 @@ final class KvEntry {
   /// pointer, then destroying the native entry.
   factory KvEntry._fromNativePtr(Pointer<kvEntry> entryPtr) {
     final entry = _copyFromNativePtr(entryPtr);
-    bindings.kvEntry_Destroy(entryPtr);
+    kvEntry_Destroy(entryPtr);
     return entry;
   }
 }
@@ -126,7 +124,9 @@ final class KvEntry {
 /// for timely cleanup is not recommended.
 final class KeyValueStore implements Finalizable {
   static final _finalizer = NativeFinalizer(
-    natsLib.lookup('kvStore_Destroy'),
+    Native.addressOf<NativeFunction<Void Function(Pointer<kvStore>)>>(
+      kvStore_Destroy,
+    ).cast(),
   );
 
   Pointer<kvStore>? _kv;
@@ -139,12 +139,11 @@ final class KeyValueStore implements Finalizable {
 
   /// Creates a new KeyValue bucket.
   factory KeyValueStore.create(JetStreamContext js, KvConfig config) {
-    final b = bindings;
     final kvPtrPtr = calloc<Pointer<kvStore>>();
     final cfgPtr = calloc<kvConfig>();
     final nativeStrings = <Pointer<Utf8>>[];
     try {
-      checkStatus(b.kvConfig_Init(cfgPtr), 'kvConfig_Init');
+      checkStatus(kvConfig_Init(cfgPtr), 'kvConfig_Init');
 
       final bucketNative = config.bucket.toNativeUtf8();
       nativeStrings.add(bucketNative);
@@ -170,7 +169,7 @@ final class KeyValueStore implements Finalizable {
       cfgPtr.ref.Replicas = config.replicas;
 
       checkStatus(
-        b.js_CreateKeyValue(kvPtrPtr, js.nativePtr, cfgPtr),
+        js_CreateKeyValue(kvPtrPtr, js.nativePtr, cfgPtr),
         'js_CreateKeyValue',
       );
       return KeyValueStore._(kvPtrPtr.value);
@@ -185,12 +184,11 @@ final class KeyValueStore implements Finalizable {
 
   /// Opens an existing KeyValue bucket by name.
   factory KeyValueStore.open(JetStreamContext js, String bucket) {
-    final b = bindings;
     final kvPtrPtr = calloc<Pointer<kvStore>>();
     final bucketNative = bucket.toNativeUtf8();
     try {
       checkStatus(
-        b.js_KeyValue(kvPtrPtr, js.nativePtr, bucketNative.cast()),
+        js_KeyValue(kvPtrPtr, js.nativePtr, bucketNative.cast()),
         'js_KeyValue',
       );
       return KeyValueStore._(kvPtrPtr.value);
@@ -203,7 +201,7 @@ final class KeyValueStore implements Finalizable {
   /// Returns the bucket name.
   String get bucket {
     _ensureOpen();
-    return bindings.kvStore_Bucket(_kv!).cast<Utf8>().toDartString();
+    return kvStore_Bucket(_kv!).cast<Utf8>().toDartString();
   }
 
   // ── CRUD operations ─────────────────────────────────────────────────
@@ -211,14 +209,13 @@ final class KeyValueStore implements Finalizable {
   /// Puts a value for the given key. Returns the new revision number.
   int put(String key, Uint8List value) {
     _ensureOpen();
-    final b = bindings;
     final keyNative = key.toNativeUtf8();
     final dataPtr = malloc<Uint8>(value.length);
     final revPtr = calloc<Uint64>();
     try {
       dataPtr.asTypedList(value.length).setAll(0, value);
       checkStatus(
-        b.kvStore_Put(revPtr, _kv!, keyNative.cast(), dataPtr.cast(),
+        kvStore_Put(revPtr, _kv!, keyNative.cast(), dataPtr.cast(),
             value.length),
         'kvStore_Put',
       );
@@ -233,13 +230,12 @@ final class KeyValueStore implements Finalizable {
   /// Puts a string value for the given key. Returns the new revision number.
   int putString(String key, String value) {
     _ensureOpen();
-    final b = bindings;
     final keyNative = key.toNativeUtf8();
     final valueNative = value.toNativeUtf8();
     final revPtr = calloc<Uint64>();
     try {
       checkStatus(
-        b.kvStore_PutString(
+        kvStore_PutString(
           revPtr,
           _kv!,
           keyNative.cast(),
@@ -258,12 +254,11 @@ final class KeyValueStore implements Finalizable {
   /// Gets the latest entry for the given key, or `null` if not found.
   KvEntry? get(String key) {
     _ensureOpen();
-    final b = bindings;
     final keyNative = key.toNativeUtf8();
     final entryPtrPtr = calloc<Pointer<kvEntry>>();
     try {
       final status =
-          b.kvStore_Get(entryPtrPtr, _kv!, keyNative.cast());
+          kvStore_Get(entryPtrPtr, _kv!, keyNative.cast());
       if (status == natsStatus.NATS_NOT_FOUND) return null;
       checkStatus(status, 'kvStore_Get');
       return KvEntry._fromNativePtr(entryPtrPtr.value);
@@ -278,14 +273,13 @@ final class KeyValueStore implements Finalizable {
   /// Throws [NatsException] if the key already exists.
   int create(String key, Uint8List value) {
     _ensureOpen();
-    final b = bindings;
     final keyNative = key.toNativeUtf8();
     final dataPtr = malloc<Uint8>(value.length);
     final revPtr = calloc<Uint64>();
     try {
       dataPtr.asTypedList(value.length).setAll(0, value);
       checkStatus(
-        b.kvStore_Create(
+        kvStore_Create(
           revPtr,
           _kv!,
           keyNative.cast(),
@@ -305,13 +299,12 @@ final class KeyValueStore implements Finalizable {
   /// Creates a key with a string value only if it doesn't exist.
   int createString(String key, String value) {
     _ensureOpen();
-    final b = bindings;
     final keyNative = key.toNativeUtf8();
     final valueNative = value.toNativeUtf8();
     final revPtr = calloc<Uint64>();
     try {
       checkStatus(
-        b.kvStore_CreateString(
+        kvStore_CreateString(
           revPtr,
           _kv!,
           keyNative.cast(),
@@ -334,14 +327,13 @@ final class KeyValueStore implements Finalizable {
   /// concurrency check).
   int update(String key, Uint8List value, int lastRevision) {
     _ensureOpen();
-    final b = bindings;
     final keyNative = key.toNativeUtf8();
     final dataPtr = malloc<Uint8>(value.length);
     final revPtr = calloc<Uint64>();
     try {
       dataPtr.asTypedList(value.length).setAll(0, value);
       checkStatus(
-        b.kvStore_Update(
+        kvStore_Update(
           revPtr,
           _kv!,
           keyNative.cast(),
@@ -362,13 +354,12 @@ final class KeyValueStore implements Finalizable {
   /// Updates a key with a string value, with optimistic concurrency.
   int updateString(String key, String value, int lastRevision) {
     _ensureOpen();
-    final b = bindings;
     final keyNative = key.toNativeUtf8();
     final valueNative = value.toNativeUtf8();
     final revPtr = calloc<Uint64>();
     try {
       checkStatus(
-        b.kvStore_UpdateString(
+        kvStore_UpdateString(
           revPtr,
           _kv!,
           keyNative.cast(),
@@ -388,11 +379,10 @@ final class KeyValueStore implements Finalizable {
   /// Soft-deletes the key (adds a delete marker).
   void delete(String key) {
     _ensureOpen();
-    final b = bindings;
     final keyNative = key.toNativeUtf8();
     try {
       checkStatus(
-        b.kvStore_Delete(_kv!, keyNative.cast()),
+        kvStore_Delete(_kv!, keyNative.cast()),
         'kvStore_Delete',
       );
     } finally {
@@ -403,11 +393,10 @@ final class KeyValueStore implements Finalizable {
   /// Purges all revisions of a key.
   void purge(String key) {
     _ensureOpen();
-    final b = bindings;
     final keyNative = key.toNativeUtf8();
     try {
       checkStatus(
-        b.kvStore_Purge(_kv!, keyNative.cast(), nullptr),
+        kvStore_Purge(_kv!, keyNative.cast(), nullptr),
         'kvStore_Purge',
       );
     } finally {
@@ -420,18 +409,17 @@ final class KeyValueStore implements Finalizable {
   /// Returns all keys in this bucket.
   List<String> keys() {
     _ensureOpen();
-    final b = bindings;
     final keysList = calloc<kvKeysList>();
     try {
       checkStatus(
-        b.kvStore_Keys(keysList, _kv!, nullptr),
+        kvStore_Keys(keysList, _kv!, nullptr),
         'kvStore_Keys',
       );
       final result = <String>[];
       for (var i = 0; i < keysList.ref.Count; i++) {
         result.add(keysList.ref.Keys[i].cast<Utf8>().toDartString());
       }
-      b.kvKeysList_Destroy(keysList);
+      kvKeysList_Destroy(keysList);
       return result;
     } finally {
       calloc.free(keysList);
@@ -441,12 +429,11 @@ final class KeyValueStore implements Finalizable {
   /// Returns all revisions of a key (most recent first).
   List<KvEntry> history(String key) {
     _ensureOpen();
-    final b = bindings;
     final keyNative = key.toNativeUtf8();
     final entryList = calloc<kvEntryList>();
     try {
       checkStatus(
-        b.kvStore_History(entryList, _kv!, keyNative.cast(), nullptr),
+        kvStore_History(entryList, _kv!, keyNative.cast(), nullptr),
         'kvStore_History',
       );
       final result = <KvEntry>[];
@@ -455,7 +442,7 @@ final class KeyValueStore implements Finalizable {
       }
       // Destroys all entries and frees the Entries array. The kvEntryList
       // struct itself is freed in the finally block (calloc'd by us).
-      b.kvEntryList_Destroy(entryList);
+      kvEntryList_Destroy(entryList);
       return result;
     } finally {
       calloc.free(entryList);
@@ -472,10 +459,10 @@ final class KeyValueStore implements Finalizable {
   /// stop watching.
   Stream<KvEntry> watch(String keyPattern) {
     _ensureOpen();
-    return _createWatchStream((b, watcherPtrPtr, watchOpts) {
+    return _createWatchStream((watcherPtrPtr, watchOpts) {
       final keyNative = keyPattern.toNativeUtf8();
       try {
-        return b.kvStore_Watch(
+        return kvStore_Watch(
           watcherPtrPtr,
           _kv!,
           keyNative.cast(),
@@ -490,25 +477,23 @@ final class KeyValueStore implements Finalizable {
   /// Watches for changes on all keys in this bucket.
   Stream<KvEntry> watchAll() {
     _ensureOpen();
-    return _createWatchStream((b, watcherPtrPtr, watchOpts) {
-      return b.kvStore_WatchAll(watcherPtrPtr, _kv!, watchOpts);
+    return _createWatchStream((watcherPtrPtr, watchOpts) {
+      return kvStore_WatchAll(watcherPtrPtr, _kv!, watchOpts);
     });
   }
 
   Stream<KvEntry> _createWatchStream(
     natsStatus Function(
-      NatsBindings b,
       Pointer<Pointer<kvWatcher>> watcherPtrPtr,
       Pointer<kvWatchOptions> watchOpts,
     ) createWatcher,
   ) {
-    final b = bindings;
     final watcherPtrPtr = calloc<Pointer<kvWatcher>>();
     final watchOpts = calloc<kvWatchOptions>();
 
     try {
-      checkStatus(b.kvWatchOptions_Init(watchOpts), 'kvWatchOptions_Init');
-      final status = createWatcher(b, watcherPtrPtr, watchOpts);
+      checkStatus(kvWatchOptions_Init(watchOpts), 'kvWatchOptions_Init');
+      final status = createWatcher(watcherPtrPtr, watchOpts);
       checkStatus(status, 'kvStore_Watch');
     } catch (e) {
       calloc.free(watchOpts);
@@ -527,14 +512,14 @@ final class KeyValueStore implements Finalizable {
       onListen: () {
         pollTimer = Timer.periodic(
           const Duration(milliseconds: 50),
-          (_) => _pollWatcher(b, watcherPtr, controller),
+          (_) => _pollWatcher(watcherPtr, controller),
         );
       },
       onCancel: () {
         _activeWatchers.remove(controller);
         pollTimer?.cancel();
-        b.kvWatcher_Stop(watcherPtr);
-        b.kvWatcher_Destroy(watcherPtr);
+        kvWatcher_Stop(watcherPtr);
+        kvWatcher_Destroy(watcherPtr);
       },
     );
     _activeWatchers.add(controller);
@@ -543,7 +528,6 @@ final class KeyValueStore implements Finalizable {
   }
 
   void _pollWatcher(
-    NatsBindings b,
     Pointer<kvWatcher> watcher,
     StreamController<KvEntry> controller,
   ) {
@@ -555,7 +539,7 @@ final class KeyValueStore implements Finalizable {
     while (!controller.isClosed) {
       final entryPtrPtr = calloc<Pointer<kvEntry>>();
       try {
-        final status = b.kvWatcher_Next(entryPtrPtr, watcher, 1);
+        final status = kvWatcher_Next(entryPtrPtr, watcher, 1);
         if (status == natsStatus.NATS_TIMEOUT) return;
         if (status != natsStatus.NATS_OK) {
           controller.addError(NatsException(status, 'kvWatcher_Next'));
@@ -589,7 +573,7 @@ final class KeyValueStore implements Finalizable {
     _activeWatchers.clear();
     if (_kv != null) {
       _finalizer.detach(this);
-      bindings.kvStore_Destroy(_kv!);
+      kvStore_Destroy(_kv!);
       _kv = null;
     }
   }
@@ -613,11 +597,10 @@ extension JetStreamKeyValue on JetStreamContext {
 
   /// Deletes a KeyValue bucket.
   void deleteKeyValue(String bucket) {
-    final b = bindings;
     final bucketNative = bucket.toNativeUtf8();
     try {
       checkStatus(
-        b.js_DeleteKeyValue(nativePtr, bucketNative.cast()),
+        js_DeleteKeyValue(nativePtr, bucketNative.cast()),
         'js_DeleteKeyValue',
       );
     } finally {

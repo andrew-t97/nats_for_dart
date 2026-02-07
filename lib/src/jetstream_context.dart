@@ -7,7 +7,6 @@ import 'package:meta/meta.dart';
 
 import 'js_message.dart';
 import 'nats_bindings.g.dart';
-import 'nats_bindings_loader.dart';
 import 'nats_client.dart';
 import 'nats_exceptions.dart';
 
@@ -143,7 +142,9 @@ final class JsConsumerInfoResult {
 /// Use [JsAsyncSubscription] for non-blocking message delivery.
 final class JsSyncSubscription implements Finalizable {
   static final _finalizer = NativeFinalizer(
-    natsLib.lookup('natsSubscription_Destroy'),
+    Native.addressOf<NativeFunction<Void Function(Pointer<natsSubscription>)>>(
+      natsSubscription_Destroy,
+    ).cast(),
   );
 
   Pointer<natsSubscription>? _sub;
@@ -159,10 +160,9 @@ final class JsSyncSubscription implements Finalizable {
   /// [JsMessage.destroy] after processing.
   JsMessage nextMessage({Duration timeout = const Duration(seconds: 5)}) {
     _ensureOpen();
-    final b = bindings;
     final msgPtrPtr = calloc<Pointer<natsMsg>>();
     try {
-      final status = b.natsSubscription_NextMsg(
+      final status = natsSubscription_NextMsg(
         msgPtrPtr,
         _sub!,
         timeout.inMilliseconds,
@@ -179,12 +179,11 @@ final class JsSyncSubscription implements Finalizable {
     if (_closed) return;
     _closed = true;
     if (_sub != null) {
-      final b = bindings;
       final subPtr = _sub!;
       _sub = null;
       _finalizer.detach(this);
-      b.natsSubscription_Unsubscribe(subPtr);
-      b.natsSubscription_Destroy(subPtr);
+      natsSubscription_Unsubscribe(subPtr);
+      natsSubscription_Destroy(subPtr);
     }
   }
 
@@ -199,7 +198,9 @@ final class JsSyncSubscription implements Finalizable {
 /// Caller must call [JsMessage.destroy] after processing each message.
 final class JsAsyncSubscription implements Finalizable {
   static final _finalizer = NativeFinalizer(
-    natsLib.lookup('natsSubscription_Destroy'),
+    Native.addressOf<NativeFunction<Void Function(Pointer<natsSubscription>)>>(
+      natsSubscription_Destroy,
+    ).cast(),
   );
 
   /// Static routing table for JetStream async subscriptions.
@@ -252,7 +253,7 @@ final class JsAsyncSubscription implements Finalizable {
     final id = closure.address;
     final controller = _jsSubscriptionRoutes[id];
     if (controller == null || controller.isClosed) {
-      bindings.natsMsg_Destroy(msg);
+      natsMsg_Destroy(msg);
       return;
     }
     try {
@@ -260,7 +261,7 @@ final class JsAsyncSubscription implements Finalizable {
       controller.add(message);
     } catch (e, stackTrace) {
       try {
-        bindings.natsMsg_Destroy(msg);
+        natsMsg_Destroy(msg);
       } catch (_) {}
       controller.addError(e, stackTrace);
     }
@@ -286,12 +287,11 @@ final class JsAsyncSubscription implements Finalizable {
     _jsSubscriptionRoutes.remove(_id);
 
     if (_sub != null) {
-      final b = bindings;
       final subPtr = _sub!;
       _sub = null;
       _finalizer.detach(this);
-      b.natsSubscription_Unsubscribe(subPtr);
-      b.natsSubscription_Destroy(subPtr);
+      natsSubscription_Unsubscribe(subPtr);
+      natsSubscription_Destroy(subPtr);
     }
 
     _nativeCallable.close();
@@ -307,7 +307,9 @@ final class JsAsyncSubscription implements Finalizable {
 /// A JetStream pull subscription that fetches messages in batches.
 final class JsPullSubscription implements Finalizable {
   static final _finalizer = NativeFinalizer(
-    natsLib.lookup('natsSubscription_Destroy'),
+    Native.addressOf<NativeFunction<Void Function(Pointer<natsSubscription>)>>(
+      natsSubscription_Destroy,
+    ).cast(),
   );
 
   Pointer<natsSubscription>? _sub;
@@ -326,11 +328,10 @@ final class JsPullSubscription implements Finalizable {
     Duration timeout = const Duration(seconds: 5),
   }) {
     _ensureOpen();
-    final b = bindings;
     final msgList = calloc<natsMsgList>();
     final errCode = calloc<UnsignedInt>();
     try {
-      final status = b.natsSubscription_Fetch(
+      final status = natsSubscription_Fetch(
         msgList,
         _sub!,
         batchSize,
@@ -365,12 +366,11 @@ final class JsPullSubscription implements Finalizable {
     if (_closed) return;
     _closed = true;
     if (_sub != null) {
-      final b = bindings;
       final subPtr = _sub!;
       _sub = null;
       _finalizer.detach(this);
-      b.natsSubscription_Unsubscribe(subPtr);
-      b.natsSubscription_Destroy(subPtr);
+      natsSubscription_Unsubscribe(subPtr);
+      natsSubscription_Destroy(subPtr);
     }
   }
 
@@ -393,13 +393,12 @@ final class JetStreamContext {
 
   /// Creates a JetStream context from the given connection pointer.
   static JetStreamContext create(Pointer<natsConnection> nc) {
-    final b = bindings;
     final jsPtrPtr = calloc<Pointer<jsCtx>>();
     final jsOpts = calloc<jsOptions>();
     try {
-      checkStatus(b.jsOptions_Init(jsOpts), 'jsOptions_Init');
+      checkStatus(jsOptions_Init(jsOpts), 'jsOptions_Init');
       checkStatus(
-        b.natsConnection_JetStream(jsPtrPtr, nc, jsOpts),
+        natsConnection_JetStream(jsPtrPtr, nc, jsOpts),
         'natsConnection_JetStream',
       );
       return JetStreamContext._(jsPtrPtr.value);
@@ -420,14 +419,13 @@ final class JetStreamContext {
   /// Publishes raw [data] to the given [subject] via JetStream.
   JsPubAckResult publish(String subject, Uint8List data) {
     _ensureOpen();
-    final b = bindings;
     final subjectNative = subject.toNativeUtf8();
     final dataPtr = malloc<Uint8>(data.length);
     final pubAckPtrPtr = calloc<Pointer<jsPubAck>>();
     final errCode = calloc<UnsignedInt>();
     try {
       dataPtr.asTypedList(data.length).setAll(0, data);
-      final status = b.js_Publish(
+      final status = js_Publish(
         pubAckPtrPtr,
         _js!,
         subjectNative.cast(),
@@ -460,7 +458,7 @@ final class JetStreamContext {
           : pubAckPtr.ref.Domain.cast<Utf8>().toDartString(),
       duplicate: pubAckPtr.ref.Duplicate,
     );
-    bindings.jsPubAck_Destroy(pubAckPtr);
+    jsPubAck_Destroy(pubAckPtr);
     return result;
   }
 
@@ -476,14 +474,13 @@ final class JetStreamContext {
     bool manualAck = true,
   }) {
     _ensureOpen();
-    final b = bindings;
     final subPtrPtr = calloc<Pointer<natsSubscription>>();
     final subjectNative = subject.toNativeUtf8();
     final subOpts = calloc<jsSubOptions>();
     final errCode = calloc<UnsignedInt>();
     final nativeStrings = <Pointer<Utf8>>[];
     try {
-      checkStatus(b.jsSubOptions_Init(subOpts), 'jsSubOptions_Init');
+      checkStatus(jsSubOptions_Init(subOpts), 'jsSubOptions_Init');
       subOpts.ref.ManualAck = manualAck;
       if (stream != null) {
         final streamNative = stream.toNativeUtf8();
@@ -496,7 +493,7 @@ final class JetStreamContext {
         subOpts.ref.Config.Durable = durableNative.cast();
       }
 
-      final status = b.js_SubscribeSync(
+      final status = js_SubscribeSync(
         subPtrPtr,
         _js!,
         subjectNative.cast(),
@@ -527,7 +524,6 @@ final class JetStreamContext {
     bool manualAck = true,
   }) {
     _ensureOpen();
-    final b = bindings;
     final subPtrPtr = calloc<Pointer<natsSubscription>>();
     final subjectNative = subject.toNativeUtf8();
     final subOpts = calloc<jsSubOptions>();
@@ -535,7 +531,7 @@ final class JetStreamContext {
     final nativeStrings = <Pointer<Utf8>>[];
     JsAsyncSubscription? asyncSub;
     try {
-      checkStatus(b.jsSubOptions_Init(subOpts), 'jsSubOptions_Init');
+      checkStatus(jsSubOptions_Init(subOpts), 'jsSubOptions_Init');
       subOpts.ref.ManualAck = manualAck;
       if (stream != null) {
         final streamNative = stream.toNativeUtf8();
@@ -550,7 +546,7 @@ final class JetStreamContext {
 
       asyncSub = JsAsyncSubscription._create();
 
-      final status = b.js_Subscribe(
+      final status = js_Subscribe(
         subPtrPtr,
         _js!,
         subjectNative.cast(),
@@ -586,7 +582,6 @@ final class JetStreamContext {
     String? stream,
   }) {
     _ensureOpen();
-    final b = bindings;
     final subPtrPtr = calloc<Pointer<natsSubscription>>();
     final subjectNative = subject.toNativeUtf8();
     final durableNative = durable.toNativeUtf8();
@@ -594,14 +589,14 @@ final class JetStreamContext {
     final errCode = calloc<UnsignedInt>();
     final nativeStrings = <Pointer<Utf8>>[];
     try {
-      checkStatus(b.jsSubOptions_Init(subOpts), 'jsSubOptions_Init');
+      checkStatus(jsSubOptions_Init(subOpts), 'jsSubOptions_Init');
       if (stream != null) {
         final streamNative = stream.toNativeUtf8();
         nativeStrings.add(streamNative);
         subOpts.ref.Stream = streamNative.cast();
       }
 
-      final status = b.js_PullSubscribe(
+      final status = js_PullSubscribe(
         subPtrPtr,
         _js!,
         subjectNative.cast(),
@@ -629,10 +624,10 @@ final class JetStreamContext {
   /// Creates a new stream with the given configuration.
   JsStreamInfoResult addStream(JsStreamConfig config) {
     _ensureOpen();
-    return _withStreamConfig(config, (b, cfgPtr, errCode) {
+    return _withStreamConfig(config, (cfgPtr, errCode) {
       final siPtrPtr = calloc<Pointer<jsStreamInfo>>();
       try {
-        final status = b.js_AddStream(siPtrPtr, _js!, cfgPtr, nullptr, errCode);
+        final status = js_AddStream(siPtrPtr, _js!, cfgPtr, nullptr, errCode);
         checkStatus(status, 'js_AddStream');
         return _extractStreamInfo(siPtrPtr.value);
       } finally {
@@ -644,11 +639,11 @@ final class JetStreamContext {
   /// Updates an existing stream with the given configuration.
   JsStreamInfoResult updateStream(JsStreamConfig config) {
     _ensureOpen();
-    return _withStreamConfig(config, (b, cfgPtr, errCode) {
+    return _withStreamConfig(config, (cfgPtr, errCode) {
       final siPtrPtr = calloc<Pointer<jsStreamInfo>>();
       try {
         final status =
-            b.js_UpdateStream(siPtrPtr, _js!, cfgPtr, nullptr, errCode);
+            js_UpdateStream(siPtrPtr, _js!, cfgPtr, nullptr, errCode);
         checkStatus(status, 'js_UpdateStream');
         return _extractStreamInfo(siPtrPtr.value);
       } finally {
@@ -660,12 +655,11 @@ final class JetStreamContext {
   /// Deletes a stream by name.
   void deleteStream(String name) {
     _ensureOpen();
-    final b = bindings;
     final nameNative = name.toNativeUtf8();
     final errCode = calloc<UnsignedInt>();
     try {
       final status =
-          b.js_DeleteStream(_js!, nameNative.cast(), nullptr, errCode);
+          js_DeleteStream(_js!, nameNative.cast(), nullptr, errCode);
       checkStatus(status, 'js_DeleteStream');
     } finally {
       calloc.free(errCode);
@@ -676,12 +670,11 @@ final class JetStreamContext {
   /// Gets information about a stream.
   JsStreamInfoResult getStreamInfo(String name) {
     _ensureOpen();
-    final b = bindings;
     final nameNative = name.toNativeUtf8();
     final siPtrPtr = calloc<Pointer<jsStreamInfo>>();
     final errCode = calloc<UnsignedInt>();
     try {
-      final status = b.js_GetStreamInfo(
+      final status = js_GetStreamInfo(
         siPtrPtr,
         _js!,
         nameNative.cast(),
@@ -700,12 +693,11 @@ final class JetStreamContext {
   /// Purges all messages from a stream.
   void purgeStream(String name) {
     _ensureOpen();
-    final b = bindings;
     final nameNative = name.toNativeUtf8();
     final errCode = calloc<UnsignedInt>();
     try {
       final status =
-          b.js_PurgeStream(_js!, nameNative.cast(), nullptr, errCode);
+          js_PurgeStream(_js!, nameNative.cast(), nullptr, errCode);
       checkStatus(status, 'js_PurgeStream');
     } finally {
       calloc.free(errCode);
@@ -721,10 +713,10 @@ final class JetStreamContext {
     JsConsumerConfig config,
   ) {
     _ensureOpen();
-    return _withConsumerConfig(stream, config, (b, streamNative, ccPtr, errCode) {
+    return _withConsumerConfig(stream, config, (streamNative, ccPtr, errCode) {
       final ciPtrPtr = calloc<Pointer<jsConsumerInfo>>();
       try {
-        final status = b.js_AddConsumer(
+        final status = js_AddConsumer(
           ciPtrPtr,
           _js!,
           streamNative.cast(),
@@ -743,12 +735,11 @@ final class JetStreamContext {
   /// Deletes a consumer from a stream.
   void deleteConsumer(String stream, String consumer) {
     _ensureOpen();
-    final b = bindings;
     final streamNative = stream.toNativeUtf8();
     final consumerNative = consumer.toNativeUtf8();
     final errCode = calloc<UnsignedInt>();
     try {
-      final status = b.js_DeleteConsumer(
+      final status = js_DeleteConsumer(
         _js!,
         streamNative.cast(),
         consumerNative.cast(),
@@ -766,13 +757,12 @@ final class JetStreamContext {
   /// Gets information about a consumer.
   JsConsumerInfoResult getConsumerInfo(String stream, String consumer) {
     _ensureOpen();
-    final b = bindings;
     final streamNative = stream.toNativeUtf8();
     final consumerNative = consumer.toNativeUtf8();
     final ciPtrPtr = calloc<Pointer<jsConsumerInfo>>();
     final errCode = calloc<UnsignedInt>();
     try {
-      final status = b.js_GetConsumerInfo(
+      final status = js_GetConsumerInfo(
         ciPtrPtr,
         _js!,
         streamNative.cast(),
@@ -797,7 +787,7 @@ final class JetStreamContext {
     if (_closed) return;
     _closed = true;
     if (_js != null) {
-      bindings.jsCtx_Destroy(_js!);
+      jsCtx_Destroy(_js!);
       _js = null;
     }
   }
@@ -812,19 +802,17 @@ final class JetStreamContext {
   T _withStreamConfig<T>(
     JsStreamConfig config,
     T Function(
-      NatsBindings b,
       Pointer<jsStreamConfig> cfgPtr,
       Pointer<UnsignedInt> errCode,
     ) body,
   ) {
-    final b = bindings;
     final cfgPtr = calloc<jsStreamConfig>();
     final errCode = calloc<UnsignedInt>();
     final nativeStrings = <Pointer<Utf8>>[];
     Pointer<Pointer<Char>>? subjectsArray;
 
     try {
-      checkStatus(b.jsStreamConfig_Init(cfgPtr), 'jsStreamConfig_Init');
+      checkStatus(jsStreamConfig_Init(cfgPtr), 'jsStreamConfig_Init');
 
       final nameNative = config.name.toNativeUtf8();
       nativeStrings.add(nameNative);
@@ -862,7 +850,7 @@ final class JetStreamContext {
       cfgPtr.ref.Replicas = config.replicas;
       cfgPtr.ref.NoAck = config.noAck;
 
-      return body(b, cfgPtr, errCode);
+      return body(cfgPtr, errCode);
     } finally {
       for (final ptr in nativeStrings) {
         calloc.free(ptr);
@@ -885,7 +873,7 @@ final class JetStreamContext {
       lastSeq: siPtr.ref.State.LastSeq,
       consumers: siPtr.ref.State.Consumers,
     );
-    bindings.jsStreamInfo_Destroy(siPtr);
+    jsStreamInfo_Destroy(siPtr);
     return result;
   }
 
@@ -894,20 +882,18 @@ final class JetStreamContext {
     String stream,
     JsConsumerConfig config,
     T Function(
-      NatsBindings b,
       Pointer<Utf8> streamNative,
       Pointer<jsConsumerConfig> ccPtr,
       Pointer<UnsignedInt> errCode,
     ) body,
   ) {
-    final b = bindings;
     final streamNative = stream.toNativeUtf8();
     final ccPtr = calloc<jsConsumerConfig>();
     final errCode = calloc<UnsignedInt>();
     final nativeStrings = <Pointer<Utf8>>[];
 
     try {
-      checkStatus(b.jsConsumerConfig_Init(ccPtr), 'jsConsumerConfig_Init');
+      checkStatus(jsConsumerConfig_Init(ccPtr), 'jsConsumerConfig_Init');
 
       if (config.name != null) {
         final nameNative = config.name!.toNativeUtf8();
@@ -953,7 +939,7 @@ final class JetStreamContext {
         ccPtr.ref.MaxAckPending = config.maxAckPending!;
       }
 
-      return body(b, streamNative, ccPtr, errCode);
+      return body(streamNative, ccPtr, errCode);
     } finally {
       for (final ptr in nativeStrings) {
         calloc.free(ptr);
@@ -974,7 +960,7 @@ final class JetStreamContext {
       numWaiting: ciPtr.ref.NumWaiting,
       numPending: ciPtr.ref.NumPending,
     );
-    bindings.jsConsumerInfo_Destroy(ciPtr);
+    jsConsumerInfo_Destroy(ciPtr);
     return result;
   }
 }

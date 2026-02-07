@@ -6,7 +6,6 @@ import 'package:ffi/ffi.dart';
 import 'package:meta/meta.dart';
 
 import 'nats_bindings.g.dart';
-import 'nats_bindings_loader.dart';
 import 'nats_exceptions.dart';
 
 /// A JetStream message that supports acknowledgement operations.
@@ -21,7 +20,9 @@ import 'nats_exceptions.dart';
 /// is not called, but relying on GC for timely ack is not recommended.
 final class JsMessage implements Finalizable {
   static final _finalizer = NativeFinalizer(
-    natsLib.lookup('natsMsg_Destroy'),
+    Native.addressOf<NativeFunction<Void Function(Pointer<natsMsg>)>>(
+      natsMsg_Destroy,
+    ).cast(),
   );
 
   /// The subject this message was published to.
@@ -63,15 +64,14 @@ final class JsMessage implements Finalizable {
     if (msgPtr == nullptr) {
       throw ArgumentError('Cannot create JsMessage from a null pointer');
     }
-    final b = bindings;
-    final subject = b.natsMsg_GetSubject(msgPtr).cast<Utf8>().toDartString();
-    final dataLen = b.natsMsg_GetDataLength(msgPtr);
-    final dataPtr = b.natsMsg_GetData(msgPtr);
+    final subject = natsMsg_GetSubject(msgPtr).cast<Utf8>().toDartString();
+    final dataLen = natsMsg_GetDataLength(msgPtr);
+    final dataPtr = natsMsg_GetData(msgPtr);
     final data = Uint8List.fromList(
       dataPtr.cast<Uint8>().asTypedList(dataLen),
     );
 
-    final replyPtr = b.natsMsg_GetReply(msgPtr);
+    final replyPtr = natsMsg_GetReply(msgPtr);
     final replyTo =
         replyPtr == nullptr ? null : replyPtr.cast<Utf8>().toDartString();
 
@@ -87,7 +87,7 @@ final class JsMessage implements Finalizable {
   void ack() {
     _ensureAlive();
     checkStatus(
-      bindings.natsMsg_Ack(_msgPtr!, nullptr),
+      natsMsg_Ack(_msgPtr!, nullptr),
       'natsMsg_Ack',
     );
   }
@@ -97,12 +97,12 @@ final class JsMessage implements Finalizable {
     _ensureAlive();
     final jsOpts = calloc<jsOptions>();
     try {
-      checkStatus(bindings.jsOptions_Init(jsOpts), 'jsOptions_Init');
+      checkStatus(jsOptions_Init(jsOpts), 'jsOptions_Init');
       jsOpts.ref.Wait = timeout.inMilliseconds;
       final errCode = calloc<UnsignedInt>();
       try {
         checkStatus(
-          bindings.natsMsg_AckSync(_msgPtr!, jsOpts, errCode),
+          natsMsg_AckSync(_msgPtr!, jsOpts, errCode),
           'natsMsg_AckSync',
         );
       } finally {
@@ -119,7 +119,7 @@ final class JsMessage implements Finalizable {
     if (delay != null) {
       // Safe for durations up to ~292 years (2^63 nanoseconds).
       checkStatus(
-        bindings.natsMsg_NakWithDelay(
+        natsMsg_NakWithDelay(
           _msgPtr!,
           delay.inMilliseconds * 1000000,
           nullptr,
@@ -128,7 +128,7 @@ final class JsMessage implements Finalizable {
       );
     } else {
       checkStatus(
-        bindings.natsMsg_Nak(_msgPtr!, nullptr),
+        natsMsg_Nak(_msgPtr!, nullptr),
         'natsMsg_Nak',
       );
     }
@@ -139,7 +139,7 @@ final class JsMessage implements Finalizable {
   void inProgress() {
     _ensureAlive();
     checkStatus(
-      bindings.natsMsg_InProgress(_msgPtr!, nullptr),
+      natsMsg_InProgress(_msgPtr!, nullptr),
       'natsMsg_InProgress',
     );
   }
@@ -149,7 +149,7 @@ final class JsMessage implements Finalizable {
   void term() {
     _ensureAlive();
     checkStatus(
-      bindings.natsMsg_Term(_msgPtr!, nullptr),
+      natsMsg_Term(_msgPtr!, nullptr),
       'natsMsg_Term',
     );
   }
@@ -161,7 +161,7 @@ final class JsMessage implements Finalizable {
     final metaPtrPtr = calloc<Pointer<jsMsgMetaData>>();
     try {
       checkStatus(
-        bindings.natsMsg_GetMetaData(metaPtrPtr, _msgPtr!),
+        natsMsg_GetMetaData(metaPtrPtr, _msgPtr!),
         'natsMsg_GetMetaData',
       );
       final meta = metaPtrPtr.value;
@@ -177,7 +177,7 @@ final class JsMessage implements Finalizable {
             ? null
             : meta.ref.Domain.cast<Utf8>().toDartString(),
       );
-      bindings.jsMsgMetaData_Destroy(meta);
+      jsMsgMetaData_Destroy(meta);
       return result;
     } finally {
       calloc.free(metaPtrPtr);
@@ -193,7 +193,7 @@ final class JsMessage implements Finalizable {
     _destroyed = true;
     if (_msgPtr != null) {
       _finalizer.detach(this);
-      bindings.natsMsg_Destroy(_msgPtr!);
+      natsMsg_Destroy(_msgPtr!);
       _msgPtr = null;
     }
   }

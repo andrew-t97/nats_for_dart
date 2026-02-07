@@ -1,0 +1,18 @@
+# Standard exclusions
+test/
+doc/
+examples/
+
+# Plan and review documents
+*-plan.md
+*-review.md
+
+# Upgrade tooling (not needed by consumers)
+scripts/
+
+# Leftover submodule artifacts
+.gitmodules
+.gitattributes
+
+# Development config
+justfile

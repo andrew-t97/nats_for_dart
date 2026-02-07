@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
-import 'dart:io' show Platform;
 import 'dart:isolate';
 import 'dart:typed_data';
 
@@ -11,7 +10,6 @@ import 'package:meta/meta.dart';
 import 'jetstream_context.dart';
 import 'nats_async_subscription.dart';
 import 'nats_bindings.g.dart';
-import 'nats_bindings_loader.dart';
 import 'nats_exceptions.dart';
 import 'nats_options.dart';
 
@@ -27,14 +25,14 @@ final class NatsLibrary {
   /// This must be called (once) before any connections are created. Passing
   /// `-1` uses the library defaults.
   static void init() {
-    checkStatus(bindings.nats_Open(-1), 'nats_Open');
+    checkStatus(nats_Open(-1), 'nats_Open');
   }
 
   /// Tears down the NATS C library and waits for resources to be released.
   ///
   /// Pass `0` to wait indefinitely.
   static void close({int timeoutMs = 0}) {
-    checkStatus(bindings.nats_CloseAndWait(timeoutMs), 'nats_CloseAndWait');
+    checkStatus(nats_CloseAndWait(timeoutMs), 'nats_CloseAndWait');
   }
 }
 
@@ -82,20 +80,19 @@ final class NatsMessage {
     if (msgPtr == nullptr) {
       throw ArgumentError('Cannot create NatsMessage from a null pointer');
     }
-    final b = bindings;
-    final subject = b.natsMsg_GetSubject(msgPtr).cast<Utf8>().toDartString();
-    final dataLen = b.natsMsg_GetDataLength(msgPtr);
-    final dataPtr = b.natsMsg_GetData(msgPtr);
+    final subject = natsMsg_GetSubject(msgPtr).cast<Utf8>().toDartString();
+    final dataLen = natsMsg_GetDataLength(msgPtr);
+    final dataPtr = natsMsg_GetData(msgPtr);
     final data = Uint8List.fromList(
       dataPtr.cast<Uint8>().asTypedList(dataLen),
     );
 
     // Eagerly copy the reply-to subject if present.
-    final replyPtr = b.natsMsg_GetReply(msgPtr);
+    final replyPtr = natsMsg_GetReply(msgPtr);
     final replyTo =
         replyPtr == nullptr ? null : replyPtr.cast<Utf8>().toDartString();
 
-    b.natsMsg_Destroy(msgPtr);
+    natsMsg_Destroy(msgPtr);
     return NatsMessage._(subject, data, replyTo);
   }
 }
@@ -112,7 +109,9 @@ final class NatsMessage {
 /// for CLI tools, scripts, and tests where blocking is acceptable.
 final class NatsSyncSubscription implements Finalizable {
   static final _finalizer = NativeFinalizer(
-    natsLib.lookup('natsSubscription_Destroy'),
+    Native.addressOf<NativeFunction<Void Function(Pointer<natsSubscription>)>>(
+      natsSubscription_Destroy,
+    ).cast(),
   );
 
   Pointer<natsSubscription>? _sub;
@@ -136,10 +135,9 @@ final class NatsSyncSubscription implements Finalizable {
   /// message is destroyed before this method returns.
   NatsMessage nextMessage({Duration timeout = const Duration(seconds: 5)}) {
     _ensureOpen();
-    final b = bindings;
     final msgPtrPtr = calloc<Pointer<natsMsg>>();
     try {
-      final status = b.natsSubscription_NextMsg(
+      final status = natsSubscription_NextMsg(
         msgPtrPtr,
         _sub!,
         timeout.inMilliseconds,
@@ -158,7 +156,6 @@ final class NatsSyncSubscription implements Finalizable {
     _owner?.removeSyncSubscription(this);
     _owner = null;
     if (_sub != null) {
-      final b = bindings;
       final subPtr = _sub!;
       _sub = null;
       // Detach the finalizer before manually destroying to prevent
@@ -166,9 +163,9 @@ final class NatsSyncSubscription implements Finalizable {
       _finalizer.detach(this);
       // Ignore expected statuses during teardown (e.g. connection already
       // closed or subscription already invalid).
-      final status = b.natsSubscription_Unsubscribe(subPtr);
+      final status = natsSubscription_Unsubscribe(subPtr);
       // Always destroy regardless of unsubscribe outcome.
-      b.natsSubscription_Destroy(subPtr);
+      natsSubscription_Destroy(subPtr);
       if (status != natsStatus.NATS_OK &&
           status != natsStatus.NATS_CONNECTION_CLOSED &&
           status != natsStatus.NATS_INVALID_SUBSCRIPTION) {
@@ -192,7 +189,9 @@ final class NatsSyncSubscription implements Finalizable {
 /// Provides synchronous publish/subscribe over a single connection.
 final class NatsClient implements Finalizable {
   static final _finalizer = NativeFinalizer(
-    natsLib.lookup('natsConnection_Destroy'),
+    Native.addressOf<NativeFunction<Void Function(Pointer<natsConnection>)>>(
+      natsConnection_Destroy,
+    ).cast(),
   );
 
   Pointer<natsConnection>? _nc;
@@ -218,11 +217,10 @@ final class NatsClient implements Finalizable {
   /// ```
   factory NatsClient.connect(String url) {
     final client = NatsClient._();
-    final b = bindings;
     final ncPtrPtr = calloc<Pointer<natsConnection>>();
     final urlNative = url.toNativeUtf8();
     try {
-      final status = b.natsConnection_ConnectTo(
+      final status = natsConnection_ConnectTo(
         ncPtrPtr,
         urlNative.cast(),
       );
@@ -254,10 +252,9 @@ final class NatsClient implements Finalizable {
   factory NatsClient.connectWithOptions(NatsOptions options) {
     final client = NatsClient._();
     client._options = options;
-    final b = bindings;
     final ncPtrPtr = calloc<Pointer<natsConnection>>();
     try {
-      final status = b.natsConnection_Connect(ncPtrPtr, options.nativePtr);
+      final status = natsConnection_Connect(ncPtrPtr, options.nativePtr);
       checkStatus(status, 'natsConnection_Connect');
       client._nc = ncPtrPtr.value;
       _finalizer.attach(client, client._nc!.cast(), detach: client);
@@ -279,16 +276,14 @@ final class NatsClient implements Finalizable {
   /// ```
   static Future<NatsClient> connectAsync(String url) async {
     final connectionAddress = await Isolate.run(() {
-      final lib = _openNatsLibInIsolate();
-      final b = NatsBindings(lib);
       final ncPtrPtr = calloc<Pointer<natsConnection>>();
       final urlNative = url.toNativeUtf8();
       try {
-        final status = b.natsConnection_ConnectTo(
+        final status = natsConnection_ConnectTo(
           ncPtrPtr,
           urlNative.cast(),
         );
-        _checkStatusInIsolate(b, status, 'natsConnection_ConnectTo');
+        checkStatus(status, 'natsConnection_ConnectTo');
         return ncPtrPtr.value.address;
       } finally {
         calloc.free(ncPtrPtr);
@@ -326,13 +321,11 @@ final class NatsClient implements Finalizable {
   ) async {
     final optionsAddress = options.nativePtr.address;
     final connectionAddress = await Isolate.run(() {
-      final lib = _openNatsLibInIsolate();
-      final b = NatsBindings(lib);
       final ncPtrPtr = calloc<Pointer<natsConnection>>();
       try {
         final optsPtr = Pointer<natsOptions>.fromAddress(optionsAddress);
-        final status = b.natsConnection_Connect(ncPtrPtr, optsPtr);
-        _checkStatusInIsolate(b, status, 'natsConnection_Connect');
+        final status = natsConnection_Connect(ncPtrPtr, optsPtr);
+        checkStatus(status, 'natsConnection_Connect');
         return ncPtrPtr.value.address;
       } finally {
         calloc.free(ncPtrPtr);
@@ -346,62 +339,13 @@ final class NatsClient implements Finalizable {
     return client;
   }
 
-  /// Opens the NATS shared library inside a worker isolate.
-  ///
-  /// Worker isolates don't share the main isolate's lazy singletons, so we
-  /// need to open the library independently.
-  static DynamicLibrary _openNatsLibInIsolate() {
-    if (Platform.isMacOS) {
-      try {
-        return DynamicLibrary.open(
-          '/opt/homebrew/opt/cnats/lib/libnats.dylib',
-        );
-      } catch (_) {
-        return DynamicLibrary.open('libnats.dylib');
-      }
-    } else if (Platform.isLinux) {
-      try {
-        return DynamicLibrary.open(
-          '/home/linuxbrew/.linuxbrew/lib/libnats.so',
-        );
-      } catch (_) {
-        return DynamicLibrary.open('libnats.so');
-      }
-    }
-    throw UnsupportedError(
-      'Unsupported platform: ${Platform.operatingSystem}',
-    );
-  }
-
-  /// A self-contained status check for use inside worker isolates, which
-  /// cannot access the main isolate's [bindings] singleton.
-  static void _checkStatusInIsolate(
-    NatsBindings b,
-    natsStatus status,
-    String context,
-  ) {
-    if (status != natsStatus.NATS_OK) {
-      String? nativeError;
-      try {
-        final errPtr = b.nats_GetLastError(nullptr);
-        if (errPtr != nullptr) {
-          nativeError = errPtr.cast<Utf8>().toDartString();
-        }
-      } catch (_) {}
-
-      final parts = <String>[context, status.name, ?nativeError];
-      throw NatsException(status, parts.join(': '));
-    }
-  }
-
   /// Publishes a string [message] on the given [subject].
   void publish(String subject, String message) {
     _ensureOpen();
-    final b = bindings;
     final subjectNative = subject.toNativeUtf8();
     final messageNative = message.toNativeUtf8();
     try {
-      final status = b.natsConnection_PublishString(
+      final status = natsConnection_PublishString(
         _nc!,
         subjectNative.cast(),
         messageNative.cast(),
@@ -416,12 +360,11 @@ final class NatsClient implements Finalizable {
   /// Publishes raw [data] bytes on the given [subject].
   void publishBytes(String subject, Uint8List data) {
     _ensureOpen();
-    final b = bindings;
     final subjectNative = subject.toNativeUtf8();
     final dataPtr = malloc<Uint8>(data.length);
     try {
       dataPtr.asTypedList(data.length).setAll(0, data);
-      final status = b.natsConnection_Publish(
+      final status = natsConnection_Publish(
         _nc!,
         subjectNative.cast(),
         dataPtr.cast(),
@@ -440,15 +383,14 @@ final class NatsClient implements Finalizable {
   /// blocks until the flush completes with [natsConnection_Flush].
   void flush({Duration? timeout}) {
     _ensureOpen();
-    final b = bindings;
     if (timeout != null) {
-      final status = b.natsConnection_FlushTimeout(
+      final status = natsConnection_FlushTimeout(
         _nc!,
         timeout.inMilliseconds,
       );
       checkStatus(status, 'natsConnection_FlushTimeout');
     } else {
-      final status = b.natsConnection_Flush(_nc!);
+      final status = natsConnection_Flush(_nc!);
       checkStatus(status, 'natsConnection_Flush');
     }
   }
@@ -472,11 +414,10 @@ final class NatsClient implements Finalizable {
   /// Creates a synchronous subscription on the given [subject].
   NatsSyncSubscription subscribeSync(String subject) {
     _ensureOpen();
-    final b = bindings;
     final subPtrPtr = calloc<Pointer<natsSubscription>>();
     final subjectNative = subject.toNativeUtf8();
     try {
-      final status = b.natsConnection_SubscribeSync(
+      final status = natsConnection_SubscribeSync(
         subPtrPtr,
         _nc!,
         subjectNative.cast(),
@@ -498,7 +439,6 @@ final class NatsClient implements Finalizable {
   /// [NativeCallable.listener] ensures they arrive on the Dart event loop.
   NatsAsyncSubscription subscribe(String subject) {
     _ensureOpen();
-    final b = bindings;
     final subPtrPtr = calloc<Pointer<natsSubscription>>();
     final subjectNative = subject.toNativeUtf8();
     NatsAsyncSubscription? asyncSub;
@@ -507,7 +447,7 @@ final class NatsClient implements Finalizable {
       // native callback pointer and closure before calling into C.
       asyncSub = NatsAsyncSubscription.create(this);
 
-      final status = b.natsConnection_Subscribe(
+      final status = natsConnection_Subscribe(
         subPtrPtr,
         _nc!,
         subjectNative.cast(),
@@ -538,7 +478,6 @@ final class NatsClient implements Finalizable {
   /// only one member receives any given message.
   NatsAsyncSubscription queueSubscribe(String subject, String queueGroup) {
     _ensureOpen();
-    final b = bindings;
     final subPtrPtr = calloc<Pointer<natsSubscription>>();
     final subjectNative = subject.toNativeUtf8();
     final queueNative = queueGroup.toNativeUtf8();
@@ -546,7 +485,7 @@ final class NatsClient implements Finalizable {
     try {
       asyncSub = NatsAsyncSubscription.create(this);
 
-      final status = b.natsConnection_QueueSubscribe(
+      final status = natsConnection_QueueSubscribe(
         subPtrPtr,
         _nc!,
         subjectNative.cast(),
@@ -615,14 +554,13 @@ final class NatsClient implements Finalizable {
     _activeAsyncSubscriptions.clear();
 
     if (_nc != null) {
-      final b = bindings;
       final ncPtr = _nc!;
       _nc = null;
       // Detach the finalizer before manually destroying to prevent
       // double-free if GC runs after an explicit close.
       _finalizer.detach(this);
-      b.natsConnection_Close(ncPtr);
-      b.natsConnection_Destroy(ncPtr);
+      natsConnection_Close(ncPtr);
+      natsConnection_Destroy(ncPtr);
     }
 
     // Close options if owned by this client.
@@ -651,12 +589,11 @@ final class NatsClient implements Finalizable {
     Duration timeout = const Duration(seconds: 5),
   }) async {
     _ensureOpen();
-    final b = bindings;
 
     // 1. Create a unique inbox subject.
     final inboxPtrPtr = calloc<Pointer<Char>>();
     try {
-      checkStatus(b.natsInbox_Create(inboxPtrPtr), 'natsInbox_Create');
+      checkStatus(natsInbox_Create(inboxPtrPtr), 'natsInbox_Create');
     } catch (e) {
       calloc.free(inboxPtrPtr);
       rethrow;
@@ -673,7 +610,7 @@ final class NatsClient implements Finalizable {
       final subjectNative = subject.toNativeUtf8();
       final messageNative = message.toNativeUtf8();
       try {
-        final status = b.natsConnection_PublishRequestString(
+        final status = natsConnection_PublishRequestString(
           _nc!,
           subjectNative.cast(),
           inboxPtr,
@@ -692,7 +629,7 @@ final class NatsClient implements Finalizable {
       return await inboxSub.messages.first.timeout(timeout);
     } finally {
       await inboxSub.close();
-      b.natsInbox_Destroy(inboxPtr);
+      natsInbox_Destroy(inboxPtr);
     }
   }
 
@@ -705,12 +642,11 @@ final class NatsClient implements Finalizable {
     Duration timeout = const Duration(seconds: 5),
   }) async {
     _ensureOpen();
-    final b = bindings;
 
     // 1. Create a unique inbox subject.
     final inboxPtrPtr = calloc<Pointer<Char>>();
     try {
-      checkStatus(b.natsInbox_Create(inboxPtrPtr), 'natsInbox_Create');
+      checkStatus(natsInbox_Create(inboxPtrPtr), 'natsInbox_Create');
     } catch (e) {
       calloc.free(inboxPtrPtr);
       rethrow;
@@ -728,7 +664,7 @@ final class NatsClient implements Finalizable {
       final dataPtr = malloc<Uint8>(data.length);
       try {
         dataPtr.asTypedList(data.length).setAll(0, data);
-        final status = b.natsConnection_PublishRequest(
+        final status = natsConnection_PublishRequest(
           _nc!,
           subjectNative.cast(),
           inboxPtr,
@@ -748,7 +684,7 @@ final class NatsClient implements Finalizable {
       return await inboxSub.messages.first.timeout(timeout);
     } finally {
       await inboxSub.close();
-      b.natsInbox_Destroy(inboxPtr);
+      natsInbox_Destroy(inboxPtr);
     }
   }
 

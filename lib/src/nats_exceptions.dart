@@ -3,7 +3,6 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'nats_bindings.g.dart';
-import 'nats_bindings_loader.dart';
 
 /// Exception thrown when a NATS C library call returns a non-OK status.
 final class NatsException implements Exception {
@@ -39,7 +38,7 @@ void checkStatus(natsStatus status, [String? context]) {
     // Retrieve the thread-local error description from the C library.
     String? nativeError;
     try {
-      final errPtr = bindings.nats_GetLastError(nullptr);
+      final errPtr = nats_GetLastError(nullptr);
       if (errPtr != nullptr) {
         nativeError = errPtr.cast<Utf8>().toDartString();
       }

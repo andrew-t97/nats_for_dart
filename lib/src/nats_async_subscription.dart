@@ -5,7 +5,6 @@ import 'package:ffi/ffi.dart';
 import 'package:meta/meta.dart';
 
 import 'nats_bindings.g.dart';
-import 'nats_bindings_loader.dart';
 import 'nats_client.dart';
 import 'nats_exceptions.dart';
 
@@ -41,15 +40,15 @@ void _onMessage(
   final controller = _subscriptionRoutes[id];
   if (controller == null || controller.isClosed) {
     // No route or already closed — destroy the message and bail.
-    bindings.natsMsg_Destroy(msg);
+    natsMsg_Destroy(msg);
     return;
   }
 
   // Detect "503 No Responders" before copying — the raw pointer must
   // still be alive for this check.
-  if (bindings.natsMsg_IsNoResponders(msg)) {
-    final subject = bindings.natsMsg_GetSubject(msg).cast<Utf8>().toDartString();
-    bindings.natsMsg_Destroy(msg);
+  if (natsMsg_IsNoResponders(msg)) {
+    final subject = natsMsg_GetSubject(msg).cast<Utf8>().toDartString();
+    natsMsg_Destroy(msg);
     controller.addError(NatsNoRespondersException(subject));
     return;
   }
@@ -65,7 +64,7 @@ void _onMessage(
     // before reaching its internal natsMsg_Destroy call. Calling destroy
     // on an already-destroyed pointer is a no-op in the C library.
     try {
-      bindings.natsMsg_Destroy(msg);
+      natsMsg_Destroy(msg);
     } catch (_) {}
     // Propagate the error through the stream so consumers can observe it.
     controller.addError(e, stackTrace);
@@ -78,7 +77,9 @@ void _onMessage(
 /// Dart event loop using [NativeCallable.listener].
 final class NatsAsyncSubscription implements Finalizable {
   static final _finalizer = NativeFinalizer(
-    natsLib.lookup('natsSubscription_Destroy'),
+    Native.addressOf<NativeFunction<Void Function(Pointer<natsSubscription>)>>(
+      natsSubscription_Destroy,
+    ).cast(),
   );
 
   Pointer<natsSubscription>? _sub;
@@ -192,14 +193,13 @@ final class NatsAsyncSubscription implements Finalizable {
     //    tells the C library to stop delivering messages, which must
     //    happen *before* we close the NativeCallable.
     if (_sub != null) {
-      final b = bindings;
       final subPtr = _sub!;
       _sub = null;
       // Detach the finalizer before manually destroying to prevent
       // double-free if GC runs after an explicit close.
       _finalizer.detach(this);
-      final status = b.natsSubscription_Unsubscribe(subPtr);
-      b.natsSubscription_Destroy(subPtr);
+      final status = natsSubscription_Unsubscribe(subPtr);
+      natsSubscription_Destroy(subPtr);
       // Ignore expected statuses during teardown (e.g. connection
       // already closed or subscription already invalid).
       if (status != natsStatus.NATS_OK &&

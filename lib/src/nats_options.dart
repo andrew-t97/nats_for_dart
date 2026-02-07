@@ -5,7 +5,6 @@ import 'package:ffi/ffi.dart';
 import 'package:meta/meta.dart';
 
 import 'nats_bindings.g.dart';
-import 'nats_bindings_loader.dart';
 import 'nats_exceptions.dart';
 
 /// Represents an error reported by the NATS C library's asynchronous error
@@ -71,7 +70,9 @@ void _onError(
 /// `NativeCallable.listener()`.
 final class NatsOptions implements Finalizable {
   static final _finalizer = NativeFinalizer(
-    natsLib.lookup('natsOptions_Destroy'),
+    Native.addressOf<NativeFunction<Void Function(Pointer<natsOptions>)>>(
+      natsOptions_Destroy,
+    ).cast(),
   );
 
   Pointer<natsOptions>? _opts;
@@ -121,10 +122,9 @@ final class NatsOptions implements Finalizable {
 
   /// Creates a new [NatsOptions] with default settings.
   NatsOptions() {
-    final b = bindings;
     final optsPtrPtr = calloc<Pointer<natsOptions>>();
     try {
-      checkStatus(b.natsOptions_Create(optsPtrPtr), 'natsOptions_Create');
+      checkStatus(natsOptions_Create(optsPtrPtr), 'natsOptions_Create');
       _opts = optsPtrPtr.value;
       _finalizer.attach(this, _opts!.cast(), detach: this);
     } finally {
@@ -153,7 +153,7 @@ final class NatsOptions implements Finalizable {
     final urlNative = url.toNativeUtf8();
     try {
       checkStatus(
-        bindings.natsOptions_SetURL(_opts!, urlNative.cast()),
+        natsOptions_SetURL(_opts!, urlNative.cast()),
         'natsOptions_SetURL',
       );
     } finally {
@@ -173,7 +173,7 @@ final class NatsOptions implements Finalizable {
         serverPtrs[i] = native.cast();
       }
       checkStatus(
-        bindings.natsOptions_SetServers(_opts!, serverPtrs, servers.length),
+        natsOptions_SetServers(_opts!, serverPtrs, servers.length),
         'natsOptions_SetServers',
       );
     } finally {
@@ -191,7 +191,7 @@ final class NatsOptions implements Finalizable {
     final passNative = password.toNativeUtf8();
     try {
       checkStatus(
-        bindings.natsOptions_SetUserInfo(
+        natsOptions_SetUserInfo(
             _opts!, userNative.cast(), passNative.cast()),
         'natsOptions_SetUserInfo',
       );
@@ -207,7 +207,7 @@ final class NatsOptions implements Finalizable {
     final tokenNative = token.toNativeUtf8();
     try {
       checkStatus(
-        bindings.natsOptions_SetToken(_opts!, tokenNative.cast()),
+        natsOptions_SetToken(_opts!, tokenNative.cast()),
         'natsOptions_SetToken',
       );
     } finally {
@@ -219,7 +219,7 @@ final class NatsOptions implements Finalizable {
   void setMaxReconnect(int maxReconnect) {
     _ensureAlive();
     checkStatus(
-      bindings.natsOptions_SetMaxReconnect(_opts!, maxReconnect),
+      natsOptions_SetMaxReconnect(_opts!, maxReconnect),
       'natsOptions_SetMaxReconnect',
     );
   }
@@ -228,7 +228,7 @@ final class NatsOptions implements Finalizable {
   void setReconnectWait(Duration wait) {
     _ensureAlive();
     checkStatus(
-      bindings.natsOptions_SetReconnectWait(_opts!, wait.inMilliseconds),
+      natsOptions_SetReconnectWait(_opts!, wait.inMilliseconds),
       'natsOptions_SetReconnectWait',
     );
   }
@@ -241,7 +241,7 @@ final class NatsOptions implements Finalizable {
   void setReconnectBufSize(int size) {
     _ensureAlive();
     checkStatus(
-      bindings.natsOptions_SetReconnectBufSize(_opts!, size),
+      natsOptions_SetReconnectBufSize(_opts!, size),
       'natsOptions_SetReconnectBufSize',
     );
   }
@@ -252,7 +252,7 @@ final class NatsOptions implements Finalizable {
     final nameNative = name.toNativeUtf8();
     try {
       checkStatus(
-        bindings.natsOptions_SetName(_opts!, nameNative.cast()),
+        natsOptions_SetName(_opts!, nameNative.cast()),
         'natsOptions_SetName',
       );
     } finally {
@@ -266,7 +266,7 @@ final class NatsOptions implements Finalizable {
   void setVerbose(bool verbose) {
     _ensureAlive();
     checkStatus(
-      bindings.natsOptions_SetVerbose(_opts!, verbose),
+      natsOptions_SetVerbose(_opts!, verbose),
       'natsOptions_SetVerbose',
     );
   }
@@ -277,7 +277,7 @@ final class NatsOptions implements Finalizable {
   void setPedantic(bool pedantic) {
     _ensureAlive();
     checkStatus(
-      bindings.natsOptions_SetPedantic(_opts!, pedantic),
+      natsOptions_SetPedantic(_opts!, pedantic),
       'natsOptions_SetPedantic',
     );
   }
@@ -289,7 +289,7 @@ final class NatsOptions implements Finalizable {
   void setNoRandomize(bool noRandomize) {
     _ensureAlive();
     checkStatus(
-      bindings.natsOptions_SetNoRandomize(_opts!, noRandomize),
+      natsOptions_SetNoRandomize(_opts!, noRandomize),
       'natsOptions_SetNoRandomize',
     );
   }
@@ -298,7 +298,7 @@ final class NatsOptions implements Finalizable {
   void setPingInterval(Duration interval) {
     _ensureAlive();
     checkStatus(
-      bindings.natsOptions_SetPingInterval(_opts!, interval.inMilliseconds),
+      natsOptions_SetPingInterval(_opts!, interval.inMilliseconds),
       'natsOptions_SetPingInterval',
     );
   }
@@ -308,7 +308,7 @@ final class NatsOptions implements Finalizable {
   void setMaxPingsOut(int maxPingsOut) {
     _ensureAlive();
     checkStatus(
-      bindings.natsOptions_SetMaxPingsOut(_opts!, maxPingsOut),
+      natsOptions_SetMaxPingsOut(_opts!, maxPingsOut),
       'natsOptions_SetMaxPingsOut',
     );
   }
@@ -317,7 +317,7 @@ final class NatsOptions implements Finalizable {
   void setIOBufSize(int size) {
     _ensureAlive();
     checkStatus(
-      bindings.natsOptions_SetIOBufSize(_opts!, size),
+      natsOptions_SetIOBufSize(_opts!, size),
       'natsOptions_SetIOBufSize',
     );
   }
@@ -329,7 +329,7 @@ final class NatsOptions implements Finalizable {
   void setTimeout(Duration timeout) {
     _ensureAlive();
     checkStatus(
-      bindings.natsOptions_SetTimeout(_opts!, timeout.inMilliseconds),
+      natsOptions_SetTimeout(_opts!, timeout.inMilliseconds),
       'natsOptions_SetTimeout',
     );
   }
@@ -345,7 +345,7 @@ final class NatsOptions implements Finalizable {
     final seedNative = seedFile?.toNativeUtf8();
     try {
       checkStatus(
-        bindings.natsOptions_SetUserCredentialsFromFiles(
+        natsOptions_SetUserCredentialsFromFiles(
           _opts!,
           userNative.cast(),
           seedNative?.cast() ?? nullptr,
@@ -378,7 +378,7 @@ final class NatsOptions implements Finalizable {
           _onDisconnected);
 
       checkStatus(
-        bindings.natsOptions_SetDisconnectedCB(
+        natsOptions_SetDisconnectedCB(
           _opts!,
           _disconnectedCallable!.nativeFunction,
           Pointer.fromAddress(_disconnectedId!),
@@ -408,7 +408,7 @@ final class NatsOptions implements Finalizable {
           _onReconnected);
 
       checkStatus(
-        bindings.natsOptions_SetReconnectedCB(
+        natsOptions_SetReconnectedCB(
           _opts!,
           _reconnectedCallable!.nativeFunction,
           Pointer.fromAddress(_reconnectedId!),
@@ -438,7 +438,7 @@ final class NatsOptions implements Finalizable {
           _onClosed);
 
       checkStatus(
-        bindings.natsOptions_SetClosedCB(
+        natsOptions_SetClosedCB(
           _opts!,
           _closedCallable!.nativeFunction,
           Pointer.fromAddress(_closedId!),
@@ -467,7 +467,7 @@ final class NatsOptions implements Finalizable {
               UnsignedInt, Pointer<Void>)>.listener(_onError);
 
       checkStatus(
-        bindings.natsOptions_SetErrorHandler(
+        natsOptions_SetErrorHandler(
           _opts!,
           _errorCallable!.nativeFunction,
           Pointer.fromAddress(_errorId!),
@@ -517,7 +517,7 @@ final class NatsOptions implements Finalizable {
     // 4. Destroy the native options pointer.
     if (_opts != null) {
       _finalizer.detach(this);
-      bindings.natsOptions_Destroy(_opts!);
+      natsOptions_Destroy(_opts!);
       _opts = null;
     }
 

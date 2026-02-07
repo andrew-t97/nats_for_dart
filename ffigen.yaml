@@ -3,12 +3,14 @@ description: FFI bindings to the NATS C client library (Phase 1-4)
 output: 'lib/src/nats_bindings.g.dart'
 headers:
   entry-points:
-    - '/opt/homebrew/opt/cnats/include/nats/nats.h'
+    - 'third_party/nats_c/src/nats.h'
   include-directives:
-    - '/opt/homebrew/opt/cnats/include/nats/nats.h'
-    - '/opt/homebrew/opt/cnats/include/nats/status.h'
+    - 'third_party/nats_c/src/nats.h'
+    - 'third_party/nats_c/src/status.h'
 compiler-opts:
-  - '-I/opt/homebrew/opt/cnats/include'
+  - '-Ithird_party/nats_c/src'
+ffi-native:
+  asset-id: 'package:nats_ffi_experiment/src/nats_bindings.g.dart'
 functions:
   include:
     # Phase 1 — library lifecycle & sync pub/sub
