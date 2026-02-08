@@ -572,7 +572,9 @@ _sslCertCallback(SSL* ssl, void* arg)
         return 0;
 
     // delete any certificates associated with the SSL object
+#ifndef LIBRESSL_VERSION_NUMBER
     SSL_certs_clear(ssl);
+#endif
 
     if (SSL_use_certificate_chain_file(ssl, ctx->certFileName) != 1)
     {
@@ -627,7 +629,28 @@ natsOptions_LoadCertificatesChainDynamic(natsOptions *opts,
     }
     if (s == NATS_OK)
     {
+#ifdef LIBRESSL_VERSION_NUMBER
+        // LibreSSL lacks SSL_CTX_set_cert_cb — load certs eagerly into SSL_CTX.
+        if (SSL_CTX_use_certificate_chain_file(opts->sslCtx->ctx, opts->sslCtx->certFileName) != 1)
+        {
+            s = nats_setError(NATS_SSL_ERROR,
+                              "Error loading certificate chain '%s': %s",
+                              opts->sslCtx->certFileName,
+                              NATS_SSL_ERR_REASON_STRING);
+        }
+        if (s == NATS_OK)
+        {
+            if (SSL_CTX_use_PrivateKey_file(opts->sslCtx->ctx, opts->sslCtx->keyFileName, SSL_FILETYPE_PEM) != 1)
+            {
+                s = nats_setError(NATS_SSL_ERROR,
+                                  "Error loading private key '%s': %s",
+                                  opts->sslCtx->keyFileName,
+                                  NATS_SSL_ERR_REASON_STRING);
+            }
+        }
+#else
         SSL_CTX_set_cert_cb(opts->sslCtx->ctx, _sslCertCallback, opts->sslCtx);
+#endif
     }
 
     UNLOCK_OPTS(opts);

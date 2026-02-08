@@ -742,7 +742,11 @@ _makeTLSConn(natsConnection *nc)
             if (s == NATS_OK)
             {
                 if (nc->opts->sslCtx->callback != NULL)
+#ifdef LIBRESSL_VERSION_NUMBER
+                    SSL_set_verify(ssl, SSL_VERIFY_PEER, (int (*)(int, X509_STORE_CTX*)) nc->opts->sslCtx->callback);
+#else
                     SSL_set_verify(ssl, SSL_VERIFY_PEER, (SSL_verify_cb) nc->opts->sslCtx->callback);
+#endif
                 else
                     SSL_set_verify(ssl, SSL_VERIFY_PEER, _collectSSLErr);
             }

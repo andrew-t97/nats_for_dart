@@ -10,7 +10,7 @@ headers:
 compiler-opts:
   - '-Ithird_party/nats_c/src'
 ffi-native:
-  asset-id: 'package:nats_ffi_experiment/src/nats_bindings.g.dart'
+  asset-id: 'package:nats_dart/src/nats_bindings.g.dart'
 functions:
   include:
     # Phase 1 — library lifecycle & sync pub/sub

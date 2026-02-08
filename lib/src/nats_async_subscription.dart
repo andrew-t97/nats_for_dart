@@ -165,6 +165,20 @@ final class NatsAsyncSubscription implements Finalizable {
     _finalizer.attach(this, _sub!.cast(), detach: this);
   }
 
+  /// Sets the maximum number of pending messages and bytes that the C library
+  /// will buffer for this subscription before flagging a slow consumer.
+  ///
+  /// Pass `-1` for either parameter to mean "no limit".
+  /// Must be called before heavy message traffic begins.
+  void setPendingLimits({int msgLimit = -1, int bytesLimit = -1}) {
+    if (_closed || _sub == null) {
+      throw StateError('Subscription is closed');
+    }
+    final status =
+        natsSubscription_SetPendingLimits(_sub!, msgLimit, bytesLimit);
+    checkStatus(status, 'natsSubscription_SetPendingLimits');
+  }
+
   /// A stream of messages delivered to this subscription.
   Stream<NatsMessage> get messages => _controller.stream;
 

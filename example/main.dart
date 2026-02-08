@@ -8,7 +8,7 @@
 ///   dart run example/main.dart
 library;
 
-import 'package:nats_ffi_experiment/nats_ffi_experiment.dart';
+import 'package:nats_dart/nats_dart.dart';
 
 Future<void> main() async {
   // 1. Initialise the NATS C library.

@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:nats_ffi_experiment/nats_ffi_experiment.dart';
+import 'package:nats_dart/nats_dart.dart';
 
 void main() async {
   NatsLibrary.init();
