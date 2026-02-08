@@ -4,7 +4,7 @@
 
 import 'dart:async';
 
-import 'package:nats_dart/nats_dart.dart';
+import 'package:nats_for_dart/nats_for_dart.dart';
 
 void main() async {
   NatsLibrary.init();

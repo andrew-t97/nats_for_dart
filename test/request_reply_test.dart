@@ -7,8 +7,8 @@ library;
 
 import 'dart:typed_data';
 
-import 'package:nats_dart/nats_dart.dart';
-import 'package:nats_dart/src/nats_async_subscription.dart';
+import 'package:nats_for_dart/nats_for_dart.dart';
+import 'package:nats_for_dart/src/nats_async_subscription.dart';
 import 'package:test/test.dart';
 
 void main() {

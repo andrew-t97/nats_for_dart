@@ -2,7 +2,7 @@
 //
 // Requires: `nats-server -js` running on localhost:4222.
 
-import 'package:nats_dart/nats_dart.dart';
+import 'package:nats_for_dart/nats_for_dart.dart';
 
 void main() {
   NatsLibrary.init();

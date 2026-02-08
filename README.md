@@ -1,4 +1,4 @@
-# nats_dart
+# nats_for_dart
 
 A Dart FFI wrapper around [nats.c](https://github.com/nats-io/nats.c), the official C client for [NATS](https://nats.io/).
 
@@ -36,7 +36,7 @@ Add the package to your `pubspec.yaml` and run `dart pub get`. The native C libr
 ## Usage
 
 ```dart
-import 'package:nats_dart/nats_dart.dart';
+import 'package:nats_for_dart/nats_for_dart.dart';
 
 void main() async {
   NatsLibrary.init();
