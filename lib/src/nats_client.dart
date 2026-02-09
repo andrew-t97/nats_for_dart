@@ -75,7 +75,7 @@ final class NatsMessage {
   /// `natsMsg` pointer, then destroying the native message.
   ///
   /// This is the canonical way to materialise a message from a native
-  /// pointer. Both sync and async code paths use this.
+  /// pointer.
   factory NatsMessage.fromNativePtr(Pointer<natsMsg> msgPtr) {
     if (msgPtr == nullptr) {
       throw ArgumentError('Cannot create NatsMessage from a null pointer');

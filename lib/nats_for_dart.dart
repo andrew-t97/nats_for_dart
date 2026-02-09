@@ -18,7 +18,6 @@ export 'src/nats_bindings.g.dart'
         jsAckPolicy,
         jsReplayPolicy,
         kvOperation;
-// Phase 4 — JetStream
 export 'src/js_message.dart'
     show JsMessage, JsMessageMetadata, JsPubAckResult;
 export 'src/jetstream_context.dart'
@@ -31,6 +30,5 @@ export 'src/jetstream_context.dart'
         JsSyncSubscription,
         JsAsyncSubscription,
         JsPullSubscription;
-// Phase 4 — KeyValue
 export 'src/kv_store.dart'
     show KeyValueStore, KvConfig, KvEntry, JetStreamKeyValue;

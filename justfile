@@ -13,7 +13,3 @@ test:
     dart test test/kv_test.dart           || failed=1
     dart test test/request_reply_test.dart || failed=1
     exit $failed
-
-# Run the Flutter example app on macOS
-example:
-    cd ../nats_example_app && flutter run -d macos
