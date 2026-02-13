@@ -2,14 +2,12 @@
 list:
     @just --list
 
-# Run all tests (each file in its own process for native library isolation)
-test:
-    #!/usr/bin/env bash
-    set -uo pipefail
-    failed=0
-    dart test test/nats_client_test.dart  || failed=1
-    dart test test/nats_async_test.dart   || failed=1
-    dart test test/jetstream_test.dart    || failed=1
-    dart test test/kv_test.dart           || failed=1
-    dart test test/request_reply_test.dart || failed=1
-    exit $failed
+# Run all tests using group-based test runner (sequential init/close cycles)
+# Pass additional args like: just test --reporter compact
+test *args:
+    dart test test/test_all.dart {{args}}
+
+# Run individual test file (for debugging)
+# Pass additional args like: just test-single nats_client_test.dart --reporter compact
+test-single FILE *args:
+    dart test test/{{FILE}} {{args}}
