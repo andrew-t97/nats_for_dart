@@ -5,8 +5,11 @@
 library;
 
 export 'src/nats_async_subscription.dart' show NatsAsyncSubscription;
-export 'src/nats_client.dart';
+export 'src/nats_client.dart' show NatsClient;
 export 'src/nats_exceptions.dart';
+export 'src/nats_library.dart' show NatsLibrary;
+export 'src/nats_message.dart' show NatsMessage;
+export 'src/nats_sync_subscription.dart' show NatsSyncSubscription;
 export 'src/nats_options.dart' show NatsOptions, NatsError;
 export 'src/nats_bindings.g.dart'
     show

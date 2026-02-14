@@ -3,9 +3,11 @@ import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 
+import 'package:meta/meta.dart';
+
 import 'nats_bindings.g.dart';
-import 'nats_client.dart';
 import 'nats_exceptions.dart';
+import 'nats_message.dart';
 
 /// A static routing table that maps subscription IDs to their
 /// [StreamController]s. Used by the native callback to deliver messages
@@ -85,16 +87,16 @@ final class NatsAsyncSubscription implements Finalizable {
       Void Function(Pointer<natsConnection>, Pointer<natsSubscription>,
           Pointer<natsMsg>, Pointer<Void>)> _nativeCallable;
 
-  /// Back-reference to the owning client so the subscription can remove
-  /// itself from the client's active-subscription set on close.
-  NatsClient? _owner;
+  /// Callback invoked on close to remove this subscription from
+  /// the owning client's active-subscription set.
+  void Function()? _onClose;
 
   NatsAsyncSubscription._(
     this._sub,
     this._id,
     this._controller,
     this._nativeCallable,
-    this._owner,
+    this._onClose,
   );
 
   /// Creates a new [NatsAsyncSubscription] by allocating a routing slot and
@@ -108,8 +110,9 @@ final class NatsAsyncSubscription implements Finalizable {
   ///
   /// This is intended to be called from [NatsClient.subscribe] and
   /// [NatsClient.queueSubscribe].
+  @internal
   factory NatsAsyncSubscription.create(
-    NatsClient owner,
+    void Function()? onClose,
   ) {
     final id = _nextSubscriptionId++;
     final controller = StreamController<NatsMessage>();
@@ -124,7 +127,7 @@ final class NatsAsyncSubscription implements Finalizable {
       id,
       controller,
       callable,
-      owner,
+      onClose,
     );
     return sub;
   }
@@ -220,8 +223,8 @@ final class NatsAsyncSubscription implements Finalizable {
     _nativeCallable.close();
 
     // 4. Remove from owning client's active set.
-    _owner?.removeAsyncSubscription(this);
-    _owner = null;
+    _onClose?.call();
+    _onClose = null;
 
     // 5. Close the stream to notify listeners. For a single-subscription
     //    StreamController, close() only completes when the done event is

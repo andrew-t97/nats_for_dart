@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ffi';
 import 'dart:isolate';
 import 'dart:typed_data';
@@ -11,174 +10,9 @@ import 'jetstream_context.dart';
 import 'nats_async_subscription.dart';
 import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
+import 'nats_message.dart';
 import 'nats_options.dart';
-
-/// Global library initialisation and teardown for the NATS C client.
-///
-/// Call [NatsLibrary.init] once before creating any connections and
-/// [NatsLibrary.close] after all connections have been destroyed.
-final class NatsLibrary {
-  NatsLibrary._();
-
-  /// Initialises the NATS C library with default settings.
-  ///
-  /// This must be called (once) before any connections are created. Passing
-  /// `-1` uses the library defaults.
-  static void init() {
-    checkStatus(nats_Open(-1), 'nats_Open');
-  }
-
-  /// Tears down the NATS C library and waits for resources to be released.
-  ///
-  /// Pass `0` to wait indefinitely.
-  static void close({int timeoutMs = 0}) {
-    checkStatus(nats_CloseAndWait(timeoutMs), 'nats_CloseAndWait');
-  }
-}
-
-/// A message received from a NATS subscription.
-///
-/// All fields are eagerly copied from the native `natsMsg` pointer so this
-/// object is safe to use after the underlying pointer has been destroyed.
-///
-/// Unlike [NatsClient], [NatsSyncSubscription], and [NatsAsyncSubscription],
-/// this class does **not** use a [NativeFinalizer]. The native `natsMsg`
-/// pointer is destroyed eagerly inside [fromNativePtr] immediately after
-/// copying, so there is no pointer left to leak — no GC safety net needed.
-@immutable
-final class NatsMessage {
-  /// The subject this message was published to.
-  final String subject;
-
-  /// The raw payload bytes.
-  final Uint8List data;
-
-  /// The reply-to subject, if present.
-  final String? replyTo;
-
-  NatsMessage._(this.subject, this.data, this.replyTo);
-
-  /// Convenience getter that decodes [data] as a UTF-8 string.
-  String get dataAsString => utf8.decode(data);
-
-  @override
-  String toString() {
-    final reply = replyTo != null ? ', replyTo: $replyTo' : '';
-    return 'NatsMessage(subject: $subject$reply, data: $dataAsString)';
-  }
-
-  /// Creates a [NatsMessage] by eagerly copying data out of a native
-  /// `natsMsg` pointer, then destroying the native message.
-  ///
-  /// This is the canonical way to materialise a message from a native
-  /// pointer.
-  factory NatsMessage.fromNativePtr(Pointer<natsMsg> msgPtr) {
-    if (msgPtr == nullptr) {
-      throw ArgumentError('Cannot create NatsMessage from a null pointer');
-    }
-    final subject = natsMsg_GetSubject(msgPtr).cast<Utf8>().toDartString();
-    final dataLen = natsMsg_GetDataLength(msgPtr);
-    final dataPtr = natsMsg_GetData(msgPtr);
-    final data = Uint8List.fromList(
-      dataPtr.cast<Uint8>().asTypedList(dataLen),
-    );
-
-    // Eagerly copy the reply-to subject if present.
-    final replyPtr = natsMsg_GetReply(msgPtr);
-    final replyTo =
-        replyPtr == nullptr ? null : replyPtr.cast<Utf8>().toDartString();
-
-    natsMsg_Destroy(msgPtr);
-    return NatsMessage._(subject, data, replyTo);
-  }
-}
-
-/// A synchronous subscription that can be polled for messages.
-///
-/// **Warning:** [nextMessage] calls the blocking C function
-/// `natsSubscription_NextMsg`, which blocks the calling isolate's event
-/// loop until a message arrives or the timeout expires. In Flutter apps
-/// this will freeze the UI.
-///
-/// Use [NatsAsyncSubscription] (via [NatsClient.subscribe]) for
-/// Flutter-friendly, non-blocking message delivery. This class is intended
-/// for CLI tools, scripts, and tests where blocking is acceptable.
-final class NatsSyncSubscription implements Finalizable {
-  static final _finalizer = NativeFinalizer(
-    Native.addressOf<NativeFunction<Void Function(Pointer<natsSubscription>)>>(
-      natsSubscription_Destroy,
-    ).cast(),
-  );
-
-  Pointer<natsSubscription>? _sub;
-  bool _closed = false;
-
-  /// Back-reference to the owning client so the subscription can remove itself
-  /// from the client's active-subscription set on close.
-  NatsClient? _owner;
-
-  NatsSyncSubscription._(this._sub, this._owner) {
-    _finalizer.attach(this, _sub!.cast(), detach: this);
-  }
-
-  /// Polls for the next message, blocking the current isolate up to [timeout].
-  ///
-  /// **This is a blocking FFI call.** The Dart event loop will not process
-  /// any events (timers, I/O, UI frames) until this method returns. In
-  /// Flutter, prefer [NatsAsyncSubscription] instead.
-  ///
-  /// Returns a [NatsMessage] with eagerly-copied data. The underlying native
-  /// message is destroyed before this method returns.
-  NatsMessage nextMessage({Duration timeout = const Duration(seconds: 5)}) {
-    _ensureOpen();
-    final msgPtrPtr = calloc<Pointer<natsMsg>>();
-    try {
-      final status = natsSubscription_NextMsg(
-        msgPtrPtr,
-        _sub!,
-        timeout.inMilliseconds,
-      );
-      checkStatus(status, 'natsSubscription_NextMsg');
-      return NatsMessage.fromNativePtr(msgPtrPtr.value);
-    } finally {
-      calloc.free(msgPtrPtr);
-    }
-  }
-
-  /// Unsubscribes and destroys this subscription.
-  void unsubscribe() {
-    if (_closed) return;
-    _closed = true;
-    _owner?.removeSyncSubscription(this);
-    _owner = null;
-    if (_sub != null) {
-      final subPtr = _sub!;
-      _sub = null;
-      // Detach the finalizer before manually destroying to prevent
-      // double-free if GC runs after an explicit close.
-      _finalizer.detach(this);
-      // Ignore expected statuses during teardown (e.g. connection already
-      // closed or subscription already invalid).
-      final status = natsSubscription_Unsubscribe(subPtr);
-      // Always destroy regardless of unsubscribe outcome.
-      natsSubscription_Destroy(subPtr);
-      if (status != natsStatus.NATS_OK &&
-          status != natsStatus.NATS_CONNECTION_CLOSED &&
-          status != natsStatus.NATS_INVALID_SUBSCRIPTION) {
-        checkStatus(status, 'natsSubscription_Unsubscribe');
-      }
-    }
-  }
-
-  /// Alias for [unsubscribe].
-  void close() => unsubscribe();
-
-  void _ensureOpen() {
-    if (_closed) {
-      throw StateError('Subscription is already closed');
-    }
-  }
-}
+import 'nats_sync_subscription.dart';
 
 /// A Dart-friendly wrapper around the NATS C client library.
 ///
@@ -419,7 +253,11 @@ final class NatsClient implements Finalizable {
         subjectNative.cast(),
       );
       checkStatus(status, 'natsConnection_SubscribeSync');
-      final sub = NatsSyncSubscription._(subPtrPtr.value, this);
+      late final NatsSyncSubscription sub;
+      sub = NatsSyncSubscription.create(
+        subPtrPtr.value,
+        () => _activeSubscriptions.remove(sub),
+      );
       _activeSubscriptions.add(sub);
       return sub;
     } finally {
@@ -441,7 +279,11 @@ final class NatsClient implements Finalizable {
     try {
       // Pre-allocate the subscription wrapper so we can extract the
       // native callback pointer and closure before calling into C.
-      asyncSub = NatsAsyncSubscription.create(this);
+      late final NatsAsyncSubscription capturedSub;
+      asyncSub = NatsAsyncSubscription.create(
+        () => _activeAsyncSubscriptions.remove(capturedSub),
+      );
+      capturedSub = asyncSub;
 
       final status = natsConnection_Subscribe(
         subPtrPtr,
@@ -479,7 +321,11 @@ final class NatsClient implements Finalizable {
     final queueNative = queueGroup.toNativeUtf8();
     NatsAsyncSubscription? asyncSub;
     try {
-      asyncSub = NatsAsyncSubscription.create(this);
+      late final NatsAsyncSubscription capturedSub;
+      asyncSub = NatsAsyncSubscription.create(
+        () => _activeAsyncSubscriptions.remove(capturedSub),
+      );
+      capturedSub = asyncSub;
 
       final status = natsConnection_QueueSubscribe(
         subPtrPtr,
@@ -502,24 +348,6 @@ final class NatsClient implements Finalizable {
       calloc.free(subjectNative);
       calloc.free(queueNative);
     }
-  }
-
-  /// Removes a sync subscription from the active set.
-  ///
-  /// Called internally by [NatsSyncSubscription.unsubscribe] — not intended
-  /// for external use.
-  @internal
-  void removeSyncSubscription(NatsSyncSubscription sub) {
-    _activeSubscriptions.remove(sub);
-  }
-
-  /// Removes an async subscription from the active set.
-  ///
-  /// Called internally by [NatsAsyncSubscription.unsubscribe] — not intended
-  /// for external use.
-  @internal
-  void removeAsyncSubscription(NatsAsyncSubscription sub) {
-    _activeAsyncSubscriptions.remove(sub);
   }
 
   /// Closes all active subscriptions, then closes the connection and destroys
@@ -583,50 +411,25 @@ final class NatsClient implements Finalizable {
     String subject,
     String message, {
     Duration timeout = const Duration(seconds: 5),
-  }) async {
-    _ensureOpen();
-
-    // 1. Create a unique inbox subject.
-    final inboxPtrPtr = calloc<Pointer<Char>>();
-    try {
-      checkStatus(natsInbox_Create(inboxPtrPtr), 'natsInbox_Create');
-    } catch (e) {
-      calloc.free(inboxPtrPtr);
-      rethrow;
-    }
-    final inboxPtr = inboxPtrPtr.value;
-    calloc.free(inboxPtrPtr);
-
-    // 2. Subscribe to the inbox.
-    final inboxSubject = inboxPtr.cast<Utf8>().toDartString();
-    final inboxSub = subscribe(inboxSubject);
-
-    try {
-      // 3. Publish with reply-to.
-      final subjectNative = subject.toNativeUtf8();
-      final messageNative = message.toNativeUtf8();
-      try {
-        final status = natsConnection_PublishRequestString(
-          _nc!,
-          subjectNative.cast(),
-          inboxPtr,
-          messageNative.cast(),
-        );
-        checkStatus(status, 'natsConnection_PublishRequestString');
-      } finally {
-        calloc.free(subjectNative);
-        calloc.free(messageNative);
-      }
-
-      // 4. Flush to ensure delivery.
-      flush();
-
-      // 5. Wait for a single reply.
-      return await inboxSub.messages.first.timeout(timeout);
-    } finally {
-      await inboxSub.close();
-      natsInbox_Destroy(inboxPtr);
-    }
+  }) {
+    return _requestImpl(
+      subject,
+      (subjectPtr, inboxPtr) {
+        final messageNative = message.toNativeUtf8();
+        try {
+          final status = natsConnection_PublishRequestString(
+            _nc!,
+            subjectPtr,
+            inboxPtr,
+            messageNative.cast(),
+          );
+          checkStatus(status, 'natsConnection_PublishRequestString');
+        } finally {
+          calloc.free(messageNative);
+        }
+      },
+      timeout: timeout,
+    );
   }
 
   /// Sends raw [data] bytes as a request on [subject] and waits for a reply.
@@ -636,6 +439,39 @@ final class NatsClient implements Finalizable {
     String subject,
     Uint8List data, {
     Duration timeout = const Duration(seconds: 5),
+  }) {
+    return _requestImpl(
+      subject,
+      (subjectPtr, inboxPtr) {
+        final dataPtr = malloc<Uint8>(data.length);
+        try {
+          dataPtr.asTypedList(data.length).setAll(0, data);
+          final status = natsConnection_PublishRequest(
+            _nc!,
+            subjectPtr,
+            inboxPtr,
+            dataPtr.cast(),
+            data.length,
+          );
+          checkStatus(status, 'natsConnection_PublishRequest');
+        } finally {
+          malloc.free(dataPtr);
+        }
+      },
+      timeout: timeout,
+    );
+  }
+
+  /// Shared implementation for [request] and [requestBytes].
+  ///
+  /// Handles inbox creation, subscription, flush, reply await, and cleanup.
+  /// The caller-provided [publishWithReplyTo] callback performs the
+  /// type-specific publish call.
+  Future<NatsMessage> _requestImpl(
+    String subject,
+    void Function(Pointer<Char> subjectPtr, Pointer<Char> inboxPtr)
+        publishWithReplyTo, {
+    required Duration timeout,
   }) async {
     _ensureOpen();
 
@@ -655,22 +491,12 @@ final class NatsClient implements Finalizable {
     final inboxSub = subscribe(inboxSubject);
 
     try {
-      // 3. Publish with reply-to.
+      // 3. Publish with reply-to (type-specific).
       final subjectNative = subject.toNativeUtf8();
-      final dataPtr = malloc<Uint8>(data.length);
       try {
-        dataPtr.asTypedList(data.length).setAll(0, data);
-        final status = natsConnection_PublishRequest(
-          _nc!,
-          subjectNative.cast(),
-          inboxPtr,
-          dataPtr.cast(),
-          data.length,
-        );
-        checkStatus(status, 'natsConnection_PublishRequest');
+        publishWithReplyTo(subjectNative.cast(), inboxPtr);
       } finally {
         calloc.free(subjectNative);
-        malloc.free(dataPtr);
       }
 
       // 4. Flush to ensure delivery.

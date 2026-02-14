@@ -7,7 +7,6 @@ import 'package:meta/meta.dart';
 
 import 'js_message.dart';
 import 'nats_bindings.g.dart';
-import 'nats_client.dart';
 import 'nats_exceptions.dart';
 
 // ── Dart-friendly config classes ────────────────────────────────────────
