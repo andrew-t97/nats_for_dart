@@ -9,7 +9,6 @@ library;
 import 'dart:async';
 
 import 'package:nats_for_dart/nats_for_dart.dart';
-import 'package:nats_for_dart/src/nats_async_subscription.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -18,8 +17,6 @@ void main() {
   });
 
   tearDownAll(() {
-    resetAsyncSubscriptionRoutingForTesting();
-    NatsOptions.resetRoutingTablesForTesting();
     NatsLibrary.close(timeoutMs: 5000);
   });
 

@@ -208,13 +208,6 @@ final class JsAsyncSubscription implements Finalizable {
       {};
   static int _nextJsSubscriptionId = 1;
 
-  /// Resets the routing state. Only for use in tests.
-  @visibleForTesting
-  static void resetRoutingForTesting() {
-    _jsSubscriptionRoutes.clear();
-    _nextJsSubscriptionId = 1;
-  }
-
   Pointer<natsSubscription>? _sub;
   bool _closed = false;
   final int _id;

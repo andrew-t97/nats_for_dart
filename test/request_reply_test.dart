@@ -8,7 +8,6 @@ library;
 import 'dart:typed_data';
 
 import 'package:nats_for_dart/nats_for_dart.dart';
-import 'package:nats_for_dart/src/nats_async_subscription.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -17,8 +16,6 @@ void main() {
   });
 
   tearDownAll(() {
-    resetAsyncSubscriptionRoutingForTesting();
-    NatsOptions.resetRoutingTablesForTesting();
     NatsLibrary.close(timeoutMs: 5000);
   });
 
@@ -115,10 +112,13 @@ void main() {
       await sub.close();
     });
 
-    test('respond without replyTo throws ArgumentError', () {
-      // Create a NatsMessage with no replyTo manually by publishing and
-      // receiving a normal message.
-      final message = NatsMessage.forTest('test.sub', Uint8List(0), null);
+    test('respond without replyTo throws ArgumentError', () async {
+      // Publish and receive a normal message (which has no replyTo).
+      final subject = 'test.no-reply.${DateTime.now().millisecondsSinceEpoch}';
+      final sub = requester.subscribe(subject);
+      requester.publish(subject, 'hello');
+      final message = await sub.messages.first.timeout(Duration(seconds: 5));
+      await sub.close();
 
       expect(
         () => requester.respond(message, 'oops'),

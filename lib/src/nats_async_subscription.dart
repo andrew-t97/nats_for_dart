@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
-import 'package:meta/meta.dart';
 
 import 'nats_bindings.g.dart';
 import 'nats_client.dart';
@@ -16,13 +15,6 @@ final Map<int, StreamController<NatsMessage>> _subscriptionRoutes = {};
 /// Monotonically increasing counter used to generate unique subscription IDs
 /// for the routing table.
 int _nextSubscriptionId = 1;
-
-/// Resets the module-level routing state. Only for use in tests.
-@visibleForTesting
-void resetAsyncSubscriptionRoutingForTesting() {
-  _subscriptionRoutes.clear();
-  _nextSubscriptionId = 1;
-}
 
 /// The native callback that the NATS C library invokes on its internal
 /// threads when a message arrives.

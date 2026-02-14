@@ -15,7 +15,6 @@ void main() {
   });
 
   tearDownAll(() {
-    JsAsyncSubscription.resetRoutingForTesting();
     NatsLibrary.close(timeoutMs: 5000);
   });
 

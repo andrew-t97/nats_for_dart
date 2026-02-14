@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
-import 'package:meta/meta.dart';
 
 import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
@@ -88,14 +87,6 @@ final class NatsOptions implements Finalizable {
   static final Map<int, StreamController<NatsError>> _errorRoutes = {};
 
   static int _nextId = 1;
-
-  /// Resets the static routing tables. Only for use in tests.
-  @visibleForTesting
-  static void resetRoutingTablesForTesting() {
-    _lifecycleRoutes.clear();
-    _errorRoutes.clear();
-    _nextId = 1;
-  }
 
   // ── Per-instance callback state ────────────────────────────────────
 

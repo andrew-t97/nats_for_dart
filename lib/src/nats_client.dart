@@ -58,10 +58,6 @@ final class NatsMessage {
 
   NatsMessage._(this.subject, this.data, this.replyTo);
 
-  /// Creates a [NatsMessage] for use in tests.
-  @visibleForTesting
-  NatsMessage.forTest(this.subject, this.data, this.replyTo);
-
   /// Convenience getter that decodes [data] as a UTF-8 string.
   String get dataAsString => utf8.decode(data);
 
