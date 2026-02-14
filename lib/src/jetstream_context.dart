@@ -331,10 +331,9 @@ final class JsPullSubscription implements Finalizable {
         errCode,
       );
 
-      // NATS_TIMEOUT is expected when fewer messages are available
-      if (status == natsStatus.NATS_TIMEOUT && msgList.ref.Count > 0) {
-        // Partial batch — return what we got
-      } else if (status != natsStatus.NATS_OK) {
+      // Partial batch (timeout but got some messages) is OK; other errors are not
+      final isPartialBatch = status == natsStatus.NATS_TIMEOUT && msgList.ref.Count > 0;
+      if (status != natsStatus.NATS_OK && !isPartialBatch) {
         checkStatus(status, 'natsSubscription_Fetch');
       }
 
