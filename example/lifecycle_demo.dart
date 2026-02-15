@@ -4,7 +4,6 @@
 /// closed) using [NatsOptions] with `NativeCallable.listener()`.
 ///
 /// Prerequisites:
-///   - `brew install cnats nats-server`
 ///   - `nats-server` running on localhost:4222
 ///
 /// Run:

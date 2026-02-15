@@ -1,7 +1,6 @@
 /// Asynchronous subscription demo using the NATS C FFI wrapper.
 ///
 /// Prerequisites:
-///   - `brew install cnats nats-server`
 ///   - `nats-server` running on localhost:4222
 ///
 /// Run:

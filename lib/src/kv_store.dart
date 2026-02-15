@@ -112,6 +112,27 @@ final class KvEntry {
   }
 }
 
+// ── _KvWatcherHandle ────────────────────────────────────────────────────
+
+final class _KvWatcherHandle {
+  final StreamController<KvEntry> controller;
+  final Pointer<kvWatcher> watcherPtr;
+  Timer? pollTimer;
+  bool _disposed = false;
+
+  _KvWatcherHandle({required this.controller, required this.watcherPtr});
+
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    pollTimer?.cancel();
+    pollTimer = null;
+    kvWatcher_Stop(watcherPtr);
+    kvWatcher_Destroy(watcherPtr);
+    controller.close();
+  }
+}
+
 // ── KeyValueStore ───────────────────────────────────────────────────────
 
 /// A KeyValue store backed by JetStream.
@@ -131,7 +152,7 @@ final class KeyValueStore implements Finalizable {
 
   Pointer<kvStore>? _kv;
   bool _closed = false;
-  final Set<StreamController<KvEntry>> _activeWatchers = {};
+  final Set<_KvWatcherHandle> _activeWatchers = {};
 
   KeyValueStore._(this._kv) {
     _finalizer.attach(this, _kv!.cast(), detach: this);
@@ -505,49 +526,43 @@ final class KeyValueStore implements Finalizable {
     calloc.free(watchOpts);
     calloc.free(watcherPtrPtr);
 
-    late StreamController<KvEntry> controller;
-    Timer? pollTimer;
-
-    controller = StreamController<KvEntry>(
+    late _KvWatcherHandle handle;
+    final controller = StreamController<KvEntry>(
       onListen: () {
-        pollTimer = Timer.periodic(
+        handle.pollTimer = Timer.periodic(
           const Duration(milliseconds: 50),
-          (_) => _pollWatcher(watcherPtr, controller),
+          (_) => _pollWatcher(handle),
         );
       },
       onCancel: () {
-        _activeWatchers.remove(controller);
-        pollTimer?.cancel();
-        kvWatcher_Stop(watcherPtr);
-        kvWatcher_Destroy(watcherPtr);
+        _activeWatchers.remove(handle);
+        handle.dispose();
       },
     );
-    _activeWatchers.add(controller);
+    handle = _KvWatcherHandle(controller: controller, watcherPtr: watcherPtr);
+    _activeWatchers.add(handle);
 
     return controller.stream;
   }
 
-  void _pollWatcher(
-    Pointer<kvWatcher> watcher,
-    StreamController<KvEntry> controller,
-  ) {
-    if (controller.isClosed) return;
+  void _pollWatcher(_KvWatcherHandle handle) {
+    if (handle.controller.isClosed) return;
 
     // Drain all available entries in a loop with a 1ms timeout per call.
     // In the NATS C library, timeout=0 means "wait forever" (blocking),
     // so we use 1ms for a near-immediate return when no entries are ready.
-    while (!controller.isClosed) {
+    while (!handle.controller.isClosed) {
       final entryPtrPtr = calloc<Pointer<kvEntry>>();
       try {
-        final status = kvWatcher_Next(entryPtrPtr, watcher, 1);
+        final status = kvWatcher_Next(entryPtrPtr, handle.watcherPtr, 1);
         if (status == natsStatus.NATS_TIMEOUT) return;
         if (status != natsStatus.NATS_OK) {
-          controller.addError(NatsException(status, 'kvWatcher_Next'));
-          controller.close();
+          handle.controller.addError(NatsException(status, 'kvWatcher_Next'));
+          handle.controller.close();
           return;
         }
         if (entryPtrPtr.value != nullptr) {
-          controller.add(KvEntry._fromNativePtr(entryPtrPtr.value));
+          handle.controller.add(KvEntry._fromNativePtr(entryPtrPtr.value));
         } else {
           return;
         }
@@ -565,10 +580,8 @@ final class KeyValueStore implements Finalizable {
   void close() {
     if (_closed) return;
     _closed = true;
-    // Cancel all active watchers before destroying the KV store.
-    // Use .toList() since onCancel removes from the set during iteration.
-    for (final watcher in _activeWatchers.toList()) {
-      watcher.close();
+    for (final handle in _activeWatchers) {
+      handle.dispose();
     }
     _activeWatchers.clear();
     if (_kv != null) {
