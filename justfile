@@ -11,3 +11,16 @@ test *args:
 # Pass additional args like: just test-single nats_client_test.dart --reporter compact
 test-single FILE *args:
     dart test test/{{FILE}} {{args}}
+
+# Generate test coverage report (excludes generated FFI bindings)
+coverage:
+    just test --coverage=coverage
+    dart run coverage:format_coverage \
+        --lcov \
+        --in=coverage \
+        --out=coverage/lcov.info \
+        --report-on=lib
+    lcov --remove coverage/lcov.info '*/nats_bindings.g.dart' \
+        -o coverage/lcov.info
+    genhtml coverage/lcov.info -o coverage/report
+    @echo "Coverage report: coverage/report/index.html"
