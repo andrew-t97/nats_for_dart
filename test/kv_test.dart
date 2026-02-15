@@ -4,9 +4,14 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:nats_for_dart/nats_for_dart.dart';
 import 'package:test/test.dart';
+
+/// Encodes a string to bytes for use in raw-bytes KV API tests.
+Uint8List toBytes(String s) => Uint8List.fromList(utf8.encode(s));
 
 void main() {
   setUpAll(() {
@@ -111,6 +116,79 @@ void main() {
     });
   });
 
+  group('KeyValue bytes CRUD', () {
+    late NatsClient client;
+    late JetStreamContext js;
+    late KeyValueStore kv;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+      kv = js.createKeyValue(KvConfig(
+        bucket: 'test-kv-bytes',
+        history: 5,
+        storageType: jsStorageType.js_MemoryStorage,
+      ));
+    });
+
+    tearDown(() {
+      kv.close();
+      try {
+        js.deleteKeyValue('test-kv-bytes');
+      } catch (_) {}
+      js.close();
+      return client.close();
+    });
+
+    final bytesCrudOps =
+        <String, int Function(KeyValueStore kv, String key, Uint8List value)>{
+      'put': (kv, key, value) => kv.put(key, value),
+      'create': (kv, key, value) => kv.create(key, value),
+    };
+
+    for (final MapEntry(key: opName, value: writeOp)
+        in bytesCrudOps.entries) {
+      test('$opName writes and reads back raw bytes', () {
+        final data = toBytes('bytes-$opName');
+        final rev = writeOp(kv, 'key-$opName', data);
+        expect(rev, greaterThan(0));
+
+        final entry = kv.get('key-$opName');
+        expect(entry, isNotNull);
+        expect(entry!.value, equals(data));
+      });
+    }
+
+    test('update with raw bytes and correct revision succeeds', () {
+      final initial = toBytes('initial');
+      final rev1 = kv.put('update-bytes', initial);
+
+      final updated = toBytes('updated');
+      final rev2 = kv.update('update-bytes', updated, rev1);
+      expect(rev2, greaterThan(rev1));
+
+      final entry = kv.get('update-bytes');
+      expect(entry!.value, equals(updated));
+    });
+
+    test('update with stale revision throws', () {
+      kv.put('stale-rev', toBytes('v1'));
+      expect(
+        () => kv.update('stale-rev', toBytes('v2'), 999),
+        throwsA(isA<NatsException>()),
+      );
+    });
+
+    test('put and get zero-length value', () {
+      final rev = kv.put('empty-val', Uint8List(0));
+      expect(rev, greaterThan(0));
+
+      final entry = kv.get('empty-val');
+      expect(entry, isNotNull);
+      expect(entry!.value, equals(Uint8List(0)));
+    });
+  });
+
   group('KeyValue list operations', () {
     late NatsClient client;
     late JetStreamContext js;
@@ -158,6 +236,48 @@ void main() {
       expect(values, contains('first'));
       expect(values, contains('second'));
       expect(values, contains('third'));
+    });
+  });
+
+  group('KeyValueStore.open and keyValue extension', () {
+    late NatsClient client;
+    late JetStreamContext js;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+    });
+
+    tearDown(() {
+      try {
+        js.deleteKeyValue('test-kv-open');
+      } catch (_) {}
+      js.close();
+      return client.close();
+    });
+
+    test('open re-opens existing bucket and reads back data', () {
+      final kv1 = js.createKeyValue(KvConfig(
+        bucket: 'test-kv-open',
+        storageType: jsStorageType.js_MemoryStorage,
+      ));
+      kv1.putString('survive', 'reopened');
+      kv1.close();
+
+      final kv2 = js.keyValue('test-kv-open');
+      final entry = kv2.get('survive');
+      expect(entry, isNotNull);
+      expect(entry!.valueAsString, equals('reopened'));
+      kv2.close();
+    });
+
+    test('bucket getter returns correct bucket name', () {
+      final kv = js.createKeyValue(KvConfig(
+        bucket: 'test-kv-open',
+        storageType: jsStorageType.js_MemoryStorage,
+      ));
+      expect(kv.bucket, equals('test-kv-open'));
+      kv.close();
     });
   });
 
@@ -240,6 +360,80 @@ void main() {
       expect(received.length, greaterThanOrEqualTo(2));
       final keys = received.map((e) => e.key).toSet();
       expect(keys, containsAll(['key1', 'key2']));
+    });
+  });
+
+  group('KvEntry.toString', () {
+    late NatsClient client;
+    late JetStreamContext js;
+    late KeyValueStore kv;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+      kv = js.createKeyValue(KvConfig(
+        bucket: 'test-kv-tostring',
+        storageType: jsStorageType.js_MemoryStorage,
+      ));
+    });
+
+    tearDown(() {
+      kv.close();
+      try {
+        js.deleteKeyValue('test-kv-tostring');
+      } catch (_) {}
+      js.close();
+      return client.close();
+    });
+
+    test('returns a non-empty descriptive string', () {
+      kv.putString('ts-key', 'ts-val');
+      final entry = kv.get('ts-key');
+      final str = entry!.toString();
+      expect(
+        str,
+        equals(
+          'KvEntry(key: ts-key, revision: 1, '
+          'operation: kvOp_Put, value: ts-val)',
+        ),
+      );
+    });
+  });
+
+  group('KvConfig optional fields', () {
+    late NatsClient client;
+    late JetStreamContext js;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+    });
+
+    tearDown(() {
+      try {
+        js.deleteKeyValue('test-kv-cfg');
+      } catch (_) {}
+      js.close();
+      return client.close();
+    });
+
+    test('creates bucket with description, maxValueSize, ttl, maxBytes', () {
+      final kv = js.createKeyValue(KvConfig(
+        bucket: 'test-kv-cfg',
+        description: 'A test bucket',
+        maxValueSize: 1024,
+        ttl: Duration(hours: 1),
+        maxBytes: 1024 * 1024,
+        storageType: jsStorageType.js_MemoryStorage,
+      ));
+
+      // Verify the bucket is functional
+      final rev = kv.putString('cfg-key', 'cfg-val');
+      expect(rev, greaterThan(0));
+
+      final entry = kv.get('cfg-key');
+      expect(entry!.valueAsString, equals('cfg-val'));
+      kv.close();
     });
   });
 }
