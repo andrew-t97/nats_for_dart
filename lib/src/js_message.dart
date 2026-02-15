@@ -162,11 +162,10 @@ final class JsMessage implements Finalizable {
   void nak({Duration? delay}) {
     _ensureAlive();
     if (delay != null) {
-      // Safe for durations up to ~292 years (2^63 nanoseconds).
       checkStatus(
         natsMsg_NakWithDelay(
           _msgPtr!,
-          delay.inMilliseconds * 1000000,
+          delay.inMilliseconds,
           nullptr,
         ),
         'natsMsg_NakWithDelay',
