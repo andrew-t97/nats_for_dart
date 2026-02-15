@@ -353,4 +353,240 @@ void main() {
       );
     });
   });
+
+  group('Stream config options', () {
+    late NatsClient client;
+    late JetStreamContext js;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+    });
+
+    tearDown(() {
+      for (final name in ['CFG_DESC', 'CFG_MAXAGE', 'CFG_UPDATE']) {
+        try {
+          js.deleteStream(name);
+        } catch (_) {}
+      }
+      js.close();
+      return client.close();
+    });
+
+    final streamConfigCases =
+        <String, ({JsStreamConfig config, void Function(JsStreamInfoResult) verify})>{
+      'with description': (
+        config: JsStreamConfig(
+          name: 'CFG_DESC',
+          subjects: ['cfg.desc.>'],
+          storage: jsStorageType.js_MemoryStorage,
+          description: 'A test stream with description',
+        ),
+        verify: (info) => expect(info.name, equals('CFG_DESC')),
+      ),
+      'with maxAge': (
+        config: JsStreamConfig(
+          name: 'CFG_MAXAGE',
+          subjects: ['cfg.maxage.>'],
+          storage: jsStorageType.js_MemoryStorage,
+          maxAge: Duration(hours: 1),
+        ),
+        verify: (info) => expect(info.name, equals('CFG_MAXAGE')),
+      ),
+    };
+
+    for (final MapEntry(key: label, value: tc) in streamConfigCases.entries) {
+      test('addStream $label', () {
+        final info = js.addStream(tc.config);
+        tc.verify(info);
+      });
+    }
+
+    test('updateStream changes stream config', () {
+      js.addStream(JsStreamConfig(
+        name: 'CFG_UPDATE',
+        subjects: ['cfg.update.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ));
+
+      final updated = js.updateStream(JsStreamConfig(
+        name: 'CFG_UPDATE',
+        subjects: ['cfg.update.>'],
+        storage: jsStorageType.js_MemoryStorage,
+        description: 'Updated description',
+        maxAge: Duration(hours: 2),
+      ));
+      expect(updated.name, equals('CFG_UPDATE'));
+    });
+  });
+
+  group('Consumer config options', () {
+    late NatsClient client;
+    late JetStreamContext js;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+      js.addStream(JsStreamConfig(
+        name: 'CONS_CFG',
+        subjects: ['cons.cfg.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ));
+    });
+
+    tearDown(() {
+      try {
+        js.deleteStream('CONS_CFG');
+      } catch (_) {}
+      js.close();
+      return client.close();
+    });
+
+    final consumerConfigCases = <String, JsConsumerConfig>{
+      'with name and description': JsConsumerConfig(
+        durable: 'named-consumer',
+        name: 'named-consumer',
+        description: 'Test consumer with description',
+      ),
+      'with filterSubject and maxDeliver': JsConsumerConfig(
+        durable: 'filter-consumer',
+        filterSubject: 'cons.cfg.>',
+        maxDeliver: 3,
+      ),
+      'with ackWait and maxAckPending': JsConsumerConfig(
+        durable: 'ackwait-consumer',
+        ackWait: Duration(seconds: 30),
+        maxAckPending: 100,
+      ),
+    };
+
+    for (final MapEntry(key: label, value: config)
+        in consumerConfigCases.entries) {
+      test('addConsumer $label', () {
+        final info = js.addConsumer('CONS_CFG', config);
+        expect(info.stream, equals('CONS_CFG'));
+        expect(info.name, isNotEmpty);
+      });
+    }
+  });
+
+  group('Subscription with explicit stream/durable params', () {
+    late NatsClient client;
+    late JetStreamContext js;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+      js.addStream(JsStreamConfig(
+        name: 'SUB_PARAMS',
+        subjects: ['sub.params.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ));
+    });
+
+    tearDown(() {
+      try {
+        js.deleteStream('SUB_PARAMS');
+      } catch (_) {}
+      js.close();
+      return client.close();
+    });
+
+    test('pullSubscribe with explicit stream param', () {
+      js.publishString('sub.params.pull', 'pull-msg');
+
+      final pullSub = js.pullSubscribe(
+        'sub.params.pull',
+        'pull-stream-param',
+        stream: 'SUB_PARAMS',
+      );
+      addTearDown(pullSub.close);
+
+      final messages = pullSub.fetch(1, timeout: Duration(seconds: 5));
+      expect(messages, hasLength(1));
+      expect(messages[0].dataAsString, equals('pull-msg'));
+      messages[0].ack();
+    });
+
+    test('subscribeSync with explicit stream and durable params', () {
+      js.publishString('sub.params.sync', 'sync-msg');
+
+      final syncSub = js.subscribeSync(
+        'sub.params.sync',
+        stream: 'SUB_PARAMS',
+        durable: 'sync-durable',
+      );
+      addTearDown(syncSub.close);
+
+      final msg = syncSub.nextMessage(timeout: Duration(seconds: 5));
+      expect(msg.dataAsString, equals('sync-msg'));
+      msg.ack();
+    });
+
+    test('async subscribe with explicit stream and durable params', () async {
+      final asyncSub = js.subscribe(
+        'sub.params.async',
+        stream: 'SUB_PARAMS',
+        durable: 'async-durable',
+      );
+      addTearDown(() => asyncSub.close());
+
+      Future.delayed(Duration(milliseconds: 100), () {
+        js.publishString('sub.params.async', 'async-msg');
+      });
+
+      final msg = await asyncSub.messages.first
+          .timeout(Duration(seconds: 5));
+      expect(msg.dataAsString, equals('async-msg'));
+      msg.ack();
+    });
+  });
+
+  group('JetStream toString()', () {
+    late NatsClient client;
+    late JetStreamContext js;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+    });
+
+    tearDown(() {
+      try {
+        js.deleteStream('TOSTR_TEST');
+      } catch (_) {}
+      js.close();
+      return client.close();
+    });
+
+    test('JsStreamInfoResult.toString() matches expected format', () {
+      final info = js.addStream(JsStreamConfig(
+        name: 'TOSTR_TEST',
+        subjects: ['tostr.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ));
+      expect(
+        info.toString(),
+        equals('JsStreamInfoResult(name: TOSTR_TEST, messages: 0, '
+            'firstSeq: 0, lastSeq: 0)'),
+      );
+    });
+
+    test('JsConsumerInfoResult.toString() matches expected format', () {
+      js.addStream(JsStreamConfig(
+        name: 'TOSTR_TEST',
+        subjects: ['tostr.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ));
+      final consumerInfo = js.addConsumer(
+        'TOSTR_TEST',
+        JsConsumerConfig(durable: 'tostr-consumer'),
+      );
+      expect(
+        consumerInfo.toString(),
+        equals('JsConsumerInfoResult(stream: TOSTR_TEST, name: tostr-consumer, '
+            'pending: 0, ackPending: 0)'),
+      );
+    });
+  });
 }
