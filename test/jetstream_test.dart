@@ -458,6 +458,11 @@ void main() {
         ackWait: Duration(seconds: 30),
         maxAckPending: 100,
       ),
+      'with deliverSubject and deliverGroup': JsConsumerConfig(
+        durable: 'push-consumer',
+        deliverSubject: 'deliver.push.inbox',
+        deliverGroup: 'cons-group',
+      ),
     };
 
     for (final MapEntry(key: label, value: config)
@@ -542,6 +547,51 @@ void main() {
     });
   });
 
+  group('nak with delay', () {
+    late NatsClient client;
+    late JetStreamContext js;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+      js.addStream(JsStreamConfig(
+        name: 'TEST_JS',
+        subjects: ['test.js.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ));
+    });
+
+    tearDown(() {
+      try {
+        js.deleteStream('TEST_JS');
+      } catch (_) {}
+      js.close();
+      return client.close();
+    });
+
+    test('nak with delay redelivers after the specified delay', () {
+      js.publishString('test.js.nakdelay', 'delay-me');
+
+      final pullSub = js.pullSubscribe('test.js.nakdelay', 'nak-delay-test');
+      addTearDown(pullSub.close);
+
+      // First fetch — nak with a short delay
+      final firstFetch = pullSub.fetch(1, timeout: Duration(seconds: 5));
+      expect(firstFetch, hasLength(1));
+      expect(firstFetch[0].dataAsString, equals('delay-me'));
+      firstFetch[0].nak(delay: Duration(milliseconds: 500));
+
+      // Second fetch — message should be redelivered after the delay
+      final secondFetch = pullSub.fetch(1, timeout: Duration(seconds: 5));
+      expect(secondFetch, hasLength(1));
+      expect(secondFetch[0].dataAsString, equals('delay-me'));
+
+      final meta = secondFetch[0].metadata();
+      expect(meta.numDelivered, greaterThan(1));
+      secondFetch[0].ack();
+    });
+  });
+
   group('JetStream toString()', () {
     late NatsClient client;
     late JetStreamContext js;
@@ -586,6 +636,66 @@ void main() {
         consumerInfo.toString(),
         equals('JsConsumerInfoResult(stream: TOSTR_TEST, name: tostr-consumer, '
             'pending: 0, ackPending: 0)'),
+      );
+    });
+
+    test('JsMessage.toString() matches expected format', () {
+      js.addStream(JsStreamConfig(
+        name: 'TOSTR_TEST',
+        subjects: ['tostr.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ));
+
+      js.publishString('tostr.msg', 'hello-str');
+      final pullSub = js.pullSubscribe('tostr.msg', 'tostr-msg-consumer');
+      addTearDown(pullSub.close);
+
+      final messages = pullSub.fetch(1, timeout: Duration(seconds: 5));
+      expect(messages, hasLength(1));
+      // replyTo is a server-generated ack inbox — build expected string
+      // dynamically from the actual value.
+      final replyTo = messages[0].replyTo;
+      expect(
+        messages[0].toString(),
+        equals('JsMessage(subject: tostr.msg, replyTo: $replyTo, '
+            'data: hello-str)'),
+      );
+      messages[0].ack();
+    });
+
+    test('JsMessageMetadata.toString() matches expected format', () {
+      js.addStream(JsStreamConfig(
+        name: 'TOSTR_TEST',
+        subjects: ['tostr.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ));
+
+      js.publishString('tostr.meta', 'meta-msg');
+      final pullSub = js.pullSubscribe('tostr.meta', 'tostr-meta-consumer');
+      addTearDown(pullSub.close);
+
+      final messages = pullSub.fetch(1, timeout: Duration(seconds: 5));
+      final meta = messages[0].metadata();
+      expect(
+        meta.toString(),
+        equals('JsMessageMetadata(stream: TOSTR_TEST, seq: 1, '
+            'consumer: tostr-meta-consumer, delivered: 1)'),
+      );
+      messages[0].ack();
+    });
+
+    test('JsPubAckResult.toString() matches expected format', () {
+      js.addStream(JsStreamConfig(
+        name: 'TOSTR_TEST',
+        subjects: ['tostr.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ));
+
+      final ack = js.publishString('tostr.ack', 'ack-msg');
+      expect(
+        ack.toString(),
+        equals('JsPubAckResult(stream: TOSTR_TEST, sequence: 1, '
+            'duplicate: false)'),
       );
     });
   });

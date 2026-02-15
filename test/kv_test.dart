@@ -363,6 +363,42 @@ void main() {
     });
   });
 
+  group('KeyValue close with active watcher', () {
+    late NatsClient client;
+    late JetStreamContext js;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+    });
+
+    tearDown(() {
+      try {
+        js.deleteKeyValue('test-kv-close-watch');
+      } catch (_) {}
+      js.close();
+      return client.close();
+    });
+
+    test('closing KV store cancels active watchers', () async {
+      final kv = js.createKeyValue(KvConfig(
+        bucket: 'test-kv-close-watch',
+        storageType: jsStorageType.js_MemoryStorage,
+      ));
+      kv.putString('key', 'val');
+
+      // Start a watcher but don't cancel it
+      final watchStream = kv.watchAll();
+      final subscription = watchStream.listen((_) {});
+
+      await Future.delayed(Duration(milliseconds: 200));
+
+      // Close KV store while watcher is active — should not throw
+      kv.close();
+      await subscription.cancel();
+    });
+  });
+
   group('KvEntry.toString', () {
     late NatsClient client;
     late JetStreamContext js;

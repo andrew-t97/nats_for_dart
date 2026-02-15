@@ -208,6 +208,105 @@ void main() {
     });
   });
 
+  group('flush with timeout', () {
+    late NatsClient client;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+    });
+
+    tearDown(() => client.close());
+
+    test('flush with explicit timeout succeeds', () {
+      final sub = client.subscribeSync('test.flush.timeout');
+      addTearDown(sub.close);
+
+      client.publish('test.flush.timeout', 'flushed');
+      client.flush(timeout: const Duration(seconds: 5));
+
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('flushed'));
+    });
+  });
+
+  group('NatsMessage.toString()', () {
+    late NatsClient client;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+    });
+
+    tearDown(() => client.close());
+
+    test('NatsMessage.toString() without replyTo matches expected format', () {
+      final sub = client.subscribeSync('test.msg.tostring');
+      addTearDown(sub.close);
+
+      client.publish('test.msg.tostring', 'hello');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+
+      expect(
+        msg.toString(),
+        equals('NatsMessage(subject: test.msg.tostring, data: hello)'),
+      );
+    });
+
+    test('NatsMessage.toString() with replyTo matches expected format', () async {
+      // Set up a responder so we can get a message with a replyTo
+      final responder = client.subscribeSync('test.msg.tostring.req');
+      addTearDown(responder.close);
+
+      client.publish('test.msg.tostring', 'ignored');
+
+      // Use request/respond to get a message that has replyTo set
+      final sub = client.subscribe('test.msg.tostring.req');
+      addTearDown(() => sub.close());
+
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // Publish a request (has replyTo set to the inbox)
+      client.publish('test.msg.tostring', 'no-reply');
+
+      // Get a message via sync sub — it won't have replyTo.
+      // Instead, listen on the responder for a request message.
+      final requestFuture = client.request(
+        'test.msg.tostring.req',
+        'request-body',
+        timeout: const Duration(seconds: 5),
+      );
+
+      final reqMsg = responder.nextMessage(timeout: const Duration(seconds: 5));
+      expect(reqMsg.replyTo, isNotNull);
+      expect(
+        reqMsg.toString(),
+        equals('NatsMessage(subject: test.msg.tostring.req, '
+            'replyTo: ${reqMsg.replyTo}, data: request-body)'),
+      );
+
+      // Respond so the request future completes
+      client.respond(reqMsg, 'response');
+      await requestFuture;
+    });
+  });
+
+  group('NatsError.toString()', () {
+    test('NatsError.toString() matches expected format', () {
+      final error = NatsError(natsStatus.NATS_OK);
+      expect(
+        error.toString(),
+        equals('NatsError(NATS_OK)'),
+      );
+    });
+
+    test('NatsError.toString() with error status matches expected format', () {
+      final error = NatsError(natsStatus.NATS_TIMEOUT);
+      expect(
+        error.toString(),
+        equals('NatsError(NATS_TIMEOUT)'),
+      );
+    });
+  });
+
   group('NatsOptions expanded builder', () {
     test('fromUrl convenience factory connects successfully', () async {
       final opts = NatsOptions.fromUrl('nats://localhost:4222');
@@ -299,6 +398,38 @@ void main() {
       final opts = NatsOptions()
         ..setServers(['nats://localhost:4222', 'nats://localhost:4223']);
       addTearDown(() => opts.close());
+    });
+
+    test('NatsOptions setCredentialsFile does not throw', () {
+      final opts = NatsOptions()
+        ..setUrl('nats://localhost:4222')
+        ..setCredentialsFile('/tmp/fake-creds.jwt');
+      addTearDown(() => opts.close());
+    });
+
+    test('NatsOptions setCredentialsFile with separate seed file', () {
+      final opts = NatsOptions()
+        ..setUrl('nats://localhost:4222')
+        ..setCredentialsFile('/tmp/fake-creds.jwt', '/tmp/fake-seed.nk');
+      addTearDown(() => opts.close());
+    });
+  });
+
+  group('NatsException', () {
+    test('default message includes status name and value', () {
+      final exception = NatsException(natsStatus.NATS_TIMEOUT);
+      expect(
+        exception.message,
+        equals('NATS error: NATS_TIMEOUT (26)'),
+      );
+    });
+
+    test('toString() wraps the message', () {
+      final exception = NatsException(natsStatus.NATS_TIMEOUT);
+      expect(
+        exception.toString(),
+        equals('NatsException(NATS error: NATS_TIMEOUT (26))'),
+      );
     });
   });
 }

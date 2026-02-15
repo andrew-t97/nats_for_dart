@@ -244,6 +244,55 @@ void main() {
     });
   });
 
+  group('Async subscription properties', () {
+    late NatsClient publisher;
+    late NatsClient subscriber;
+
+    setUp(() {
+      publisher = NatsClient.connect('nats://localhost:4222');
+      subscriber = NatsClient.connect('nats://localhost:4222');
+    });
+
+    tearDown(() async {
+      await publisher.close();
+      await subscriber.close();
+    });
+
+    test('id getter returns a positive routing table ID', () {
+      final sub = subscriber.subscribe('test.async.id');
+      addTearDown(sub.close);
+
+      expect(sub.id, isPositive);
+    });
+
+    test('setPendingLimits does not throw on a live subscription', () async {
+      final sub = subscriber.subscribe('test.async.pending');
+      addTearDown(sub.close);
+
+      sub.setPendingLimits(msgLimit: 1000, bytesLimit: 1024 * 1024);
+
+      // Verify the subscription still works after setting limits
+      await Future.delayed(const Duration(milliseconds: 200));
+      publisher.publish('test.async.pending', 'after-limits');
+      publisher.flush();
+
+      final msg = await sub.messages.first.timeout(
+        const Duration(seconds: 5),
+      );
+      expect(msg.dataAsString, equals('after-limits'));
+    });
+
+    test('setPendingLimits on closed subscription throws StateError', () async {
+      final sub = subscriber.subscribe('test.async.pending.closed');
+      await sub.close();
+
+      expect(
+        () => sub.setPendingLimits(msgLimit: 100, bytesLimit: 100),
+        throwsStateError,
+      );
+    });
+  });
+
   group('Async message eager copy', () {
     test(
         'message fields are accessible after client is closed '
