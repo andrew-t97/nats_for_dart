@@ -72,7 +72,6 @@ void main() {
       for (var i = 0; i < messages.length; i++) {
         expect(messages[i].dataAsString, equals('message ${i + 1}'));
         messages[i].ack();
-        messages[i].destroy();
       }
     });
 
@@ -93,7 +92,6 @@ void main() {
       expect(firstFetch.length, equals(1));
       expect(firstFetch[0].dataAsString, equals('retry-me'));
       firstFetch[0].nak();
-      firstFetch[0].destroy();
 
       // Second fetch — message should be redelivered
       final secondFetch = pullSub.fetch(1, timeout: Duration(seconds: 5));
@@ -103,7 +101,6 @@ void main() {
       final meta = secondFetch[0].metadata();
       expect(meta.numDelivered, greaterThan(1));
       secondFetch[0].ack();
-      secondFetch[0].destroy();
     });
 
     test('sync subscribe receives messages', () {
@@ -121,7 +118,6 @@ void main() {
       final msg = syncSub.nextMessage(timeout: Duration(seconds: 5));
       expect(msg.dataAsString, equals('sync-msg'));
       msg.ack();
-      msg.destroy();
     });
 
     test('async subscribe receives messages via stream', () async {
@@ -143,7 +139,6 @@ void main() {
           .timeout(Duration(seconds: 5));
       expect(msg.dataAsString, equals('async-msg'));
       msg.ack();
-      msg.destroy();
     });
 
     test('message metadata is correct', () {
@@ -168,7 +163,6 @@ void main() {
       expect(meta.timestamp, greaterThan(0));
 
       messages[0].ack();
-      messages[0].destroy();
     });
   });
 
@@ -233,6 +227,88 @@ void main() {
 
       info = js.getStreamInfo('MGMT_TEST');
       expect(info.messages, equals(0));
+    });
+  });
+
+  group('Auto-destroy after terminal ack', () {
+    late NatsClient client;
+    late JetStreamContext js;
+
+    setUp(() {
+      client = NatsClient.connect('nats://localhost:4222');
+      js = client.jetStream();
+      js.addStream(JsStreamConfig(
+        name: 'TEST_JS',
+        subjects: ['test.js.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ));
+    });
+
+    tearDown(() {
+      try {
+        js.deleteStream('TEST_JS');
+      } catch (_) {}
+      js.close();
+      return client.close();
+    });
+
+    /// Publishes [payload] to [subject], creates a pull consumer, fetches one
+    /// message, and registers tearDown for the subscription.
+    JsMessage publishAndFetchOne(
+      JetStreamContext js,
+      String subject,
+      String consumerName,
+      String payload,
+    ) {
+      js.publishString(subject, payload);
+      final pullSub = js.pullSubscribe(subject, consumerName);
+      addTearDown(pullSub.close);
+      final messages = pullSub.fetch(1, timeout: Duration(seconds: 5));
+      expect(messages, hasLength(1));
+      return messages[0];
+    }
+
+    final terminalOps = <String, void Function(JsMessage)>{
+      'ack': (msg) => msg.ack(),
+      'ackSync': (msg) => msg.ackSync(),
+      'nak': (msg) => msg.nak(),
+      'term': (msg) => msg.term(),
+    };
+
+    for (final MapEntry(key: name, value: terminalAck)
+        in terminalOps.entries) {
+      test('$name auto-destroys and prevents further ack operations', () {
+        final msg = publishAndFetchOne(
+            js, 'test.js.auto', 'auto-$name', 'payload');
+        terminalAck(msg);
+        expect(() => msg.ack(), throwsStateError);
+      });
+
+      test('data fields and metadata accessible after $name', () {
+        final msg = publishAndFetchOne(
+            js, 'test.js.auto', 'data-$name', 'test-data');
+        terminalAck(msg);
+        expect(msg.dataAsString, equals('test-data'));
+        expect(msg.subject, equals('test.js.auto'));
+        expect(msg.metadata().stream, equals('TEST_JS'));
+      });
+    }
+
+    test('inProgress does NOT auto-destroy — can still ack after', () {
+      final msg = publishAndFetchOne(
+          js, 'test.js.auto', 'auto-progress', 'in-progress');
+      msg.inProgress();
+      msg.ack(); // should not throw
+    });
+
+    test('metadata returns cached instance across calls', () {
+      final msg = publishAndFetchOne(
+          js, 'test.js.auto', 'meta-cache', 'cache-test');
+      final meta1 = msg.metadata();
+      final meta2 = msg.metadata();
+      expect(meta1, same(meta2));
+      msg.ack();
+      expect(msg.metadata(), same(meta1));
     });
   });
 

@@ -38,7 +38,6 @@ void main() {
         'delivered=${meta.numDelivered}',
       );
       msg.ack();
-      msg.destroy();
     }
 
     // 5. Clean up

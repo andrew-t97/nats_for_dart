@@ -155,8 +155,9 @@ final class JsSyncSubscription implements Finalizable {
 
   /// Polls for the next JetStream message, blocking up to [timeout].
   ///
-  /// Returns a [JsMessage] with ack capabilities. Caller must call
-  /// [JsMessage.destroy] after processing.
+  /// Returns a [JsMessage] with ack capabilities. Native resources are
+  /// automatically released after a terminal ack ([JsMessage.ack],
+  /// [JsMessage.ackSync], [JsMessage.nak], or [JsMessage.term]).
   JsMessage nextMessage({Duration timeout = const Duration(seconds: 5)}) {
     _ensureOpen();
     final msgPtrPtr = calloc<Pointer<natsMsg>>();
@@ -193,8 +194,8 @@ final class JsSyncSubscription implements Finalizable {
 
 /// An asynchronous JetStream subscription that delivers messages via a Stream.
 ///
-/// Messages arrive as [JsMessage] objects with ack capabilities.
-/// Caller must call [JsMessage.destroy] after processing each message.
+/// Messages arrive as [JsMessage] objects with ack capabilities. Native
+/// resources are automatically released after a terminal ack.
 final class JsAsyncSubscription implements Finalizable {
   static final _finalizer = NativeFinalizer(
     Native.addressOf<NativeFunction<Void Function(Pointer<natsSubscription>)>>(
@@ -313,8 +314,8 @@ final class JsPullSubscription implements Finalizable {
 
   /// Fetches up to [batchSize] messages, waiting up to [timeout].
   ///
-  /// Returns a list of [JsMessage] objects. Callers must call
-  /// [JsMessage.destroy] on each message after processing.
+  /// Returns a list of [JsMessage] objects. Native resources are
+  /// automatically released after a terminal ack on each message.
   List<JsMessage> fetch(
     int batchSize, {
     Duration timeout = const Duration(seconds: 5),
