@@ -27,7 +27,13 @@ class DockerNats {
   // Docker commands
   static const _docker = 'docker';
   static const _startArgs = [
-    'run', '-d', '--name', _containerName, '-p', _portMapping, _image,
+    'run',
+    '-d',
+    '--name',
+    _containerName,
+    '-p',
+    _portMapping,
+    _image,
     _jetstreamFlag,
   ];
   static const _stopArgs = ['stop', _containerName];
@@ -118,8 +124,11 @@ class DockerNats {
   /// Returns `true` if a TCP connection to [host]:[port] succeeds.
   static Future<bool> _isPortReachable(String host, int port) async {
     try {
-      final socket = await Socket.connect(host, port,
-          timeout: const Duration(milliseconds: 500));
+      final socket = await Socket.connect(
+        host,
+        port,
+        timeout: const Duration(milliseconds: 500),
+      );
       await socket.close();
       return true;
     } on SocketException {
