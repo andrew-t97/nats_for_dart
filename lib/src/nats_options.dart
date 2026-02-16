@@ -77,6 +77,9 @@ final class NatsOptions implements Finalizable {
   Pointer<natsOptions>? _opts;
   bool _closed = false;
 
+  /// Whether these options have been closed.
+  bool get isClosed => _closed;
+
   // ── Routing tables for lifecycle callbacks ──────────────────────────
 
   /// Routes for lifecycle callbacks (disconnected, reconnected, closed).

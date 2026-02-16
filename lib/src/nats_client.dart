@@ -27,6 +27,9 @@ final class NatsClient implements Finalizable {
   Pointer<natsConnection>? _nc;
   bool _closed = false;
 
+  /// Whether this client has been closed.
+  bool get isClosed => _closed;
+
   /// Active sync subscriptions created through this client. Closed
   /// automatically when the client itself is closed.
   final Set<NatsSyncSubscription> _activeSubscriptions = {};

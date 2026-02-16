@@ -27,6 +27,9 @@ final class NatsSyncSubscription implements Finalizable {
   Pointer<natsSubscription>? _sub;
   bool _closed = false;
 
+  /// Whether this subscription has been closed.
+  bool get isClosed => _closed;
+
   /// Callback invoked on unsubscribe so the owning client can remove this
   /// subscription from its active-subscription set.
   void Function()? _onUnsubscribe;

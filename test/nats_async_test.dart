@@ -186,6 +186,7 @@ void main() {
 
       // Double close should be safe.
       await sub.close();
+      expect(sub.isClosed, isTrue);
     });
   });
 

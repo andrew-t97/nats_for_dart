@@ -96,12 +96,14 @@ void main() {
       final c = NatsClient.connect('nats://localhost:4222');
       await c.close();
       await c.close(); // should be a no-op
+      expect(c.isClosed, isTrue);
     });
 
     test('subscription close is idempotent', () {
       final sub = client.subscribeSync('test.idempotent');
       sub.close();
       sub.close(); // should be a no-op
+      expect(sub.isClosed, isTrue);
     });
 
     test('nextMessage on closed subscription throws StateError', () {
@@ -205,6 +207,7 @@ void main() {
       final client = await NatsClient.connectAsync('nats://localhost:4222');
       await client.close();
       await client.close(); // should be a no-op
+      expect(client.isClosed, isTrue);
     });
   });
 
@@ -378,26 +381,51 @@ void main() {
       final opts = NatsOptions();
       await opts.close();
       await opts.close(); // should be a no-op
+      expect(opts.isClosed, isTrue);
     });
 
-    test('NatsOptions setUserInfo does not throw', () {
+    test('NatsOptions setUserInfo connects and works', () async {
       final opts = NatsOptions()
         ..setUrl('nats://localhost:4222')
         ..setUserInfo('user', 'password');
-      addTearDown(() => opts.close());
+      final client = NatsClient.connectWithOptions(opts);
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.opts.userinfo');
+      addTearDown(sub.close);
+
+      client.publish('test.opts.userinfo', 'userinfo works');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('userinfo works'));
     });
 
-    test('NatsOptions setToken does not throw', () {
+    test('NatsOptions setToken connects and works', () async {
       final opts = NatsOptions()
         ..setUrl('nats://localhost:4222')
         ..setToken('some-token');
-      addTearDown(() => opts.close());
+      final client = NatsClient.connectWithOptions(opts);
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.opts.token');
+      addTearDown(sub.close);
+
+      client.publish('test.opts.token', 'token works');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('token works'));
     });
 
-    test('NatsOptions setServers accepts multiple URLs', () {
+    test('NatsOptions setServers connects and works', () async {
       final opts = NatsOptions()
         ..setServers(['nats://localhost:4222', 'nats://localhost:4223']);
-      addTearDown(() => opts.close());
+      final client = NatsClient.connectWithOptions(opts);
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.opts.servers');
+      addTearDown(sub.close);
+
+      client.publish('test.opts.servers', 'servers works');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('servers works'));
     });
 
     test('NatsOptions setCredentialsFile does not throw', () {
