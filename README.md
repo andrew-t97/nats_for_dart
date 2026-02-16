@@ -23,7 +23,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  nats_for_dart: ^1.0.0
+  nats_for_dart: ^0.1.0
 ```
 
 Then run:
@@ -74,10 +74,10 @@ All examples except `main.dart` require `nats-server -js`.
 
 ## Running tests
 
-A running `nats-server -js` is required for the test suite.
+Tests automatically start a Docker NATS container with JetStream enabled. Docker must be installed and running.
 
 ```bash
-# Run all tests (sequential init/close cycles)
+# Run all tests — Docker container starts/stops automatically
 just test
 
 # Run a single test file
