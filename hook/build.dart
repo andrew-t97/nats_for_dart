@@ -141,6 +141,7 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
       },
       if (targetOS == OS.linux) ...{
         // Linux-specific (glibc)
+        'HAVE_ENDIAN_H': null,
         'HAVE_EXPLICIT_BZERO': null,
         'LINUX': null,
         '_GNU_SOURCE': null,
