@@ -1,6 +1,7 @@
 /// Integration tests for KeyValue store operations.
 ///
-/// Requires a running `nats-server -js` on localhost:4222.
+/// These tests require a NATS server on localhost:4222.
+/// The test helper will automatically start a Docker container if needed.
 library;
 
 import 'dart:async';
@@ -10,16 +11,22 @@ import 'dart:typed_data';
 import 'package:nats_for_dart/nats_for_dart.dart';
 import 'package:test/test.dart';
 
+import 'support/docker_nats.dart';
+
 /// Encodes a string to bytes for use in raw-bytes KV API tests.
 Uint8List toBytes(String s) => Uint8List.fromList(utf8.encode(s));
 
 void main() {
-  setUpAll(() {
+  late DockerNats nats;
+
+  setUpAll(() async {
+    nats = await DockerNats.start();
     NatsLibrary.init();
   });
 
-  tearDownAll(() {
+  tearDownAll(() async {
     NatsLibrary.close(timeoutMs: 5000);
+    await nats.stop();
   });
 
   group('KeyValue CRUD', () {

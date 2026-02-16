@@ -1,8 +1,7 @@
-/// Integration tests for NATS request-reply (Phase 5).
+/// Integration tests for NATS request-reply.
 ///
-/// These tests require a running `nats-server` on localhost:4222.
-/// Start one with:
-///   nats-server &
+/// These tests require a NATS server on localhost:4222.
+/// The test helper will automatically start a Docker container if needed.
 library;
 
 import 'dart:typed_data';
@@ -10,13 +9,19 @@ import 'dart:typed_data';
 import 'package:nats_for_dart/nats_for_dart.dart';
 import 'package:test/test.dart';
 
+import 'support/docker_nats.dart';
+
 void main() {
-  setUpAll(() {
+  late DockerNats nats;
+
+  setUpAll(() async {
+    nats = await DockerNats.start();
     NatsLibrary.init();
   });
 
-  tearDownAll(() {
+  tearDownAll(() async {
     NatsLibrary.close(timeoutMs: 5000);
+    await nats.stop();
   });
 
   group('Request-Reply', () {

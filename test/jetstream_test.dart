@@ -1,7 +1,8 @@
 /// Integration tests for JetStream publish/subscribe and stream/consumer
 /// management.
 ///
-/// Requires a running `nats-server -js` on localhost:4222.
+/// These tests require a NATS server on localhost:4222.
+/// The test helper will automatically start a Docker container if needed.
 library;
 
 import 'dart:async';
@@ -9,13 +10,19 @@ import 'dart:async';
 import 'package:nats_for_dart/nats_for_dart.dart';
 import 'package:test/test.dart';
 
+import 'support/docker_nats.dart';
+
 void main() {
-  setUpAll(() {
+  late DockerNats nats;
+
+  setUpAll(() async {
+    nats = await DockerNats.start();
     NatsLibrary.init();
   });
 
-  tearDownAll(() {
+  tearDownAll(() async {
     NatsLibrary.close(timeoutMs: 5000);
+    await nats.stop();
   });
 
   group('JetStream publish and pull subscribe', () {
