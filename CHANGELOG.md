@@ -1,4 +1,4 @@
-## 1.0.0
+## 0.1.0
 
 - Core pub/sub with synchronous and asynchronous subscriptions
 - Request-reply messaging
