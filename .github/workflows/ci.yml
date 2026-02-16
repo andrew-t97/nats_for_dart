@@ -12,7 +12,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dart-lang/setup-dart@v1
         with:
@@ -29,11 +29,11 @@ jobs:
       - name: Verify API docs
         run: dart doc --dry-run
 
-  test:
-    name: Tests
+  test-ubuntu:
+    name: Tests (Ubuntu / Docker)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dart-lang/setup-dart@v1
         with:
@@ -44,11 +44,32 @@ jobs:
       - name: Run tests
         run: dart test test/test_all.dart
 
+  test-macos:
+    name: Tests (macOS / native nats-server)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "3.10.8"
+
+      - run: dart pub get
+
+      - name: Install and start nats-server
+        run: |
+          brew install nats-server
+          nats-server -js &
+          sleep 2
+
+      - name: Run tests
+        run: dart test test/test_all.dart
+
   publish-dry-run:
     name: Publish (dry run)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dart-lang/setup-dart@v1
         with:
