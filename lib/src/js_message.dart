@@ -47,8 +47,8 @@ final class JsMessage implements Finalizable {
     this.replyTo,
     required Pointer<natsMsg> msgPtr,
     required JsMessageMetadata cachedMetadata,
-  })  : _msgPtr = msgPtr,
-        _cachedMetadata = cachedMetadata {
+  }) : _msgPtr = msgPtr,
+       _cachedMetadata = cachedMetadata {
     _finalizer.attach(this, msgPtr.cast(), detach: this);
   }
 
@@ -101,13 +101,12 @@ final class JsMessage implements Finalizable {
     final subject = natsMsg_GetSubject(msgPtr).cast<Utf8>().toDartString();
     final dataLen = natsMsg_GetDataLength(msgPtr);
     final dataPtr = natsMsg_GetData(msgPtr);
-    final data = Uint8List.fromList(
-      dataPtr.cast<Uint8>().asTypedList(dataLen),
-    );
+    final data = Uint8List.fromList(dataPtr.cast<Uint8>().asTypedList(dataLen));
 
     final replyPtr = natsMsg_GetReply(msgPtr);
-    final replyTo =
-        replyPtr == nullptr ? null : replyPtr.cast<Utf8>().toDartString();
+    final replyTo = replyPtr == nullptr
+        ? null
+        : replyPtr.cast<Utf8>().toDartString();
 
     final metadata = _extractMetadata(msgPtr);
 
@@ -125,10 +124,7 @@ final class JsMessage implements Finalizable {
   /// Automatically releases native resources after a successful ack.
   void ack() {
     _ensureAlive();
-    checkStatus(
-      natsMsg_Ack(_msgPtr!, nullptr),
-      'natsMsg_Ack',
-    );
+    checkStatus(natsMsg_Ack(_msgPtr!, nullptr), 'natsMsg_Ack');
     _destroy();
   }
 
@@ -163,18 +159,11 @@ final class JsMessage implements Finalizable {
     _ensureAlive();
     if (delay != null) {
       checkStatus(
-        natsMsg_NakWithDelay(
-          _msgPtr!,
-          delay.inMilliseconds,
-          nullptr,
-        ),
+        natsMsg_NakWithDelay(_msgPtr!, delay.inMilliseconds, nullptr),
         'natsMsg_NakWithDelay',
       );
     } else {
-      checkStatus(
-        natsMsg_Nak(_msgPtr!, nullptr),
-        'natsMsg_Nak',
-      );
+      checkStatus(natsMsg_Nak(_msgPtr!, nullptr), 'natsMsg_Nak');
     }
     _destroy();
   }
@@ -183,10 +172,7 @@ final class JsMessage implements Finalizable {
   /// timer on the server.
   void inProgress() {
     _ensureAlive();
-    checkStatus(
-      natsMsg_InProgress(_msgPtr!, nullptr),
-      'natsMsg_InProgress',
-    );
+    checkStatus(natsMsg_InProgress(_msgPtr!, nullptr), 'natsMsg_InProgress');
   }
 
   /// Terminates processing of this message — the server will not attempt
@@ -195,10 +181,7 @@ final class JsMessage implements Finalizable {
   /// Automatically releases native resources after a successful term.
   void term() {
     _ensureAlive();
-    checkStatus(
-      natsMsg_Term(_msgPtr!, nullptr),
-      'natsMsg_Term',
-    );
+    checkStatus(natsMsg_Term(_msgPtr!, nullptr), 'natsMsg_Term');
     _destroy();
   }
 

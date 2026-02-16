@@ -84,8 +84,14 @@ final class NatsAsyncSubscription implements Finalizable {
   /// The [NativeCallable] that must stay alive while the subscription is
   /// active. Prevent GC from collecting it.
   final NativeCallable<
-      Void Function(Pointer<natsConnection>, Pointer<natsSubscription>,
-          Pointer<natsMsg>, Pointer<Void>)> _nativeCallable;
+    Void Function(
+      Pointer<natsConnection>,
+      Pointer<natsSubscription>,
+      Pointer<natsMsg>,
+      Pointer<Void>,
+    )
+  >
+  _nativeCallable;
 
   /// Callback invoked on close to remove this subscription from
   /// the owning client's active-subscription set.
@@ -111,16 +117,20 @@ final class NatsAsyncSubscription implements Finalizable {
   /// This is intended to be called from [NatsClient.subscribe] and
   /// [NatsClient.queueSubscribe].
   @internal
-  factory NatsAsyncSubscription.create(
-    void Function()? onClose,
-  ) {
+  factory NatsAsyncSubscription.create(void Function()? onClose) {
     final id = _nextSubscriptionId++;
     final controller = StreamController<NatsMessage>();
     _subscriptionRoutes[id] = controller;
 
-    final callable = NativeCallable<
-        Void Function(Pointer<natsConnection>, Pointer<natsSubscription>,
-            Pointer<natsMsg>, Pointer<Void>)>.listener(_onMessage);
+    final callable =
+        NativeCallable<
+          Void Function(
+            Pointer<natsConnection>,
+            Pointer<natsSubscription>,
+            Pointer<natsMsg>,
+            Pointer<Void>,
+          )
+        >.listener(_onMessage);
 
     final sub = NatsAsyncSubscription._(
       null,
@@ -169,8 +179,11 @@ final class NatsAsyncSubscription implements Finalizable {
     if (_closed || _sub == null) {
       throw StateError('Subscription is closed');
     }
-    final status =
-        natsSubscription_SetPendingLimits(_sub!, msgLimit, bytesLimit);
+    final status = natsSubscription_SetPendingLimits(
+      _sub!,
+      msgLimit,
+      bytesLimit,
+    );
     checkStatus(status, 'natsSubscription_SetPendingLimits');
   }
 

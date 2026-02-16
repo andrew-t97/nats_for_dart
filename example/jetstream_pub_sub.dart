@@ -12,11 +12,13 @@ void main() {
 
   try {
     // 1. Create a stream for orders
-    final streamInfo = js.addStream(JsStreamConfig(
-      name: 'ORDERS',
-      subjects: ['orders.>'],
-      storage: jsStorageType.js_MemoryStorage,
-    ));
+    final streamInfo = js.addStream(
+      JsStreamConfig(
+        name: 'ORDERS',
+        subjects: ['orders.>'],
+        storage: jsStorageType.js_MemoryStorage,
+      ),
+    );
     print('Created stream: ${streamInfo.name}');
 
     // 2. Publish 5 messages

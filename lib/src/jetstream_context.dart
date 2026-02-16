@@ -204,8 +204,7 @@ final class JsAsyncSubscription implements Finalizable {
   );
 
   /// Static routing table for JetStream async subscriptions.
-  static final Map<int, StreamController<JsMessage>> _jsSubscriptionRoutes =
-      {};
+  static final Map<int, StreamController<JsMessage>> _jsSubscriptionRoutes = {};
   static int _nextJsSubscriptionId = 1;
 
   Pointer<natsSubscription>? _sub;
@@ -213,8 +212,14 @@ final class JsAsyncSubscription implements Finalizable {
   final int _id;
   final StreamController<JsMessage> _controller;
   final NativeCallable<
-      Void Function(Pointer<natsConnection>, Pointer<natsSubscription>,
-          Pointer<natsMsg>, Pointer<Void>)> _nativeCallable;
+    Void Function(
+      Pointer<natsConnection>,
+      Pointer<natsSubscription>,
+      Pointer<natsMsg>,
+      Pointer<Void>,
+    )
+  >
+  _nativeCallable;
 
   JsAsyncSubscription._(
     this._sub,
@@ -229,9 +234,15 @@ final class JsAsyncSubscription implements Finalizable {
     final controller = StreamController<JsMessage>();
     _jsSubscriptionRoutes[id] = controller;
 
-    final callable = NativeCallable<
-        Void Function(Pointer<natsConnection>, Pointer<natsSubscription>,
-            Pointer<natsMsg>, Pointer<Void>)>.listener(_onJsMessage);
+    final callable =
+        NativeCallable<
+          Void Function(
+            Pointer<natsConnection>,
+            Pointer<natsSubscription>,
+            Pointer<natsMsg>,
+            Pointer<Void>,
+          )
+        >.listener(_onJsMessage);
 
     return JsAsyncSubscription._(null, id, controller, callable);
   }
@@ -333,7 +344,8 @@ final class JsPullSubscription implements Finalizable {
       );
 
       // Partial batch (timeout but got some messages) is OK; other errors are not
-      final isPartialBatch = status == natsStatus.NATS_TIMEOUT && msgList.ref.Count > 0;
+      final isPartialBatch =
+          status == natsStatus.NATS_TIMEOUT && msgList.ref.Count > 0;
       if (status != natsStatus.NATS_OK && !isPartialBatch) {
         checkStatus(status, 'natsSubscription_Fetch');
       }
@@ -634,8 +646,13 @@ final class JetStreamContext {
     return _withStreamConfig(config, (cfgPtr, errCode) {
       final siPtrPtr = calloc<Pointer<jsStreamInfo>>();
       try {
-        final status =
-            js_UpdateStream(siPtrPtr, _js!, cfgPtr, nullptr, errCode);
+        final status = js_UpdateStream(
+          siPtrPtr,
+          _js!,
+          cfgPtr,
+          nullptr,
+          errCode,
+        );
         checkStatus(status, 'js_UpdateStream');
         return _extractStreamInfo(siPtrPtr.value);
       } finally {
@@ -650,8 +667,7 @@ final class JetStreamContext {
     final nameNative = name.toNativeUtf8();
     final errCode = calloc<UnsignedInt>();
     try {
-      final status =
-          js_DeleteStream(_js!, nameNative.cast(), nullptr, errCode);
+      final status = js_DeleteStream(_js!, nameNative.cast(), nullptr, errCode);
       checkStatus(status, 'js_DeleteStream');
     } finally {
       calloc.free(errCode);
@@ -688,8 +704,7 @@ final class JetStreamContext {
     final nameNative = name.toNativeUtf8();
     final errCode = calloc<UnsignedInt>();
     try {
-      final status =
-          js_PurgeStream(_js!, nameNative.cast(), nullptr, errCode);
+      final status = js_PurgeStream(_js!, nameNative.cast(), nullptr, errCode);
       checkStatus(status, 'js_PurgeStream');
     } finally {
       calloc.free(errCode);
@@ -700,10 +715,7 @@ final class JetStreamContext {
   // ── Consumer management ─────────────────────────────────────────────
 
   /// Adds a consumer to the named stream.
-  JsConsumerInfoResult addConsumer(
-    String stream,
-    JsConsumerConfig config,
-  ) {
+  JsConsumerInfoResult addConsumer(String stream, JsConsumerConfig config) {
     _ensureOpen();
     return _withConsumerConfig(stream, config, (streamNative, ccPtr, errCode) {
       final ciPtrPtr = calloc<Pointer<jsConsumerInfo>>();
@@ -793,10 +805,8 @@ final class JetStreamContext {
   /// Sets up a native jsStreamConfig, calls [body], then frees resources.
   T _withStreamConfig<T>(
     JsStreamConfig config,
-    T Function(
-      Pointer<jsStreamConfig> cfgPtr,
-      Pointer<UnsignedInt> errCode,
-    ) body,
+    T Function(Pointer<jsStreamConfig> cfgPtr, Pointer<UnsignedInt> errCode)
+    body,
   ) {
     final cfgPtr = calloc<jsStreamConfig>();
     final errCode = calloc<UnsignedInt>();
@@ -877,7 +887,8 @@ final class JetStreamContext {
       Pointer<Utf8> streamNative,
       Pointer<jsConsumerConfig> ccPtr,
       Pointer<UnsignedInt> errCode,
-    ) body,
+    )
+    body,
   ) {
     final streamNative = stream.toNativeUtf8();
     final ccPtr = calloc<jsConsumerConfig>();

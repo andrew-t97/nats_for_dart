@@ -61,9 +61,7 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
       'third_party/libressl/crypto/arch/amd64/',
       'third_party/libressl/crypto/bn/arch/amd64/',
     ],
-    Architecture.ia32 => [
-      'third_party/libressl/crypto/arch/i386/',
-    ],
+    Architecture.ia32 => ['third_party/libressl/crypto/arch/i386/'],
     _ => <String>[],
   };
 
@@ -74,10 +72,7 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
     name: 'nats',
     assetName: 'src/nats_bindings.g.dart',
     std: 'gnu99',
-    sources: [
-      ...libresslSources,
-      ..._natsSources,
-    ],
+    sources: [...libresslSources, ..._natsSources],
     includes: [
       // Hidden namespace wrappers MUST come before include/ so that
       // #include <openssl/ssl.h> finds the wrapper (which uses #include_next
@@ -130,8 +125,7 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
       // (and ia32 variants provide crypto_cpu_caps_ia32()). These defines tell
       // crypto_legacy.c to skip its fallback stubs.
       'HAVE_CRYPTO_CPU_CAPS_INIT': null,
-      if (targetArch == Architecture.x64 ||
-          targetArch == Architecture.ia32)
+      if (targetArch == Architecture.x64 || targetArch == Architecture.ia32)
         'HAVE_CRYPTO_CPU_CAPS_IA32': null,
 
       // --- Platform HAVE_* feature macros ---
@@ -152,18 +146,15 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
         '_GNU_SOURCE': null,
       },
     },
-    libraries: [
-      if (targetOS == OS.linux) 'pthread',
-    ],
+    libraries: [if (targetOS == OS.linux) 'pthread'],
   );
 
   await cbuilder.run(
     input: input,
     output: output,
-    logger:
-        Logger('')
-          ..level = Level.ALL
-          ..onRecord.listen((record) => print(record.message)),
+    logger: Logger('')
+      ..level = Level.ALL
+      ..onRecord.listen((record) => print(record.message)),
   );
 }
 
@@ -182,13 +173,16 @@ List<String> _cryptoSubdirIncludes(BuildInput input) {
   return cryptoDir
       .listSync()
       .whereType<Directory>()
-      .where((d) =>
-          !excludedCryptoDirs
-              .contains(d.uri.pathSegments[d.uri.pathSegments.length - 2]))
       .where(
-          (d) => d.listSync().any((f) => f is File && f.path.endsWith('.h')))
-      .map((d) =>
-          'third_party/libressl/crypto/${d.uri.pathSegments[d.uri.pathSegments.length - 2]}/')
+        (d) => !excludedCryptoDirs.contains(
+          d.uri.pathSegments[d.uri.pathSegments.length - 2],
+        ),
+      )
+      .where((d) => d.listSync().any((f) => f is File && f.path.endsWith('.h')))
+      .map(
+        (d) =>
+            'third_party/libressl/crypto/${d.uri.pathSegments[d.uri.pathSegments.length - 2]}/',
+      )
       .toList()
     ..sort(); // deterministic ordering
 }
@@ -346,9 +340,7 @@ const _windowsOnlyFiles = {
 };
 
 /// Platform-specific getprogname implementations.
-const _getprognameSources = {
-  OS.linux: 'getprogname_linux.c',
-};
+const _getprognameSources = {OS.linux: 'getprogname_linux.c'};
 
 /// Compat files excluded on macOS because macOS provides these functions
 /// natively (HAVE_X is defined) and the files have no guard.

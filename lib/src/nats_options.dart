@@ -96,23 +96,29 @@ final class NatsOptions implements Finalizable {
   int? _disconnectedId;
   StreamController<void>? _disconnectedController;
   NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-      _disconnectedCallable;
+  _disconnectedCallable;
 
   int? _reconnectedId;
   StreamController<void>? _reconnectedController;
   NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-      _reconnectedCallable;
+  _reconnectedCallable;
 
   int? _closedId;
   StreamController<void>? _closedController;
   NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-      _closedCallable;
+  _closedCallable;
 
   int? _errorId;
   StreamController<NatsError>? _errorController;
   NativeCallable<
-      Void Function(Pointer<natsConnection>, Pointer<natsSubscription>, UnsignedInt,
-          Pointer<Void>)>? _errorCallable;
+    Void Function(
+      Pointer<natsConnection>,
+      Pointer<natsSubscription>,
+      UnsignedInt,
+      Pointer<Void>,
+    )
+  >?
+  _errorCallable;
 
   /// Creates a new [NatsOptions] with default settings.
   NatsOptions() {
@@ -185,8 +191,7 @@ final class NatsOptions implements Finalizable {
     final passNative = password.toNativeUtf8();
     try {
       checkStatus(
-        natsOptions_SetUserInfo(
-            _opts!, userNative.cast(), passNative.cast()),
+        natsOptions_SetUserInfo(_opts!, userNative.cast(), passNative.cast()),
         'natsOptions_SetUserInfo',
       );
     } finally {
@@ -367,9 +372,10 @@ final class NatsOptions implements Finalizable {
       _disconnectedController = StreamController<void>.broadcast();
       _lifecycleRoutes[_disconnectedId!] = _disconnectedController!;
 
-      _disconnectedCallable = NativeCallable<
-              Void Function(Pointer<natsConnection>, Pointer<Void>)>.listener(
-          _onDisconnected);
+      _disconnectedCallable =
+          NativeCallable<
+            Void Function(Pointer<natsConnection>, Pointer<Void>)
+          >.listener(_onDisconnected);
 
       checkStatus(
         natsOptions_SetDisconnectedCB(
@@ -397,9 +403,10 @@ final class NatsOptions implements Finalizable {
       _reconnectedController = StreamController<void>.broadcast();
       _lifecycleRoutes[_reconnectedId!] = _reconnectedController!;
 
-      _reconnectedCallable = NativeCallable<
-              Void Function(Pointer<natsConnection>, Pointer<Void>)>.listener(
-          _onReconnected);
+      _reconnectedCallable =
+          NativeCallable<
+            Void Function(Pointer<natsConnection>, Pointer<Void>)
+          >.listener(_onReconnected);
 
       checkStatus(
         natsOptions_SetReconnectedCB(
@@ -427,9 +434,10 @@ final class NatsOptions implements Finalizable {
       _closedController = StreamController<void>.broadcast();
       _lifecycleRoutes[_closedId!] = _closedController!;
 
-      _closedCallable = NativeCallable<
-              Void Function(Pointer<natsConnection>, Pointer<Void>)>.listener(
-          _onClosed);
+      _closedCallable =
+          NativeCallable<
+            Void Function(Pointer<natsConnection>, Pointer<Void>)
+          >.listener(_onClosed);
 
       checkStatus(
         natsOptions_SetClosedCB(
@@ -456,9 +464,15 @@ final class NatsOptions implements Finalizable {
       _errorController = StreamController<NatsError>.broadcast();
       _errorRoutes[_errorId!] = _errorController!;
 
-      _errorCallable = NativeCallable<
-          Void Function(Pointer<natsConnection>, Pointer<natsSubscription>,
-              UnsignedInt, Pointer<Void>)>.listener(_onError);
+      _errorCallable =
+          NativeCallable<
+            Void Function(
+              Pointer<natsConnection>,
+              Pointer<natsSubscription>,
+              UnsignedInt,
+              Pointer<Void>,
+            )
+          >.listener(_onError);
 
       checkStatus(
         natsOptions_SetErrorHandler(

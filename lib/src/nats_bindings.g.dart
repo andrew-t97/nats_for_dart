@@ -22,16 +22,10 @@ import 'dart:ffi' as ffi;
 /// @param lockSpinCount The number of times the library will spin trying to
 /// lock a mutex object.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Int64)>(symbol: 'nats_Open')
-external int _nats_Open(
-  int lockSpinCount,
-);
+external int _nats_Open(int lockSpinCount);
 
-natsStatus nats_Open(
-  int lockSpinCount,
-) =>
-    natsStatus.fromValue(_nats_Open(
-      lockSpinCount,
-    ));
+natsStatus nats_Open(int lockSpinCount) =>
+    natsStatus.fromValue(_nats_Open(lockSpinCount));
 
 /// \brief Returns the calling thread's last known error.
 ///
@@ -94,16 +88,10 @@ external ffi.Pointer<ffi.Char> nats_GetLastError(
 /// @param timeout the maximum time to wait for the library to be closed. If
 /// negative or 0, waits for as long as needed.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Int64)>(symbol: 'nats_CloseAndWait')
-external int _nats_CloseAndWait(
-  int timeout,
-);
+external int _nats_CloseAndWait(int timeout);
 
-natsStatus nats_CloseAndWait(
-  int timeout,
-) =>
-    natsStatus.fromValue(_nats_CloseAndWait(
-      timeout,
-    ));
+natsStatus nats_CloseAndWait(int timeout) =>
+    natsStatus.fromValue(_nats_CloseAndWait(timeout));
 
 /// \brief Creates a #natsOptions object.
 ///
@@ -123,17 +111,12 @@ natsStatus nats_CloseAndWait(
 /// @param newOpts the location where store the pointer to the newly created
 /// #natsOptions object.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<ffi.Pointer<natsOptions>>)>(
-    symbol: 'natsOptions_Create')
-external int _natsOptions_Create(
-  ffi.Pointer<ffi.Pointer<natsOptions>> newOpts,
-);
+  symbol: 'natsOptions_Create',
+)
+external int _natsOptions_Create(ffi.Pointer<ffi.Pointer<natsOptions>> newOpts);
 
-natsStatus natsOptions_Create(
-  ffi.Pointer<ffi.Pointer<natsOptions>> newOpts,
-) =>
-    natsStatus.fromValue(_natsOptions_Create(
-      newOpts,
-    ));
+natsStatus natsOptions_Create(ffi.Pointer<ffi.Pointer<natsOptions>> newOpts) =>
+    natsStatus.fromValue(_natsOptions_Create(newOpts));
 
 /// \brief Sets the URL to connect to.
 ///
@@ -164,8 +147,8 @@ natsStatus natsOptions_Create(
 /// nats://user@localhost:4222
 /// nats://user:password@localhost:4222
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsOptions>,
-        ffi.Pointer<ffi.Char>)>(symbol: 'natsOptions_SetURL')
+  ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Pointer<ffi.Char>)
+>(symbol: 'natsOptions_SetURL')
 external int _natsOptions_SetURL(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Char> url,
@@ -174,11 +157,7 @@ external int _natsOptions_SetURL(
 natsStatus natsOptions_SetURL(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Char> url,
-) =>
-    natsStatus.fromValue(_natsOptions_SetURL(
-      opts,
-      url,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetURL(opts, url));
 
 /// \brief Set the list of servers to try to (re)connect to.
 ///
@@ -194,10 +173,12 @@ natsStatus natsOptions_SetURL(
 /// @param servers the array of strings representing the server URLs.
 /// @param serversCount the size of the array.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<natsOptions>,
-        ffi.Pointer<ffi.Pointer<ffi.Char>>,
-        ffi.Int)>(symbol: 'natsOptions_SetServers')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsOptions>,
+    ffi.Pointer<ffi.Pointer<ffi.Char>>,
+    ffi.Int,
+  )
+>(symbol: 'natsOptions_SetServers')
 external int _natsOptions_SetServers(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Pointer<ffi.Char>> servers,
@@ -208,12 +189,7 @@ natsStatus natsOptions_SetServers(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Pointer<ffi.Char>> servers,
   int serversCount,
-) =>
-    natsStatus.fromValue(_natsOptions_SetServers(
-      opts,
-      servers,
-      serversCount,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetServers(opts, servers, serversCount));
 
 /// \brief Sets the user name/password to use when not specified in the URL.
 ///
@@ -240,8 +216,12 @@ natsStatus natsOptions_SetServers(
 /// @param user the user name to send to the server during connect.
 /// @param password the password to send to the server during connect.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>)>(symbol: 'natsOptions_SetUserInfo')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsOptions>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'natsOptions_SetUserInfo')
 external int _natsOptions_SetUserInfo(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Char> user,
@@ -252,12 +232,7 @@ natsStatus natsOptions_SetUserInfo(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Char> user,
   ffi.Pointer<ffi.Char> password,
-) =>
-    natsStatus.fromValue(_natsOptions_SetUserInfo(
-      opts,
-      user,
-      password,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetUserInfo(opts, user, password));
 
 /// \brief Sets the token to use when not specified in the URL.
 ///
@@ -283,8 +258,8 @@ natsStatus natsOptions_SetUserInfo(
 /// @param opts the pointer to the #natsOptions object.
 /// @param token the token to send to the server during connect.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsOptions>,
-        ffi.Pointer<ffi.Char>)>(symbol: 'natsOptions_SetToken')
+  ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Pointer<ffi.Char>)
+>(symbol: 'natsOptions_SetToken')
 external int _natsOptions_SetToken(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Char> token,
@@ -293,11 +268,7 @@ external int _natsOptions_SetToken(
 natsStatus natsOptions_SetToken(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Char> token,
-) =>
-    natsStatus.fromValue(_natsOptions_SetToken(
-      opts,
-      token,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetToken(opts, token));
 
 /// \brief Indicate if the servers list should be randomized.
 ///
@@ -308,7 +279,8 @@ natsStatus natsOptions_SetToken(
 /// @param opts the pointer to the #natsOptions object.
 /// @param noRandomize if `true`, the list will be used as-is.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Bool)>(
-    symbol: 'natsOptions_SetNoRandomize')
+  symbol: 'natsOptions_SetNoRandomize',
+)
 external int _natsOptions_SetNoRandomize(
   ffi.Pointer<natsOptions> opts,
   bool noRandomize,
@@ -317,11 +289,7 @@ external int _natsOptions_SetNoRandomize(
 natsStatus natsOptions_SetNoRandomize(
   ffi.Pointer<natsOptions> opts,
   bool noRandomize,
-) =>
-    natsStatus.fromValue(_natsOptions_SetNoRandomize(
-      opts,
-      noRandomize,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetNoRandomize(opts, noRandomize));
 
 /// \brief Sets the (re)connect process timeout.
 ///
@@ -334,20 +302,15 @@ natsStatus natsOptions_SetNoRandomize(
 /// @param timeout the time, in milliseconds, allowed for an individual connect
 /// (or reconnect) to complete.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Int64)>(
-    symbol: 'natsOptions_SetTimeout')
+  symbol: 'natsOptions_SetTimeout',
+)
 external int _natsOptions_SetTimeout(
   ffi.Pointer<natsOptions> opts,
   int timeout,
 );
 
-natsStatus natsOptions_SetTimeout(
-  ffi.Pointer<natsOptions> opts,
-  int timeout,
-) =>
-    natsStatus.fromValue(_natsOptions_SetTimeout(
-      opts,
-      timeout,
-    ));
+natsStatus natsOptions_SetTimeout(ffi.Pointer<natsOptions> opts, int timeout) =>
+    natsStatus.fromValue(_natsOptions_SetTimeout(opts, timeout));
 
 /// \brief Sets the name.
 ///
@@ -356,8 +319,8 @@ natsStatus natsOptions_SetTimeout(
 /// @param opts the pointer to the #natsOptions object.
 /// @param name the name to set.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsOptions>,
-        ffi.Pointer<ffi.Char>)>(symbol: 'natsOptions_SetName')
+  ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Pointer<ffi.Char>)
+>(symbol: 'natsOptions_SetName')
 external int _natsOptions_SetName(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Char> name,
@@ -366,11 +329,7 @@ external int _natsOptions_SetName(
 natsStatus natsOptions_SetName(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Char> name,
-) =>
-    natsStatus.fromValue(_natsOptions_SetName(
-      opts,
-      name,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetName(opts, name));
 
 /// \brief Sets the verbose mode.
 ///
@@ -382,7 +341,8 @@ natsStatus natsOptions_SetName(
 /// @param opts the pointer to the #natsOptions object.
 /// @param verbose `true` for a verbose protocol, `false` otherwise.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Bool)>(
-    symbol: 'natsOptions_SetVerbose')
+  symbol: 'natsOptions_SetVerbose',
+)
 external int _natsOptions_SetVerbose(
   ffi.Pointer<natsOptions> opts,
   bool verbose,
@@ -391,11 +351,7 @@ external int _natsOptions_SetVerbose(
 natsStatus natsOptions_SetVerbose(
   ffi.Pointer<natsOptions> opts,
   bool verbose,
-) =>
-    natsStatus.fromValue(_natsOptions_SetVerbose(
-      opts,
-      verbose,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetVerbose(opts, verbose));
 
 /// \brief Sets the pedantic mode.
 ///
@@ -407,7 +363,8 @@ natsStatus natsOptions_SetVerbose(
 /// @param opts the pointer to the #natsOptions object.
 /// @param pedantic `true` for a pedantic protocol, `false` otherwise.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Bool)>(
-    symbol: 'natsOptions_SetPedantic')
+  symbol: 'natsOptions_SetPedantic',
+)
 external int _natsOptions_SetPedantic(
   ffi.Pointer<natsOptions> opts,
   bool pedantic,
@@ -416,11 +373,7 @@ external int _natsOptions_SetPedantic(
 natsStatus natsOptions_SetPedantic(
   ffi.Pointer<natsOptions> opts,
   bool pedantic,
-) =>
-    natsStatus.fromValue(_natsOptions_SetPedantic(
-      opts,
-      pedantic,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetPedantic(opts, pedantic));
 
 /// \brief Sets the ping interval.
 ///
@@ -431,7 +384,8 @@ natsStatus natsOptions_SetPedantic(
 /// @param interval the interval, in milliseconds, at which the connection
 /// will send `PING` protocols to the server.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Int64)>(
-    symbol: 'natsOptions_SetPingInterval')
+  symbol: 'natsOptions_SetPingInterval',
+)
 external int _natsOptions_SetPingInterval(
   ffi.Pointer<natsOptions> opts,
   int interval,
@@ -440,11 +394,7 @@ external int _natsOptions_SetPingInterval(
 natsStatus natsOptions_SetPingInterval(
   ffi.Pointer<natsOptions> opts,
   int interval,
-) =>
-    natsStatus.fromValue(_natsOptions_SetPingInterval(
-      opts,
-      interval,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetPingInterval(opts, interval));
 
 /// \brief Sets the limit of outstanding `PING`s without corresponding `PONG`s.
 ///
@@ -457,7 +407,8 @@ natsStatus natsOptions_SetPingInterval(
 /// @param maxPingsOut the maximum number of `PING`s without `PONG`s
 /// (positive number).
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Int)>(
-    symbol: 'natsOptions_SetMaxPingsOut')
+  symbol: 'natsOptions_SetMaxPingsOut',
+)
 external int _natsOptions_SetMaxPingsOut(
   ffi.Pointer<natsOptions> opts,
   int maxPingsOut,
@@ -466,11 +417,7 @@ external int _natsOptions_SetMaxPingsOut(
 natsStatus natsOptions_SetMaxPingsOut(
   ffi.Pointer<natsOptions> opts,
   int maxPingsOut,
-) =>
-    natsStatus.fromValue(_natsOptions_SetMaxPingsOut(
-      opts,
-      maxPingsOut,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetMaxPingsOut(opts, maxPingsOut));
 
 /// \brief Sets the size of the internal read/write buffers.
 ///
@@ -483,7 +430,8 @@ natsStatus natsOptions_SetMaxPingsOut(
 /// @param ioBufSize the size, in bytes, of the internal buffer for read/write
 /// operations.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Int)>(
-    symbol: 'natsOptions_SetIOBufSize')
+  symbol: 'natsOptions_SetIOBufSize',
+)
 external int _natsOptions_SetIOBufSize(
   ffi.Pointer<natsOptions> opts,
   int ioBufSize,
@@ -492,11 +440,7 @@ external int _natsOptions_SetIOBufSize(
 natsStatus natsOptions_SetIOBufSize(
   ffi.Pointer<natsOptions> opts,
   int ioBufSize,
-) =>
-    natsStatus.fromValue(_natsOptions_SetIOBufSize(
-      opts,
-      ioBufSize,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetIOBufSize(opts, ioBufSize));
 
 /// \brief Sets the maximum number of reconnect attempts.
 ///
@@ -505,7 +449,8 @@ natsStatus natsOptions_SetIOBufSize(
 /// @param opts the pointer to the #natsOptions object.
 /// @param maxReconnect the maximum number of reconnects (positive number).
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Int)>(
-    symbol: 'natsOptions_SetMaxReconnect')
+  symbol: 'natsOptions_SetMaxReconnect',
+)
 external int _natsOptions_SetMaxReconnect(
   ffi.Pointer<natsOptions> opts,
   int maxReconnect,
@@ -514,11 +459,7 @@ external int _natsOptions_SetMaxReconnect(
 natsStatus natsOptions_SetMaxReconnect(
   ffi.Pointer<natsOptions> opts,
   int maxReconnect,
-) =>
-    natsStatus.fromValue(_natsOptions_SetMaxReconnect(
-      opts,
-      maxReconnect,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetMaxReconnect(opts, maxReconnect));
 
 /// \brief Sets the time between reconnect attempts.
 ///
@@ -533,7 +474,8 @@ natsStatus natsOptions_SetMaxReconnect(
 /// @param reconnectWait the time, in milliseconds, to wait between attempts
 /// to reconnect to the same server.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Int64)>(
-    symbol: 'natsOptions_SetReconnectWait')
+  symbol: 'natsOptions_SetReconnectWait',
+)
 external int _natsOptions_SetReconnectWait(
   ffi.Pointer<natsOptions> opts,
   int reconnectWait,
@@ -542,11 +484,7 @@ external int _natsOptions_SetReconnectWait(
 natsStatus natsOptions_SetReconnectWait(
   ffi.Pointer<natsOptions> opts,
   int reconnectWait,
-) =>
-    natsStatus.fromValue(_natsOptions_SetReconnectWait(
-      opts,
-      reconnectWait,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetReconnectWait(opts, reconnectWait));
 
 /// \brief Sets the size of the backing buffer used during reconnect.
 ///
@@ -560,7 +498,8 @@ natsStatus natsOptions_SetReconnectWait(
 /// @param reconnectBufSize the size, in bytes, of the backing buffer for
 /// write operations during a reconnect.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Int)>(
-    symbol: 'natsOptions_SetReconnectBufSize')
+  symbol: 'natsOptions_SetReconnectBufSize',
+)
 external int _natsOptions_SetReconnectBufSize(
   ffi.Pointer<natsOptions> opts,
   int reconnectBufSize,
@@ -569,11 +508,9 @@ external int _natsOptions_SetReconnectBufSize(
 natsStatus natsOptions_SetReconnectBufSize(
   ffi.Pointer<natsOptions> opts,
   int reconnectBufSize,
-) =>
-    natsStatus.fromValue(_natsOptions_SetReconnectBufSize(
-      opts,
-      reconnectBufSize,
-    ));
+) => natsStatus.fromValue(
+  _natsOptions_SetReconnectBufSize(opts, reconnectBufSize),
+);
 
 /// \brief Sets the error handler for asynchronous events.
 ///
@@ -589,8 +526,12 @@ natsStatus natsOptions_SetReconnectBufSize(
 /// @param closure a pointer to an user object that will be passed to
 /// the callback. `closure` can be `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, natsErrHandler,
-        ffi.Pointer<ffi.Void>)>(symbol: 'natsOptions_SetErrorHandler')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsOptions>,
+    natsErrHandler,
+    ffi.Pointer<ffi.Void>,
+  )
+>(symbol: 'natsOptions_SetErrorHandler')
 external int _natsOptions_SetErrorHandler(
   ffi.Pointer<natsOptions> opts,
   natsErrHandler errHandler,
@@ -601,12 +542,9 @@ natsStatus natsOptions_SetErrorHandler(
   ffi.Pointer<natsOptions> opts,
   natsErrHandler errHandler,
   ffi.Pointer<ffi.Void> closure,
-) =>
-    natsStatus.fromValue(_natsOptions_SetErrorHandler(
-      opts,
-      errHandler,
-      closure,
-    ));
+) => natsStatus.fromValue(
+  _natsOptions_SetErrorHandler(opts, errHandler, closure),
+);
 
 /// \brief Sets the callback to be invoked when a connection to a server
 /// is permanently lost.
@@ -620,8 +558,12 @@ natsStatus natsOptions_SetErrorHandler(
 /// @param closure a pointer to an user object that will be passed to
 /// the callback. `closure` can be `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, natsConnectionHandler,
-        ffi.Pointer<ffi.Void>)>(symbol: 'natsOptions_SetClosedCB')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsOptions>,
+    natsConnectionHandler,
+    ffi.Pointer<ffi.Void>,
+  )
+>(symbol: 'natsOptions_SetClosedCB')
 external int _natsOptions_SetClosedCB(
   ffi.Pointer<natsOptions> opts,
   natsConnectionHandler closedCb,
@@ -632,12 +574,7 @@ natsStatus natsOptions_SetClosedCB(
   ffi.Pointer<natsOptions> opts,
   natsConnectionHandler closedCb,
   ffi.Pointer<ffi.Void> closure,
-) =>
-    natsStatus.fromValue(_natsOptions_SetClosedCB(
-      opts,
-      closedCb,
-      closure,
-    ));
+) => natsStatus.fromValue(_natsOptions_SetClosedCB(opts, closedCb, closure));
 
 /// \brief Sets the callback to be invoked when the connection to a server is
 /// lost.
@@ -655,8 +592,12 @@ natsStatus natsOptions_SetClosedCB(
 /// @param closure a pointer to an user object that will be passed to
 /// the callback. `closure` can be `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, natsConnectionHandler,
-        ffi.Pointer<ffi.Void>)>(symbol: 'natsOptions_SetDisconnectedCB')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsOptions>,
+    natsConnectionHandler,
+    ffi.Pointer<ffi.Void>,
+  )
+>(symbol: 'natsOptions_SetDisconnectedCB')
 external int _natsOptions_SetDisconnectedCB(
   ffi.Pointer<natsOptions> opts,
   natsConnectionHandler disconnectedCb,
@@ -667,12 +608,9 @@ natsStatus natsOptions_SetDisconnectedCB(
   ffi.Pointer<natsOptions> opts,
   natsConnectionHandler disconnectedCb,
   ffi.Pointer<ffi.Void> closure,
-) =>
-    natsStatus.fromValue(_natsOptions_SetDisconnectedCB(
-      opts,
-      disconnectedCb,
-      closure,
-    ));
+) => natsStatus.fromValue(
+  _natsOptions_SetDisconnectedCB(opts, disconnectedCb, closure),
+);
 
 /// \brief Sets the callback to be invoked when the connection has reconnected.
 ///
@@ -689,8 +627,12 @@ natsStatus natsOptions_SetDisconnectedCB(
 /// @param closure a pointer to an user object that will be passed to
 /// the callback. `closure` can be `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, natsConnectionHandler,
-        ffi.Pointer<ffi.Void>)>(symbol: 'natsOptions_SetReconnectedCB')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsOptions>,
+    natsConnectionHandler,
+    ffi.Pointer<ffi.Void>,
+  )
+>(symbol: 'natsOptions_SetReconnectedCB')
 external int _natsOptions_SetReconnectedCB(
   ffi.Pointer<natsOptions> opts,
   natsConnectionHandler reconnectedCb,
@@ -701,12 +643,9 @@ natsStatus natsOptions_SetReconnectedCB(
   ffi.Pointer<natsOptions> opts,
   natsConnectionHandler reconnectedCb,
   ffi.Pointer<ffi.Void> closure,
-) =>
-    natsStatus.fromValue(_natsOptions_SetReconnectedCB(
-      opts,
-      reconnectedCb,
-      closure,
-    ));
+) => natsStatus.fromValue(
+  _natsOptions_SetReconnectedCB(opts, reconnectedCb, closure),
+);
 
 /// \brief Sets the file(s) to use to fetch user JWT and seed required to sign nonce.
 ///
@@ -746,9 +685,12 @@ natsStatus natsOptions_SetReconnectedCB(
 /// possibly the user NKey seed.
 /// @param seedFile the name of the file containing the user NKey seed.
 @ffi.Native<
-        ffi.UnsignedInt Function(ffi.Pointer<natsOptions>,
-            ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>(
-    symbol: 'natsOptions_SetUserCredentialsFromFiles')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsOptions>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'natsOptions_SetUserCredentialsFromFiles')
 external int _natsOptions_SetUserCredentialsFromFiles(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Char> userOrChainedFile,
@@ -759,12 +701,9 @@ natsStatus natsOptions_SetUserCredentialsFromFiles(
   ffi.Pointer<natsOptions> opts,
   ffi.Pointer<ffi.Char> userOrChainedFile,
   ffi.Pointer<ffi.Char> seedFile,
-) =>
-    natsStatus.fromValue(_natsOptions_SetUserCredentialsFromFiles(
-      opts,
-      userOrChainedFile,
-      seedFile,
-    ));
+) => natsStatus.fromValue(
+  _natsOptions_SetUserCredentialsFromFiles(opts, userOrChainedFile, seedFile),
+);
 
 /// \brief Destroys a #natsOptions object.
 ///
@@ -773,9 +712,7 @@ natsStatus natsOptions_SetUserCredentialsFromFiles(
 ///
 /// @param opts the pointer to the #natsOptions object to destroy.
 @ffi.Native<ffi.Void Function(ffi.Pointer<natsOptions>)>()
-external void natsOptions_Destroy(
-  ffi.Pointer<natsOptions> opts,
-);
+external void natsOptions_Destroy(ffi.Pointer<natsOptions> opts);
 
 /// \brief Creates an inbox.
 ///
@@ -790,17 +727,12 @@ external void natsOptions_Destroy(
 /// @param newInbox the location where to store a pointer to the newly
 /// created #natsInbox.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<ffi.Pointer<ffi.Char>>)>(
-    symbol: 'natsInbox_Create')
-external int _natsInbox_Create(
-  ffi.Pointer<ffi.Pointer<ffi.Char>> newInbox,
-);
+  symbol: 'natsInbox_Create',
+)
+external int _natsInbox_Create(ffi.Pointer<ffi.Pointer<ffi.Char>> newInbox);
 
-natsStatus natsInbox_Create(
-  ffi.Pointer<ffi.Pointer<ffi.Char>> newInbox,
-) =>
-    natsStatus.fromValue(_natsInbox_Create(
-      newInbox,
-    ));
+natsStatus natsInbox_Create(ffi.Pointer<ffi.Pointer<ffi.Char>> newInbox) =>
+    natsStatus.fromValue(_natsInbox_Create(newInbox));
 
 /// \brief Destroys the inbox.
 ///
@@ -808,9 +740,7 @@ natsStatus natsInbox_Create(
 ///
 /// @param inbox the pointer to the #natsInbox object to destroy.
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Char>)>()
-external void natsInbox_Destroy(
-  ffi.Pointer<ffi.Char> inbox,
-);
+external void natsInbox_Destroy(ffi.Pointer<ffi.Char> inbox);
 
 /// \brief Creates a #natsMsg object.
 ///
@@ -829,12 +759,14 @@ external void natsInbox_Destroy(
 /// @param data the optional message payload.
 /// @param dataLen the size of the payload.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<natsMsg>>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Int)>(symbol: 'natsMsg_Create')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsMsg>>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Int,
+  )
+>(symbol: 'natsMsg_Create')
 external int _natsMsg_Create(
   ffi.Pointer<ffi.Pointer<natsMsg>> newMsg,
   ffi.Pointer<ffi.Char> subj,
@@ -849,14 +781,7 @@ natsStatus natsMsg_Create(
   ffi.Pointer<ffi.Char> reply,
   ffi.Pointer<ffi.Char> data,
   int dataLen,
-) =>
-    natsStatus.fromValue(_natsMsg_Create(
-      newMsg,
-      subj,
-      reply,
-      data,
-      dataLen,
-    ));
+) => natsStatus.fromValue(_natsMsg_Create(newMsg, subj, reply, data, dataLen));
 
 /// \brief Returns the subject set in this message.
 ///
@@ -866,9 +791,7 @@ natsStatus natsMsg_Create(
 /// Copy it if needed.
 /// @param msg the pointer to the #natsMsg object.
 @ffi.Native<ffi.Pointer<ffi.Char> Function(ffi.Pointer<natsMsg>)>()
-external ffi.Pointer<ffi.Char> natsMsg_GetSubject(
-  ffi.Pointer<natsMsg> msg,
-);
+external ffi.Pointer<ffi.Char> natsMsg_GetSubject(ffi.Pointer<natsMsg> msg);
 
 /// \brief Returns the reply set in this message.
 ///
@@ -879,9 +802,7 @@ external ffi.Pointer<ffi.Char> natsMsg_GetSubject(
 ///
 /// @param msg the pointer to the #natsMsg object.
 @ffi.Native<ffi.Pointer<ffi.Char> Function(ffi.Pointer<natsMsg>)>()
-external ffi.Pointer<ffi.Char> natsMsg_GetReply(
-  ffi.Pointer<natsMsg> msg,
-);
+external ffi.Pointer<ffi.Char> natsMsg_GetReply(ffi.Pointer<natsMsg> msg);
 
 /// \brief Returns the message payload.
 ///
@@ -898,9 +819,7 @@ external ffi.Pointer<ffi.Char> natsMsg_GetReply(
 ///
 /// @param msg the pointer to the #natsMsg object.
 @ffi.Native<ffi.Pointer<ffi.Char> Function(ffi.Pointer<natsMsg>)>()
-external ffi.Pointer<ffi.Char> natsMsg_GetData(
-  ffi.Pointer<natsMsg> msg,
-);
+external ffi.Pointer<ffi.Char> natsMsg_GetData(ffi.Pointer<natsMsg> msg);
 
 /// \brief Returns the message length.
 ///
@@ -908,9 +827,7 @@ external ffi.Pointer<ffi.Char> natsMsg_GetData(
 ///
 /// @param msg the pointer to the #natsMsg object.
 @ffi.Native<ffi.Int Function(ffi.Pointer<natsMsg>)>()
-external int natsMsg_GetDataLength(
-  ffi.Pointer<natsMsg> msg,
-);
+external int natsMsg_GetDataLength(ffi.Pointer<natsMsg> msg);
 
 /// \brief Indicates if this message is a "no responders" message from the server.
 ///
@@ -937,9 +854,7 @@ external int natsMsg_GetDataLength(
 /// @return `true` if this message is a "no responders" message from the server,
 /// that is, has no payload and the "Status" header with "503" as the value.
 @ffi.Native<ffi.Bool Function(ffi.Pointer<natsMsg>)>()
-external bool natsMsg_IsNoResponders(
-  ffi.Pointer<natsMsg> msg,
-);
+external bool natsMsg_IsNoResponders(ffi.Pointer<natsMsg> msg);
 
 /// \brief Destroys the message object.
 ///
@@ -947,9 +862,7 @@ external bool natsMsg_IsNoResponders(
 ///
 /// @param msg the pointer to the #natsMsg object to destroy.
 @ffi.Native<ffi.Void Function(ffi.Pointer<natsMsg>)>()
-external void natsMsg_Destroy(
-  ffi.Pointer<natsMsg> msg,
-);
+external void natsMsg_Destroy(ffi.Pointer<natsMsg> msg);
 
 /// \brief Connects to a `NATS Server` using the provided options.
 ///
@@ -968,8 +881,11 @@ external void natsMsg_Destroy(
 /// @param options the options to use for this connection. If `NULL`
 /// this call is equivalent to #natsConnection_ConnectTo() with #NATS_DEFAULT_URL.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<ffi.Pointer<natsConnection>>,
-        ffi.Pointer<natsOptions>)>(symbol: 'natsConnection_Connect')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsConnection>>,
+    ffi.Pointer<natsOptions>,
+  )
+>(symbol: 'natsConnection_Connect')
 external int _natsConnection_Connect(
   ffi.Pointer<ffi.Pointer<natsConnection>> nc,
   ffi.Pointer<natsOptions> options,
@@ -978,11 +894,7 @@ external int _natsConnection_Connect(
 natsStatus natsConnection_Connect(
   ffi.Pointer<ffi.Pointer<natsConnection>> nc,
   ffi.Pointer<natsOptions> options,
-) =>
-    natsStatus.fromValue(_natsConnection_Connect(
-      nc,
-      options,
-    ));
+) => natsStatus.fromValue(_natsConnection_Connect(nc, options));
 
 /// \brief Connects to a `NATS Server` using any of the URL from the given list.
 ///
@@ -1002,8 +914,11 @@ natsStatus natsConnection_Connect(
 /// If `NULL` this call is equivalent to #natsConnection_ConnectTo()
 /// with #NATS_DEFAULT_URL
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<ffi.Pointer<natsConnection>>,
-        ffi.Pointer<ffi.Char>)>(symbol: 'natsConnection_ConnectTo')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsConnection>>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'natsConnection_ConnectTo')
 external int _natsConnection_ConnectTo(
   ffi.Pointer<ffi.Pointer<natsConnection>> nc,
   ffi.Pointer<ffi.Char> urls,
@@ -1012,11 +927,7 @@ external int _natsConnection_ConnectTo(
 natsStatus natsConnection_ConnectTo(
   ffi.Pointer<ffi.Pointer<natsConnection>> nc,
   ffi.Pointer<ffi.Char> urls,
-) =>
-    natsStatus.fromValue(_natsConnection_ConnectTo(
-      nc,
-      urls,
-    ));
+) => natsStatus.fromValue(_natsConnection_ConnectTo(nc, urls));
 
 /// \brief Flushes the connection.
 ///
@@ -1033,17 +944,12 @@ natsStatus natsConnection_ConnectTo(
 ///
 /// @param nc the pointer to the #natsConnection object.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsConnection>)>(
-    symbol: 'natsConnection_Flush')
-external int _natsConnection_Flush(
-  ffi.Pointer<natsConnection> nc,
-);
+  symbol: 'natsConnection_Flush',
+)
+external int _natsConnection_Flush(ffi.Pointer<natsConnection> nc);
 
-natsStatus natsConnection_Flush(
-  ffi.Pointer<natsConnection> nc,
-) =>
-    natsStatus.fromValue(_natsConnection_Flush(
-      nc,
-    ));
+natsStatus natsConnection_Flush(ffi.Pointer<natsConnection> nc) =>
+    natsStatus.fromValue(_natsConnection_Flush(nc));
 
 /// \brief Flushes the connection with a given timeout.
 ///
@@ -1057,7 +963,8 @@ natsStatus natsConnection_Flush(
 /// @param timeout in milliseconds, is the time allowed for the flush
 /// to complete before #NATS_TIMEOUT error is returned.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsConnection>, ffi.Int64)>(
-    symbol: 'natsConnection_FlushTimeout')
+  symbol: 'natsConnection_FlushTimeout',
+)
 external int _natsConnection_FlushTimeout(
   ffi.Pointer<natsConnection> nc,
   int timeout,
@@ -1066,11 +973,7 @@ external int _natsConnection_FlushTimeout(
 natsStatus natsConnection_FlushTimeout(
   ffi.Pointer<natsConnection> nc,
   int timeout,
-) =>
-    natsStatus.fromValue(_natsConnection_FlushTimeout(
-      nc,
-      timeout,
-    ));
+) => natsStatus.fromValue(_natsConnection_FlushTimeout(nc, timeout));
 
 /// \brief Closes the connection.
 ///
@@ -1081,9 +984,7 @@ natsStatus natsConnection_FlushTimeout(
 ///
 /// @param nc the pointer to the #natsConnection object.
 @ffi.Native<ffi.Void Function(ffi.Pointer<natsConnection>)>()
-external void natsConnection_Close(
-  ffi.Pointer<natsConnection> nc,
-);
+external void natsConnection_Close(ffi.Pointer<natsConnection> nc);
 
 /// \brief Destroys the connection object.
 ///
@@ -1092,9 +993,7 @@ external void natsConnection_Close(
 ///
 /// @param nc the pointer to the #natsConnection object.
 @ffi.Native<ffi.Void Function(ffi.Pointer<natsConnection>)>()
-external void natsConnection_Destroy(
-  ffi.Pointer<natsConnection> nc,
-);
+external void natsConnection_Destroy(ffi.Pointer<natsConnection> nc);
 
 /// \brief Publishes data on a subject.
 ///
@@ -1106,8 +1005,13 @@ external void natsConnection_Destroy(
 /// @param data the data to be sent, can be `NULL`.
 /// @param dataLen the length of the data to be sent.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsConnection>, ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Void>, ffi.Int)>(symbol: 'natsConnection_Publish')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsConnection>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Void>,
+    ffi.Int,
+  )
+>(symbol: 'natsConnection_Publish')
 external int _natsConnection_Publish(
   ffi.Pointer<natsConnection> nc,
   ffi.Pointer<ffi.Char> subj,
@@ -1120,13 +1024,7 @@ natsStatus natsConnection_Publish(
   ffi.Pointer<ffi.Char> subj,
   ffi.Pointer<ffi.Void> data,
   int dataLen,
-) =>
-    natsStatus.fromValue(_natsConnection_Publish(
-      nc,
-      subj,
-      data,
-      dataLen,
-    ));
+) => natsStatus.fromValue(_natsConnection_Publish(nc, subj, data, dataLen));
 
 /// \brief Publishes a string on a subject.
 ///
@@ -1142,8 +1040,12 @@ natsStatus natsConnection_Publish(
 /// @param subj the subject the data is sent to.
 /// @param str the string to be sent.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsConnection>, ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>)>(symbol: 'natsConnection_PublishString')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsConnection>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'natsConnection_PublishString')
 external int _natsConnection_PublishString(
   ffi.Pointer<natsConnection> nc,
   ffi.Pointer<ffi.Char> subj,
@@ -1154,12 +1056,7 @@ natsStatus natsConnection_PublishString(
   ffi.Pointer<natsConnection> nc,
   ffi.Pointer<ffi.Char> subj,
   ffi.Pointer<ffi.Char> str,
-) =>
-    natsStatus.fromValue(_natsConnection_PublishString(
-      nc,
-      subj,
-      str,
-    ));
+) => natsStatus.fromValue(_natsConnection_PublishString(nc, subj, str));
 
 /// \brief Publishes data on a subject expecting replies on the given reply.
 ///
@@ -1173,12 +1070,14 @@ natsStatus natsConnection_PublishString(
 /// @param data the data to be sent, can be `NULL`.
 /// @param dataLen the length of the data to be sent.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<natsConnection>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Void>,
-        ffi.Int)>(symbol: 'natsConnection_PublishRequest')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsConnection>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Void>,
+    ffi.Int,
+  )
+>(symbol: 'natsConnection_PublishRequest')
 external int _natsConnection_PublishRequest(
   ffi.Pointer<natsConnection> nc,
   ffi.Pointer<ffi.Char> subj,
@@ -1193,14 +1092,9 @@ natsStatus natsConnection_PublishRequest(
   ffi.Pointer<ffi.Char> reply,
   ffi.Pointer<ffi.Void> data,
   int dataLen,
-) =>
-    natsStatus.fromValue(_natsConnection_PublishRequest(
-      nc,
-      subj,
-      reply,
-      data,
-      dataLen,
-    ));
+) => natsStatus.fromValue(
+  _natsConnection_PublishRequest(nc, subj, reply, data, dataLen),
+);
 
 /// \brief Publishes a string on a subject expecting replies on the given reply.
 ///
@@ -1218,11 +1112,13 @@ natsStatus natsConnection_PublishRequest(
 /// @param reply the reply on which resonses are expected.
 /// @param str the string to send.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<natsConnection>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>)>(symbol: 'natsConnection_PublishRequestString')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsConnection>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'natsConnection_PublishRequestString')
 external int _natsConnection_PublishRequestString(
   ffi.Pointer<natsConnection> nc,
   ffi.Pointer<ffi.Char> subj,
@@ -1235,13 +1131,9 @@ natsStatus natsConnection_PublishRequestString(
   ffi.Pointer<ffi.Char> subj,
   ffi.Pointer<ffi.Char> reply,
   ffi.Pointer<ffi.Char> str,
-) =>
-    natsStatus.fromValue(_natsConnection_PublishRequestString(
-      nc,
-      subj,
-      reply,
-      str,
-    ));
+) => natsStatus.fromValue(
+  _natsConnection_PublishRequestString(nc, subj, reply, str),
+);
 
 /// \brief Creates an asynchronous subscription.
 ///
@@ -1257,12 +1149,14 @@ natsStatus natsConnection_PublishRequestString(
 /// @param cbClosure a pointer to an user defined object (can be `NULL`). See
 /// the #natsMsgHandler prototype.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<natsSubscription>>,
-        ffi.Pointer<natsConnection>,
-        ffi.Pointer<ffi.Char>,
-        natsMsgHandler,
-        ffi.Pointer<ffi.Void>)>(symbol: 'natsConnection_Subscribe')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsSubscription>>,
+    ffi.Pointer<natsConnection>,
+    ffi.Pointer<ffi.Char>,
+    natsMsgHandler,
+    ffi.Pointer<ffi.Void>,
+  )
+>(symbol: 'natsConnection_Subscribe')
 external int _natsConnection_Subscribe(
   ffi.Pointer<ffi.Pointer<natsSubscription>> sub,
   ffi.Pointer<natsConnection> nc,
@@ -1277,14 +1171,9 @@ natsStatus natsConnection_Subscribe(
   ffi.Pointer<ffi.Char> subject,
   natsMsgHandler cb,
   ffi.Pointer<ffi.Void> cbClosure,
-) =>
-    natsStatus.fromValue(_natsConnection_Subscribe(
-      sub,
-      nc,
-      subject,
-      cb,
-      cbClosure,
-    ));
+) => natsStatus.fromValue(
+  _natsConnection_Subscribe(sub, nc, subject, cb, cbClosure),
+);
 
 /// \brief Creates an asynchronous subscription with a timeout.
 ///
@@ -1316,13 +1205,15 @@ natsStatus natsConnection_Subscribe(
 /// @param cbClosure a pointer to an user defined object (can be `NULL`). See
 /// the #natsMsgHandler prototype.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<natsSubscription>>,
-        ffi.Pointer<natsConnection>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Int64,
-        natsMsgHandler,
-        ffi.Pointer<ffi.Void>)>(symbol: 'natsConnection_SubscribeTimeout')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsSubscription>>,
+    ffi.Pointer<natsConnection>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Int64,
+    natsMsgHandler,
+    ffi.Pointer<ffi.Void>,
+  )
+>(symbol: 'natsConnection_SubscribeTimeout')
 external int _natsConnection_SubscribeTimeout(
   ffi.Pointer<ffi.Pointer<natsSubscription>> sub,
   ffi.Pointer<natsConnection> nc,
@@ -1339,15 +1230,9 @@ natsStatus natsConnection_SubscribeTimeout(
   int timeout,
   natsMsgHandler cb,
   ffi.Pointer<ffi.Void> cbClosure,
-) =>
-    natsStatus.fromValue(_natsConnection_SubscribeTimeout(
-      sub,
-      nc,
-      subject,
-      timeout,
-      cb,
-      cbClosure,
-    ));
+) => natsStatus.fromValue(
+  _natsConnection_SubscribeTimeout(sub, nc, subject, timeout, cb, cbClosure),
+);
 
 /// \brief Creates a synchronous subcription.
 ///
@@ -1359,10 +1244,12 @@ natsStatus natsConnection_SubscribeTimeout(
 /// @param nc the pointer to the #natsConnection object.
 /// @param subject the subject this subscription is created for.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<natsSubscription>>,
-        ffi.Pointer<natsConnection>,
-        ffi.Pointer<ffi.Char>)>(symbol: 'natsConnection_SubscribeSync')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsSubscription>>,
+    ffi.Pointer<natsConnection>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'natsConnection_SubscribeSync')
 external int _natsConnection_SubscribeSync(
   ffi.Pointer<ffi.Pointer<natsSubscription>> sub,
   ffi.Pointer<natsConnection> nc,
@@ -1373,12 +1260,7 @@ natsStatus natsConnection_SubscribeSync(
   ffi.Pointer<ffi.Pointer<natsSubscription>> sub,
   ffi.Pointer<natsConnection> nc,
   ffi.Pointer<ffi.Char> subject,
-) =>
-    natsStatus.fromValue(_natsConnection_SubscribeSync(
-      sub,
-      nc,
-      subject,
-    ));
+) => natsStatus.fromValue(_natsConnection_SubscribeSync(sub, nc, subject));
 
 /// \brief Creates an asynchronous queue subscriber.
 ///
@@ -1396,13 +1278,15 @@ natsStatus natsConnection_SubscribeSync(
 /// @param cbClosure a pointer to an user defined object (can be `NULL`). See
 /// the #natsMsgHandler prototype.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<natsSubscription>>,
-        ffi.Pointer<natsConnection>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>,
-        natsMsgHandler,
-        ffi.Pointer<ffi.Void>)>(symbol: 'natsConnection_QueueSubscribe')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsSubscription>>,
+    ffi.Pointer<natsConnection>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+    natsMsgHandler,
+    ffi.Pointer<ffi.Void>,
+  )
+>(symbol: 'natsConnection_QueueSubscribe')
 external int _natsConnection_QueueSubscribe(
   ffi.Pointer<ffi.Pointer<natsSubscription>> sub,
   ffi.Pointer<natsConnection> nc,
@@ -1419,15 +1303,9 @@ natsStatus natsConnection_QueueSubscribe(
   ffi.Pointer<ffi.Char> queueGroup,
   natsMsgHandler cb,
   ffi.Pointer<ffi.Void> cbClosure,
-) =>
-    natsStatus.fromValue(_natsConnection_QueueSubscribe(
-      sub,
-      nc,
-      subject,
-      queueGroup,
-      cb,
-      cbClosure,
-    ));
+) => natsStatus.fromValue(
+  _natsConnection_QueueSubscribe(sub, nc, subject, queueGroup, cb, cbClosure),
+);
 
 /// \brief Returns the next available message.
 ///
@@ -1451,10 +1329,12 @@ natsStatus natsConnection_QueueSubscribe(
 /// @param timeout time, in milliseconds, after which this call will return
 /// #NATS_TIMEOUT if no message is available.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<natsMsg>>,
-        ffi.Pointer<natsSubscription>,
-        ffi.Int64)>(symbol: 'natsSubscription_NextMsg')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsMsg>>,
+    ffi.Pointer<natsSubscription>,
+    ffi.Int64,
+  )
+>(symbol: 'natsSubscription_NextMsg')
 external int _natsSubscription_NextMsg(
   ffi.Pointer<ffi.Pointer<natsMsg>> nextMsg,
   ffi.Pointer<natsSubscription> sub,
@@ -1465,12 +1345,7 @@ natsStatus natsSubscription_NextMsg(
   ffi.Pointer<ffi.Pointer<natsMsg>> nextMsg,
   ffi.Pointer<natsSubscription> sub,
   int timeout,
-) =>
-    natsStatus.fromValue(_natsSubscription_NextMsg(
-      nextMsg,
-      sub,
-      timeout,
-    ));
+) => natsStatus.fromValue(_natsSubscription_NextMsg(nextMsg, sub, timeout));
 
 /// \brief Unsubscribes.
 ///
@@ -1480,17 +1355,12 @@ natsStatus natsSubscription_NextMsg(
 ///
 /// @param sub the pointer to the #natsSubscription object.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsSubscription>)>(
-    symbol: 'natsSubscription_Unsubscribe')
-external int _natsSubscription_Unsubscribe(
-  ffi.Pointer<natsSubscription> sub,
-);
+  symbol: 'natsSubscription_Unsubscribe',
+)
+external int _natsSubscription_Unsubscribe(ffi.Pointer<natsSubscription> sub);
 
-natsStatus natsSubscription_Unsubscribe(
-  ffi.Pointer<natsSubscription> sub,
-) =>
-    natsStatus.fromValue(_natsSubscription_Unsubscribe(
-      sub,
-    ));
+natsStatus natsSubscription_Unsubscribe(ffi.Pointer<natsSubscription> sub) =>
+    natsStatus.fromValue(_natsSubscription_Unsubscribe(sub));
 
 /// \brief Sets the limit for pending messages and bytes.
 ///
@@ -1512,8 +1382,8 @@ natsStatus natsSubscription_Unsubscribe(
 /// @param msgLimit the limit in number of messages that the subscription can hold.
 /// @param bytesLimit the limit in bytes that the subscription can hold.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsSubscription>, ffi.Int,
-        ffi.Int)>(symbol: 'natsSubscription_SetPendingLimits')
+  ffi.UnsignedInt Function(ffi.Pointer<natsSubscription>, ffi.Int, ffi.Int)
+>(symbol: 'natsSubscription_SetPendingLimits')
 external int _natsSubscription_SetPendingLimits(
   ffi.Pointer<natsSubscription> sub,
   int msgLimit,
@@ -1524,12 +1394,9 @@ natsStatus natsSubscription_SetPendingLimits(
   ffi.Pointer<natsSubscription> sub,
   int msgLimit,
   int bytesLimit,
-) =>
-    natsStatus.fromValue(_natsSubscription_SetPendingLimits(
-      sub,
-      msgLimit,
-      bytesLimit,
-    ));
+) => natsStatus.fromValue(
+  _natsSubscription_SetPendingLimits(sub, msgLimit, bytesLimit),
+);
 
 /// \brief Returns the number of pending messages and bytes.
 ///
@@ -1545,10 +1412,12 @@ natsStatus natsSubscription_SetPendingLimits(
 /// @param bytes if not `NULL`, the memory location where to store the total size of
 /// pending messages.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<natsSubscription>,
-        ffi.Pointer<ffi.Int>,
-        ffi.Pointer<ffi.Int>)>(symbol: 'natsSubscription_GetPending')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsSubscription>,
+    ffi.Pointer<ffi.Int>,
+    ffi.Pointer<ffi.Int>,
+  )
+>(symbol: 'natsSubscription_GetPending')
 external int _natsSubscription_GetPending(
   ffi.Pointer<natsSubscription> sub,
   ffi.Pointer<ffi.Int> msgs,
@@ -1559,12 +1428,7 @@ natsStatus natsSubscription_GetPending(
   ffi.Pointer<natsSubscription> sub,
   ffi.Pointer<ffi.Int> msgs,
   ffi.Pointer<ffi.Int> bytes,
-) =>
-    natsStatus.fromValue(_natsSubscription_GetPending(
-      sub,
-      msgs,
-      bytes,
-    ));
+) => natsStatus.fromValue(_natsSubscription_GetPending(sub, msgs, bytes));
 
 /// \brief Checks the validity of the subscription.
 ///
@@ -1574,9 +1438,7 @@ natsStatus natsSubscription_GetPending(
 ///
 /// @param sub the pointer to the #natsSubscription object.
 @ffi.Native<ffi.Bool Function(ffi.Pointer<natsSubscription>)>()
-external bool natsSubscription_IsValid(
-  ffi.Pointer<natsSubscription> sub,
-);
+external bool natsSubscription_IsValid(ffi.Pointer<natsSubscription> sub);
 
 /// \brief Destroys the subscription.
 ///
@@ -1585,9 +1447,7 @@ external bool natsSubscription_IsValid(
 ///
 /// @param sub the pointer to the #natsSubscription object to destroy.
 @ffi.Native<ffi.Void Function(ffi.Pointer<natsSubscription>)>()
-external void natsSubscription_Destroy(
-  ffi.Pointer<natsSubscription> sub,
-);
+external void natsSubscription_Destroy(ffi.Pointer<natsSubscription> sub);
 
 /// \brief Initializes a streaming context options structure.
 ///
@@ -1596,17 +1456,12 @@ external void natsSubscription_Destroy(
 ///
 /// @param opts the pointer to the #jsOptions to initialize.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<jsOptions>)>(
-    symbol: 'jsOptions_Init')
-external int _jsOptions_Init(
-  ffi.Pointer<jsOptions> opts,
-);
+  symbol: 'jsOptions_Init',
+)
+external int _jsOptions_Init(ffi.Pointer<jsOptions> opts);
 
-natsStatus jsOptions_Init(
-  ffi.Pointer<jsOptions> opts,
-) =>
-    natsStatus.fromValue(_jsOptions_Init(
-      opts,
-    ));
+natsStatus jsOptions_Init(ffi.Pointer<jsOptions> opts) =>
+    natsStatus.fromValue(_jsOptions_Init(opts));
 
 /// \brief Returns a new JetStream context.
 ///
@@ -1622,10 +1477,12 @@ natsStatus jsOptions_Init(
 /// @param nc the pointer to the #natsConnection object from which to get the JetStream context.
 /// @param opts the pointer to the #jsOptions object, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<jsCtx>>,
-        ffi.Pointer<natsConnection>,
-        ffi.Pointer<jsOptions>)>(symbol: 'natsConnection_JetStream')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<jsCtx>>,
+    ffi.Pointer<natsConnection>,
+    ffi.Pointer<jsOptions>,
+  )
+>(symbol: 'natsConnection_JetStream')
 external int _natsConnection_JetStream(
   ffi.Pointer<ffi.Pointer<jsCtx>> js,
   ffi.Pointer<natsConnection> nc,
@@ -1636,12 +1493,7 @@ natsStatus natsConnection_JetStream(
   ffi.Pointer<ffi.Pointer<jsCtx>> js,
   ffi.Pointer<natsConnection> nc,
   ffi.Pointer<jsOptions> opts,
-) =>
-    natsStatus.fromValue(_natsConnection_JetStream(
-      js,
-      nc,
-      opts,
-    ));
+) => natsStatus.fromValue(_natsConnection_JetStream(js, nc, opts));
 
 /// \brief Destroys the JetStream context.
 ///
@@ -1649,9 +1501,7 @@ natsStatus natsConnection_JetStream(
 ///
 /// @param js the pointer to the #jsCtx object to destroy.
 @ffi.Native<ffi.Void Function(ffi.Pointer<jsCtx>)>()
-external void jsCtx_Destroy(
-  ffi.Pointer<jsCtx> js,
-);
+external void jsCtx_Destroy(ffi.Pointer<jsCtx> js);
 
 /// \brief Initializes a streaming configuration structure.
 ///
@@ -1660,17 +1510,12 @@ external void jsCtx_Destroy(
 ///
 /// @param cfg the pointer to the #jsStreamConfig to initialize.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<jsStreamConfig>)>(
-    symbol: 'jsStreamConfig_Init')
-external int _jsStreamConfig_Init(
-  ffi.Pointer<jsStreamConfig> cfg,
-);
+  symbol: 'jsStreamConfig_Init',
+)
+external int _jsStreamConfig_Init(ffi.Pointer<jsStreamConfig> cfg);
 
-natsStatus jsStreamConfig_Init(
-  ffi.Pointer<jsStreamConfig> cfg,
-) =>
-    natsStatus.fromValue(_jsStreamConfig_Init(
-      cfg,
-    ));
+natsStatus jsStreamConfig_Init(ffi.Pointer<jsStreamConfig> cfg) =>
+    natsStatus.fromValue(_jsStreamConfig_Init(cfg));
 
 /// \brief Creates a stream.
 ///
@@ -1691,12 +1536,14 @@ natsStatus jsStreamConfig_Init(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<jsStreamInfo>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<jsStreamConfig>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_AddStream')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<jsStreamInfo>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<jsStreamConfig>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_AddStream')
 external int _js_AddStream(
   ffi.Pointer<ffi.Pointer<jsStreamInfo>> si,
   ffi.Pointer<jsCtx> js,
@@ -1711,14 +1558,7 @@ natsStatus js_AddStream(
   ffi.Pointer<jsStreamConfig> cfg,
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_AddStream(
-      si,
-      js,
-      cfg,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(_js_AddStream(si, js, cfg, opts, errCode));
 
 /// \brief Updates a stream.
 ///
@@ -1739,12 +1579,14 @@ natsStatus js_AddStream(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<jsStreamInfo>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<jsStreamConfig>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_UpdateStream')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<jsStreamInfo>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<jsStreamConfig>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_UpdateStream')
 external int _js_UpdateStream(
   ffi.Pointer<ffi.Pointer<jsStreamInfo>> si,
   ffi.Pointer<jsCtx> js,
@@ -1759,14 +1601,7 @@ natsStatus js_UpdateStream(
   ffi.Pointer<jsStreamConfig> cfg,
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_UpdateStream(
-      si,
-      js,
-      cfg,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(_js_UpdateStream(si, js, cfg, opts, errCode));
 
 /// \brief Purges a stream.
 ///
@@ -1790,11 +1625,13 @@ natsStatus js_UpdateStream(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_PurgeStream')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_PurgeStream')
 external int _js_PurgeStream(
   ffi.Pointer<jsCtx> js,
   ffi.Pointer<ffi.Char> stream,
@@ -1807,13 +1644,7 @@ natsStatus js_PurgeStream(
   ffi.Pointer<ffi.Char> stream,
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_PurgeStream(
-      js,
-      stream,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(_js_PurgeStream(js, stream, opts, errCode));
 
 /// \brief Deletes a stream.
 ///
@@ -1825,11 +1656,13 @@ natsStatus js_PurgeStream(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_DeleteStream')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_DeleteStream')
 external int _js_DeleteStream(
   ffi.Pointer<jsCtx> js,
   ffi.Pointer<ffi.Char> stream,
@@ -1842,13 +1675,7 @@ natsStatus js_DeleteStream(
   ffi.Pointer<ffi.Char> stream,
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_DeleteStream(
-      js,
-      stream,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(_js_DeleteStream(js, stream, opts, errCode));
 
 /// \brief Retreives information from a stream.
 ///
@@ -1876,12 +1703,14 @@ natsStatus js_DeleteStream(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<jsStreamInfo>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_GetStreamInfo')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<jsStreamInfo>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_GetStreamInfo')
 external int _js_GetStreamInfo(
   ffi.Pointer<ffi.Pointer<jsStreamInfo>> si,
   ffi.Pointer<jsCtx> js,
@@ -1896,14 +1725,7 @@ natsStatus js_GetStreamInfo(
   ffi.Pointer<ffi.Char> stream,
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_GetStreamInfo(
-      si,
-      js,
-      stream,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(_js_GetStreamInfo(si, js, stream, opts, errCode));
 
 /// \brief Destroys the stream information object.
 ///
@@ -1911,9 +1733,7 @@ natsStatus js_GetStreamInfo(
 ///
 /// @param si the pointer to the #jsStreamInfo object.
 @ffi.Native<ffi.Void Function(ffi.Pointer<jsStreamInfo>)>()
-external void jsStreamInfo_Destroy(
-  ffi.Pointer<jsStreamInfo> si,
-);
+external void jsStreamInfo_Destroy(ffi.Pointer<jsStreamInfo> si);
 
 /// \brief Initializes a consumer configuration structure.
 ///
@@ -1923,17 +1743,12 @@ external void jsStreamInfo_Destroy(
 ///
 /// @param cc the pointer to the #jsConsumerConfig to initialize.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<jsConsumerConfig>)>(
-    symbol: 'jsConsumerConfig_Init')
-external int _jsConsumerConfig_Init(
-  ffi.Pointer<jsConsumerConfig> cc,
-);
+  symbol: 'jsConsumerConfig_Init',
+)
+external int _jsConsumerConfig_Init(ffi.Pointer<jsConsumerConfig> cc);
 
-natsStatus jsConsumerConfig_Init(
-  ffi.Pointer<jsConsumerConfig> cc,
-) =>
-    natsStatus.fromValue(_jsConsumerConfig_Init(
-      cc,
-    ));
+natsStatus jsConsumerConfig_Init(ffi.Pointer<jsConsumerConfig> cc) =>
+    natsStatus.fromValue(_jsConsumerConfig_Init(cc));
 
 /// \brief Adds a JetStream consumer.
 ///
@@ -1954,13 +1769,15 @@ natsStatus jsConsumerConfig_Init(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<jsConsumerInfo>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<jsConsumerConfig>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_AddConsumer')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<jsConsumerInfo>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<jsConsumerConfig>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_AddConsumer')
 external int _js_AddConsumer(
   ffi.Pointer<ffi.Pointer<jsConsumerInfo>> ci,
   ffi.Pointer<jsCtx> js,
@@ -1977,15 +1794,7 @@ natsStatus js_AddConsumer(
   ffi.Pointer<jsConsumerConfig> cfg,
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_AddConsumer(
-      ci,
-      js,
-      stream,
-      cfg,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(_js_AddConsumer(ci, js, stream, cfg, opts, errCode));
 
 /// \brief Updates a JetStream consumer.
 ///
@@ -2006,13 +1815,15 @@ natsStatus js_AddConsumer(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<jsConsumerInfo>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<jsConsumerConfig>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_UpdateConsumer')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<jsConsumerInfo>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<jsConsumerConfig>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_UpdateConsumer')
 external int _js_UpdateConsumer(
   ffi.Pointer<ffi.Pointer<jsConsumerInfo>> ci,
   ffi.Pointer<jsCtx> js,
@@ -2029,15 +1840,9 @@ natsStatus js_UpdateConsumer(
   ffi.Pointer<jsConsumerConfig> cfg,
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_UpdateConsumer(
-      ci,
-      js,
-      stream,
-      cfg,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(
+  _js_UpdateConsumer(ci, js, stream, cfg, opts, errCode),
+);
 
 /// \brief Retrieves information about a consumer.
 ///
@@ -2052,13 +1857,15 @@ natsStatus js_UpdateConsumer(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<jsConsumerInfo>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_GetConsumerInfo')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<jsConsumerInfo>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_GetConsumerInfo')
 external int _js_GetConsumerInfo(
   ffi.Pointer<ffi.Pointer<jsConsumerInfo>> ci,
   ffi.Pointer<jsCtx> js,
@@ -2075,15 +1882,9 @@ natsStatus js_GetConsumerInfo(
   ffi.Pointer<ffi.Char> consumer,
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_GetConsumerInfo(
-      ci,
-      js,
-      stream,
-      consumer,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(
+  _js_GetConsumerInfo(ci, js, stream, consumer, opts, errCode),
+);
 
 /// \brief Deletes a consumer.
 ///
@@ -2096,12 +1897,14 @@ natsStatus js_GetConsumerInfo(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_DeleteConsumer')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_DeleteConsumer')
 external int _js_DeleteConsumer(
   ffi.Pointer<jsCtx> js,
   ffi.Pointer<ffi.Char> stream,
@@ -2116,14 +1919,9 @@ natsStatus js_DeleteConsumer(
   ffi.Pointer<ffi.Char> consumer,
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_DeleteConsumer(
-      js,
-      stream,
-      consumer,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(
+  _js_DeleteConsumer(js, stream, consumer, opts, errCode),
+);
 
 /// \brief Destroys the consumer information object.
 ///
@@ -2131,9 +1929,7 @@ natsStatus js_DeleteConsumer(
 ///
 /// @param ci the pointer to the #jsConsumerInfo object.
 @ffi.Native<ffi.Void Function(ffi.Pointer<jsConsumerInfo>)>()
-external void jsConsumerInfo_Destroy(
-  ffi.Pointer<jsConsumerInfo> ci,
-);
+external void jsConsumerInfo_Destroy(ffi.Pointer<jsConsumerInfo> ci);
 
 /// \brief Initializes a publish options structure.
 ///
@@ -2142,17 +1938,12 @@ external void jsConsumerInfo_Destroy(
 ///
 /// @param opts the pointer to the #jsPubOptions to initialize.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<jsPubOptions>)>(
-    symbol: 'jsPubOptions_Init')
-external int _jsPubOptions_Init(
-  ffi.Pointer<jsPubOptions> opts,
-);
+  symbol: 'jsPubOptions_Init',
+)
+external int _jsPubOptions_Init(ffi.Pointer<jsPubOptions> opts);
 
-natsStatus jsPubOptions_Init(
-  ffi.Pointer<jsPubOptions> opts,
-) =>
-    natsStatus.fromValue(_jsPubOptions_Init(
-      opts,
-    ));
+natsStatus jsPubOptions_Init(ffi.Pointer<jsPubOptions> opts) =>
+    natsStatus.fromValue(_jsPubOptions_Init(opts));
 
 /// \brief Publishes data on a subject to JetStream.
 ///
@@ -2169,14 +1960,16 @@ natsStatus jsPubOptions_Init(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<jsPubAck>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Void>,
-        ffi.Int,
-        ffi.Pointer<jsPubOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_Publish')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<jsPubAck>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Void>,
+    ffi.Int,
+    ffi.Pointer<jsPubOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_Publish')
 external int _js_Publish(
   ffi.Pointer<ffi.Pointer<jsPubAck>> pubAck,
   ffi.Pointer<jsCtx> js,
@@ -2195,16 +1988,9 @@ natsStatus js_Publish(
   int dataLen,
   ffi.Pointer<jsPubOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_Publish(
-      pubAck,
-      js,
-      subj,
-      data,
-      dataLen,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(
+  _js_Publish(pubAck, js, subj, data, dataLen, opts, errCode),
+);
 
 /// \brief Publishes a message to JetStream.
 ///
@@ -2225,12 +2011,14 @@ natsStatus js_Publish(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<jsPubAck>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<natsMsg>,
-        ffi.Pointer<jsPubOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_PublishMsg')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<jsPubAck>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<natsMsg>,
+    ffi.Pointer<jsPubOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_PublishMsg')
 external int _js_PublishMsg(
   ffi.Pointer<ffi.Pointer<jsPubAck>> pubAck,
   ffi.Pointer<jsCtx> js,
@@ -2245,14 +2033,7 @@ natsStatus js_PublishMsg(
   ffi.Pointer<natsMsg> msg,
   ffi.Pointer<jsPubOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_PublishMsg(
-      pubAck,
-      js,
-      msg,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(_js_PublishMsg(pubAck, js, msg, opts, errCode));
 
 /// \brief Destroys the publish acknowledgment object.
 ///
@@ -2260,9 +2041,7 @@ natsStatus js_PublishMsg(
 ///
 /// @param pubAck the #jsPubAck object to destroy.
 @ffi.Native<ffi.Void Function(ffi.Pointer<jsPubAck>)>()
-external void jsPubAck_Destroy(
-  ffi.Pointer<jsPubAck> pubAck,
-);
+external void jsPubAck_Destroy(ffi.Pointer<jsPubAck> pubAck);
 
 /// \brief Publishes data to JetStream but does not wait for a #jsPubAck.
 ///
@@ -2274,12 +2053,14 @@ external void jsPubAck_Destroy(
 /// @param dataLen the length of the data to be sent.
 /// @param opts the publish options, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Void>,
-        ffi.Int,
-        ffi.Pointer<jsPubOptions>)>(symbol: 'js_PublishAsync')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Void>,
+    ffi.Int,
+    ffi.Pointer<jsPubOptions>,
+  )
+>(symbol: 'js_PublishAsync')
 external int _js_PublishAsync(
   ffi.Pointer<jsCtx> js,
   ffi.Pointer<ffi.Char> subj,
@@ -2294,14 +2075,7 @@ natsStatus js_PublishAsync(
   ffi.Pointer<ffi.Void> data,
   int dataLen,
   ffi.Pointer<jsPubOptions> opts,
-) =>
-    natsStatus.fromValue(_js_PublishAsync(
-      js,
-      subj,
-      data,
-      dataLen,
-      opts,
-    ));
+) => natsStatus.fromValue(_js_PublishAsync(js, subj, data, dataLen, opts));
 
 /// \brief Wait for all outstanding messages to be acknowledged.
 ///
@@ -2314,8 +2088,8 @@ natsStatus js_PublishAsync(
 /// @param js the pointer to the #jsCtx object.
 /// @param opts the publish options, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<jsCtx>,
-        ffi.Pointer<jsPubOptions>)>(symbol: 'js_PublishAsyncComplete')
+  ffi.UnsignedInt Function(ffi.Pointer<jsCtx>, ffi.Pointer<jsPubOptions>)
+>(symbol: 'js_PublishAsyncComplete')
 external int _js_PublishAsyncComplete(
   ffi.Pointer<jsCtx> js,
   ffi.Pointer<jsPubOptions> opts,
@@ -2324,11 +2098,7 @@ external int _js_PublishAsyncComplete(
 natsStatus js_PublishAsyncComplete(
   ffi.Pointer<jsCtx> js,
   ffi.Pointer<jsPubOptions> opts,
-) =>
-    natsStatus.fromValue(_js_PublishAsyncComplete(
-      js,
-      opts,
-    ));
+) => natsStatus.fromValue(_js_PublishAsyncComplete(js, opts));
 
 /// \brief Initializes a subscribe options structure.
 ///
@@ -2337,17 +2107,12 @@ natsStatus js_PublishAsyncComplete(
 ///
 /// @param opts the pointer to the #jsSubOptions to initialize.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<jsSubOptions>)>(
-    symbol: 'jsSubOptions_Init')
-external int _jsSubOptions_Init(
-  ffi.Pointer<jsSubOptions> opts,
-);
+  symbol: 'jsSubOptions_Init',
+)
+external int _jsSubOptions_Init(ffi.Pointer<jsSubOptions> opts);
 
-natsStatus jsSubOptions_Init(
-  ffi.Pointer<jsSubOptions> opts,
-) =>
-    natsStatus.fromValue(_jsSubOptions_Init(
-      opts,
-    ));
+natsStatus jsSubOptions_Init(ffi.Pointer<jsSubOptions> opts) =>
+    natsStatus.fromValue(_jsSubOptions_Init(opts));
 
 /// \brief Create an asynchronous subscription.
 ///
@@ -2394,15 +2159,17 @@ natsStatus jsSubOptions_Init(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<natsSubscription>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        natsMsgHandler,
-        ffi.Pointer<ffi.Void>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<jsSubOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_Subscribe')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsSubscription>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    natsMsgHandler,
+    ffi.Pointer<ffi.Void>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<jsSubOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_Subscribe')
 external int _js_Subscribe(
   ffi.Pointer<ffi.Pointer<natsSubscription>> sub,
   ffi.Pointer<jsCtx> js,
@@ -2423,17 +2190,9 @@ natsStatus js_Subscribe(
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<jsSubOptions> subOpts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_Subscribe(
-      sub,
-      js,
-      subject,
-      cb,
-      cbClosure,
-      opts,
-      subOpts,
-      errCode,
-    ));
+) => natsStatus.fromValue(
+  _js_Subscribe(sub, js, subject, cb, cbClosure, opts, subOpts, errCode),
+);
 
 /// \brief Create a synchronous subscription.
 ///
@@ -2448,13 +2207,15 @@ natsStatus js_Subscribe(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<natsSubscription>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<jsSubOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_SubscribeSync')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsSubscription>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<jsSubOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_SubscribeSync')
 external int _js_SubscribeSync(
   ffi.Pointer<ffi.Pointer<natsSubscription>> sub,
   ffi.Pointer<jsCtx> js,
@@ -2471,15 +2232,9 @@ natsStatus js_SubscribeSync(
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<jsSubOptions> subOpts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_SubscribeSync(
-      sub,
-      js,
-      subject,
-      opts,
-      subOpts,
-      errCode,
-    ));
+) => natsStatus.fromValue(
+  _js_SubscribeSync(sub, js, subject, opts, subOpts, errCode),
+);
 
 /// \brief Create a pull subscriber.
 ///
@@ -2502,14 +2257,16 @@ natsStatus js_SubscribeSync(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<natsSubscription>>,
-        ffi.Pointer<jsCtx>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<jsOptions>,
-        ffi.Pointer<jsSubOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'js_PullSubscribe')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsSubscription>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<jsSubOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'js_PullSubscribe')
 external int _js_PullSubscribe(
   ffi.Pointer<ffi.Pointer<natsSubscription>> sub,
   ffi.Pointer<jsCtx> js,
@@ -2528,16 +2285,9 @@ natsStatus js_PullSubscribe(
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<jsSubOptions> subOpts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_js_PullSubscribe(
-      sub,
-      js,
-      subject,
-      durable,
-      opts,
-      subOpts,
-      errCode,
-    ));
+) => natsStatus.fromValue(
+  _js_PullSubscribe(sub, js, subject, durable, opts, subOpts, errCode),
+);
 
 /// \brief Fetches messages for a pull subscription.
 ///
@@ -2557,12 +2307,14 @@ natsStatus js_PullSubscribe(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<natsMsgList>,
-        ffi.Pointer<natsSubscription>,
-        ffi.Int,
-        ffi.Int64,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'natsSubscription_Fetch')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsMsgList>,
+    ffi.Pointer<natsSubscription>,
+    ffi.Int,
+    ffi.Int64,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'natsSubscription_Fetch')
 external int _natsSubscription_Fetch(
   ffi.Pointer<natsMsgList> list,
   ffi.Pointer<natsSubscription> sub,
@@ -2577,14 +2329,9 @@ natsStatus natsSubscription_Fetch(
   int batch,
   int timeout,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_natsSubscription_Fetch(
-      list,
-      sub,
-      batch,
-      timeout,
-      errCode,
-    ));
+) => natsStatus.fromValue(
+  _natsSubscription_Fetch(list, sub, batch, timeout, errCode),
+);
 
 /// \brief Returns metadata from this JetStream message.
 ///
@@ -2600,8 +2347,11 @@ natsStatus natsSubscription_Fetch(
 /// @param msg the pointer to the #natsMsg object, which should be a JetStream
 /// message received through a subscription callback or #natsSubscription_NextMsg.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<ffi.Pointer<jsMsgMetaData>>,
-        ffi.Pointer<natsMsg>)>(symbol: 'natsMsg_GetMetaData')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<jsMsgMetaData>>,
+    ffi.Pointer<natsMsg>,
+  )
+>(symbol: 'natsMsg_GetMetaData')
 external int _natsMsg_GetMetaData(
   ffi.Pointer<ffi.Pointer<jsMsgMetaData>> new_meta,
   ffi.Pointer<natsMsg> msg,
@@ -2610,11 +2360,7 @@ external int _natsMsg_GetMetaData(
 natsStatus natsMsg_GetMetaData(
   ffi.Pointer<ffi.Pointer<jsMsgMetaData>> new_meta,
   ffi.Pointer<natsMsg> msg,
-) =>
-    natsStatus.fromValue(_natsMsg_GetMetaData(
-      new_meta,
-      msg,
-    ));
+) => natsStatus.fromValue(_natsMsg_GetMetaData(new_meta, msg));
 
 /// \brief Destroys the message metadata object.
 ///
@@ -2622,9 +2368,7 @@ natsStatus natsMsg_GetMetaData(
 ///
 /// @param meta the pointer to the #jsMsgMetaData object.
 @ffi.Native<ffi.Void Function(ffi.Pointer<jsMsgMetaData>)>()
-external void jsMsgMetaData_Destroy(
-  ffi.Pointer<jsMsgMetaData> meta,
-);
+external void jsMsgMetaData_Destroy(ffi.Pointer<jsMsgMetaData> meta);
 
 /// \brief Acknowledges a message.
 ///
@@ -2634,21 +2378,15 @@ external void jsMsgMetaData_Destroy(
 /// @param msg the pointer to the #natsMsg object.
 /// @param opts the pointer to the #jsOptions object, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<natsMsg>, ffi.Pointer<jsOptions>)>(symbol: 'natsMsg_Ack')
+  ffi.UnsignedInt Function(ffi.Pointer<natsMsg>, ffi.Pointer<jsOptions>)
+>(symbol: 'natsMsg_Ack')
 external int _natsMsg_Ack(
   ffi.Pointer<natsMsg> msg,
   ffi.Pointer<jsOptions> opts,
 );
 
-natsStatus natsMsg_Ack(
-  ffi.Pointer<natsMsg> msg,
-  ffi.Pointer<jsOptions> opts,
-) =>
-    natsStatus.fromValue(_natsMsg_Ack(
-      msg,
-      opts,
-    ));
+natsStatus natsMsg_Ack(ffi.Pointer<natsMsg> msg, ffi.Pointer<jsOptions> opts) =>
+    natsStatus.fromValue(_natsMsg_Ack(msg, opts));
 
 /// \brief Acknowledges a message and wait for a confirmation.
 ///
@@ -2661,8 +2399,12 @@ natsStatus natsMsg_Ack(
 /// @param errCode the location where to store the JetStream specific error code, or `NULL`
 /// if not needed.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsMsg>, ffi.Pointer<jsOptions>,
-        ffi.Pointer<ffi.UnsignedInt>)>(symbol: 'natsMsg_AckSync')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsMsg>,
+    ffi.Pointer<jsOptions>,
+    ffi.Pointer<ffi.UnsignedInt>,
+  )
+>(symbol: 'natsMsg_AckSync')
 external int _natsMsg_AckSync(
   ffi.Pointer<natsMsg> msg,
   ffi.Pointer<jsOptions> opts,
@@ -2673,12 +2415,7 @@ natsStatus natsMsg_AckSync(
   ffi.Pointer<natsMsg> msg,
   ffi.Pointer<jsOptions> opts,
   ffi.Pointer<ffi.UnsignedInt> errCode,
-) =>
-    natsStatus.fromValue(_natsMsg_AckSync(
-      msg,
-      opts,
-      errCode,
-    ));
+) => natsStatus.fromValue(_natsMsg_AckSync(msg, opts, errCode));
 
 /// \brief Negatively acknowledges a message.
 ///
@@ -2690,21 +2427,15 @@ natsStatus natsMsg_AckSync(
 /// @param msg the pointer to the #natsMsg object.
 /// @param opts the pointer to the #jsOptions object, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<natsMsg>, ffi.Pointer<jsOptions>)>(symbol: 'natsMsg_Nak')
+  ffi.UnsignedInt Function(ffi.Pointer<natsMsg>, ffi.Pointer<jsOptions>)
+>(symbol: 'natsMsg_Nak')
 external int _natsMsg_Nak(
   ffi.Pointer<natsMsg> msg,
   ffi.Pointer<jsOptions> opts,
 );
 
-natsStatus natsMsg_Nak(
-  ffi.Pointer<natsMsg> msg,
-  ffi.Pointer<jsOptions> opts,
-) =>
-    natsStatus.fromValue(_natsMsg_Nak(
-      msg,
-      opts,
-    ));
+natsStatus natsMsg_Nak(ffi.Pointer<natsMsg> msg, ffi.Pointer<jsOptions> opts) =>
+    natsStatus.fromValue(_natsMsg_Nak(msg, opts));
 
 /// \brief Negatively acknowledges a message.
 ///
@@ -2718,8 +2449,12 @@ natsStatus natsMsg_Nak(
 /// @param delay the amount of time before the redelivery expressed in milliseconds.
 /// @param opts the pointer to the #jsOptions object, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<natsMsg>, ffi.Int64,
-        ffi.Pointer<jsOptions>)>(symbol: 'natsMsg_NakWithDelay')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsMsg>,
+    ffi.Int64,
+    ffi.Pointer<jsOptions>,
+  )
+>(symbol: 'natsMsg_NakWithDelay')
 external int _natsMsg_NakWithDelay(
   ffi.Pointer<natsMsg> msg,
   int delay,
@@ -2730,12 +2465,7 @@ natsStatus natsMsg_NakWithDelay(
   ffi.Pointer<natsMsg> msg,
   int delay,
   ffi.Pointer<jsOptions> opts,
-) =>
-    natsStatus.fromValue(_natsMsg_NakWithDelay(
-      msg,
-      delay,
-      opts,
-    ));
+) => natsStatus.fromValue(_natsMsg_NakWithDelay(msg, delay, opts));
 
 /// \brief Resets redelivery timer on the server.
 ///
@@ -2745,8 +2475,8 @@ natsStatus natsMsg_NakWithDelay(
 /// @param msg the pointer to the #natsMsg object.
 /// @param opts the pointer to the #jsOptions object, possibly `NULL`.
 @ffi.Native<
-        ffi.UnsignedInt Function(ffi.Pointer<natsMsg>, ffi.Pointer<jsOptions>)>(
-    symbol: 'natsMsg_InProgress')
+  ffi.UnsignedInt Function(ffi.Pointer<natsMsg>, ffi.Pointer<jsOptions>)
+>(symbol: 'natsMsg_InProgress')
 external int _natsMsg_InProgress(
   ffi.Pointer<natsMsg> msg,
   ffi.Pointer<jsOptions> opts,
@@ -2755,11 +2485,7 @@ external int _natsMsg_InProgress(
 natsStatus natsMsg_InProgress(
   ffi.Pointer<natsMsg> msg,
   ffi.Pointer<jsOptions> opts,
-) =>
-    natsStatus.fromValue(_natsMsg_InProgress(
-      msg,
-      opts,
-    ));
+) => natsStatus.fromValue(_natsMsg_InProgress(msg, opts));
 
 /// \brief Abandon this message.
 ///
@@ -2769,8 +2495,8 @@ natsStatus natsMsg_InProgress(
 /// @param msg the pointer to the #natsMsg object.
 /// @param opts the pointer to the #jsOptions object, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<natsMsg>, ffi.Pointer<jsOptions>)>(symbol: 'natsMsg_Term')
+  ffi.UnsignedInt Function(ffi.Pointer<natsMsg>, ffi.Pointer<jsOptions>)
+>(symbol: 'natsMsg_Term')
 external int _natsMsg_Term(
   ffi.Pointer<natsMsg> msg,
   ffi.Pointer<jsOptions> opts,
@@ -2779,11 +2505,7 @@ external int _natsMsg_Term(
 natsStatus natsMsg_Term(
   ffi.Pointer<natsMsg> msg,
   ffi.Pointer<jsOptions> opts,
-) =>
-    natsStatus.fromValue(_natsMsg_Term(
-      msg,
-      opts,
-    ));
+) => natsStatus.fromValue(_natsMsg_Term(msg, opts));
 
 /// \brief Returns the sequence number of this JetStream message.
 ///
@@ -2794,9 +2516,7 @@ natsStatus natsMsg_Term(
 ///
 /// @param msg the pointer to the #natsMsg object.
 @ffi.Native<ffi.Uint64 Function(ffi.Pointer<natsMsg>)>()
-external int natsMsg_GetSequence(
-  ffi.Pointer<natsMsg> msg,
-);
+external int natsMsg_GetSequence(ffi.Pointer<natsMsg> msg);
 
 /// \brief Returns the timestamp (in UTC) of this JetStream message.
 ///
@@ -2807,9 +2527,7 @@ external int natsMsg_GetSequence(
 ///
 /// @param msg the pointer to the #natsMsg object.
 @ffi.Native<ffi.Int64 Function(ffi.Pointer<natsMsg>)>()
-external int natsMsg_GetTime(
-  ffi.Pointer<natsMsg> msg,
-);
+external int natsMsg_GetTime(ffi.Pointer<natsMsg> msg);
 
 /// \brief Initializes a KeyValue configuration structure.
 ///
@@ -2819,17 +2537,12 @@ external int natsMsg_GetTime(
 ///
 /// @param cfg the pointer to the stack variable #kvConfig to initialize.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<kvConfig>)>(
-    symbol: 'kvConfig_Init')
-external int _kvConfig_Init(
-  ffi.Pointer<kvConfig> cfg,
-);
+  symbol: 'kvConfig_Init',
+)
+external int _kvConfig_Init(ffi.Pointer<kvConfig> cfg);
 
-natsStatus kvConfig_Init(
-  ffi.Pointer<kvConfig> cfg,
-) =>
-    natsStatus.fromValue(_kvConfig_Init(
-      cfg,
-    ));
+natsStatus kvConfig_Init(ffi.Pointer<kvConfig> cfg) =>
+    natsStatus.fromValue(_kvConfig_Init(cfg));
 
 /// \brief Creates a KeyValue store with a given configuration.
 ///
@@ -2845,8 +2558,12 @@ natsStatus kvConfig_Init(
 /// @param js the pointer to the #jsCtx object.
 /// @param cfg the pointer to the #kvConfig configuration information used to create the #kvStore object.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<ffi.Pointer<kvStore>>,
-        ffi.Pointer<jsCtx>, ffi.Pointer<kvConfig>)>(symbol: 'js_CreateKeyValue')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<kvStore>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<kvConfig>,
+  )
+>(symbol: 'js_CreateKeyValue')
 external int _js_CreateKeyValue(
   ffi.Pointer<ffi.Pointer<kvStore>> new_kv,
   ffi.Pointer<jsCtx> js,
@@ -2857,12 +2574,7 @@ natsStatus js_CreateKeyValue(
   ffi.Pointer<ffi.Pointer<kvStore>> new_kv,
   ffi.Pointer<jsCtx> js,
   ffi.Pointer<kvConfig> cfg,
-) =>
-    natsStatus.fromValue(_js_CreateKeyValue(
-      new_kv,
-      js,
-      cfg,
-    ));
+) => natsStatus.fromValue(_js_CreateKeyValue(new_kv, js, cfg));
 
 /// \brief Looks-up and binds to an existing KeyValue store.
 ///
@@ -2879,8 +2591,12 @@ natsStatus js_CreateKeyValue(
 /// @param js the pointer to the #jsCtx object.
 /// @param bucket the name of the bucket of the existing KeyValue store.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<ffi.Pointer<kvStore>>,
-        ffi.Pointer<jsCtx>, ffi.Pointer<ffi.Char>)>(symbol: 'js_KeyValue')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<kvStore>>,
+    ffi.Pointer<jsCtx>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'js_KeyValue')
 external int _js_KeyValue(
   ffi.Pointer<ffi.Pointer<kvStore>> new_kv,
   ffi.Pointer<jsCtx> js,
@@ -2891,12 +2607,7 @@ natsStatus js_KeyValue(
   ffi.Pointer<ffi.Pointer<kvStore>> new_kv,
   ffi.Pointer<jsCtx> js,
   ffi.Pointer<ffi.Char> bucket,
-) =>
-    natsStatus.fromValue(_js_KeyValue(
-      new_kv,
-      js,
-      bucket,
-    ));
+) => natsStatus.fromValue(_js_KeyValue(new_kv, js, bucket));
 
 /// \brief Deletes a KeyValue store.
 ///
@@ -2907,8 +2618,8 @@ natsStatus js_KeyValue(
 /// @param js the pointer to the #jsCtx object.
 /// @param bucket the name of the bucket of the existing KeyValue store.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<jsCtx>, ffi.Pointer<ffi.Char>)>(symbol: 'js_DeleteKeyValue')
+  ffi.UnsignedInt Function(ffi.Pointer<jsCtx>, ffi.Pointer<ffi.Char>)
+>(symbol: 'js_DeleteKeyValue')
 external int _js_DeleteKeyValue(
   ffi.Pointer<jsCtx> js,
   ffi.Pointer<ffi.Char> bucket,
@@ -2917,11 +2628,7 @@ external int _js_DeleteKeyValue(
 natsStatus js_DeleteKeyValue(
   ffi.Pointer<jsCtx> js,
   ffi.Pointer<ffi.Char> bucket,
-) =>
-    natsStatus.fromValue(_js_DeleteKeyValue(
-      js,
-      bucket,
-    ));
+) => natsStatus.fromValue(_js_DeleteKeyValue(js, bucket));
 
 /// \brief Destroys a KeyValue store object.
 ///
@@ -2930,9 +2637,7 @@ natsStatus js_DeleteKeyValue(
 ///
 /// @param kv the pointer to the #kvStore object.
 @ffi.Native<ffi.Void Function(ffi.Pointer<kvStore>)>()
-external void kvStore_Destroy(
-  ffi.Pointer<kvStore> kv,
-);
+external void kvStore_Destroy(ffi.Pointer<kvStore> kv);
 
 /// \brief Returns the name of the bucket the data was loaded from.
 ///
@@ -2940,9 +2645,7 @@ external void kvStore_Destroy(
 ///
 /// @param e the pointer to the #kvEntry object.
 @ffi.Native<ffi.Pointer<ffi.Char> Function(ffi.Pointer<kvEntry>)>()
-external ffi.Pointer<ffi.Char> kvEntry_Bucket(
-  ffi.Pointer<kvEntry> e,
-);
+external ffi.Pointer<ffi.Char> kvEntry_Bucket(ffi.Pointer<kvEntry> e);
 
 /// \brief Returns the name of the key that was retrieved.
 ///
@@ -2950,9 +2653,7 @@ external ffi.Pointer<ffi.Char> kvEntry_Bucket(
 ///
 /// @param e the pointer to the #kvEntry object.
 @ffi.Native<ffi.Pointer<ffi.Char> Function(ffi.Pointer<kvEntry>)>()
-external ffi.Pointer<ffi.Char> kvEntry_Key(
-  ffi.Pointer<kvEntry> e,
-);
+external ffi.Pointer<ffi.Char> kvEntry_Key(ffi.Pointer<kvEntry> e);
 
 /// \brief Returns the value for this key.
 ///
@@ -2960,9 +2661,7 @@ external ffi.Pointer<ffi.Char> kvEntry_Key(
 ///
 /// @param e the pointer to the #kvEntry object.
 @ffi.Native<ffi.Pointer<ffi.Void> Function(ffi.Pointer<kvEntry>)>()
-external ffi.Pointer<ffi.Void> kvEntry_Value(
-  ffi.Pointer<kvEntry> e,
-);
+external ffi.Pointer<ffi.Void> kvEntry_Value(ffi.Pointer<kvEntry> e);
 
 /// \brief Returns the value length for this key.
 ///
@@ -2970,9 +2669,7 @@ external ffi.Pointer<ffi.Void> kvEntry_Value(
 ///
 /// @param e the pointer to the #kvEntry object.
 @ffi.Native<ffi.Int Function(ffi.Pointer<kvEntry>)>()
-external int kvEntry_ValueLen(
-  ffi.Pointer<kvEntry> e,
-);
+external int kvEntry_ValueLen(ffi.Pointer<kvEntry> e);
 
 /// \brief Returns the value, as a string, for this key.
 ///
@@ -2981,9 +2678,7 @@ external int kvEntry_ValueLen(
 ///
 /// @param e the pointer to the #kvEntry object.
 @ffi.Native<ffi.Pointer<ffi.Char> Function(ffi.Pointer<kvEntry>)>()
-external ffi.Pointer<ffi.Char> kvEntry_ValueString(
-  ffi.Pointer<kvEntry> e,
-);
+external ffi.Pointer<ffi.Char> kvEntry_ValueString(ffi.Pointer<kvEntry> e);
 
 /// \brief Returns the unique sequence for this value.
 ///
@@ -2991,9 +2686,7 @@ external ffi.Pointer<ffi.Char> kvEntry_ValueString(
 ///
 /// @param e the pointer to the #kvEntry object.
 @ffi.Native<ffi.Uint64 Function(ffi.Pointer<kvEntry>)>()
-external int kvEntry_Revision(
-  ffi.Pointer<kvEntry> e,
-);
+external int kvEntry_Revision(ffi.Pointer<kvEntry> e);
 
 /// \brief Returns the time (in UTC) the data was put in the bucket.
 ///
@@ -3001,9 +2694,7 @@ external int kvEntry_Revision(
 ///
 /// @param e the pointer to the #kvEntry object.
 @ffi.Native<ffi.Int64 Function(ffi.Pointer<kvEntry>)>()
-external int kvEntry_Created(
-  ffi.Pointer<kvEntry> e,
-);
+external int kvEntry_Created(ffi.Pointer<kvEntry> e);
 
 /// \brief Returns the distance from the latest value.
 ///
@@ -3014,9 +2705,7 @@ external int kvEntry_Created(
 ///
 /// @param e the pointer to the #kvEntry object.
 @ffi.Native<ffi.Uint64 Function(ffi.Pointer<kvEntry>)>()
-external int kvEntry_Delta(
-  ffi.Pointer<kvEntry> e,
-);
+external int kvEntry_Delta(ffi.Pointer<kvEntry> e);
 
 /// \brief Returns the type of operation of this value.
 ///
@@ -3026,17 +2715,12 @@ external int kvEntry_Delta(
 ///
 /// @param e the pointer to the #kvEntry object.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<kvEntry>)>(
-    symbol: 'kvEntry_Operation')
-external int _kvEntry_Operation(
-  ffi.Pointer<kvEntry> e,
-);
+  symbol: 'kvEntry_Operation',
+)
+external int _kvEntry_Operation(ffi.Pointer<kvEntry> e);
 
-kvOperation kvEntry_Operation(
-  ffi.Pointer<kvEntry> e,
-) =>
-    kvOperation.fromValue(_kvEntry_Operation(
-      e,
-    ));
+kvOperation kvEntry_Operation(ffi.Pointer<kvEntry> e) =>
+    kvOperation.fromValue(_kvEntry_Operation(e));
 
 /// \brief Destroys the KeyValue entry object.
 ///
@@ -3044,9 +2728,7 @@ kvOperation kvEntry_Operation(
 ///
 /// @param e the pointer to the #kvEntry object.
 @ffi.Native<ffi.Void Function(ffi.Pointer<kvEntry>)>()
-external void kvEntry_Destroy(
-  ffi.Pointer<kvEntry> e,
-);
+external void kvEntry_Destroy(ffi.Pointer<kvEntry> e);
 
 /// \brief Returns the latest entry for the key.
 ///
@@ -3058,8 +2740,12 @@ external void kvEntry_Destroy(
 /// @param kv the pointer to the #kvStore object.
 /// @param key the name of the key.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<ffi.Pointer<kvEntry>>,
-        ffi.Pointer<kvStore>, ffi.Pointer<ffi.Char>)>(symbol: 'kvStore_Get')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<kvEntry>>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'kvStore_Get')
 external int _kvStore_Get(
   ffi.Pointer<ffi.Pointer<kvEntry>> new_entry,
   ffi.Pointer<kvStore> kv,
@@ -3070,12 +2756,7 @@ natsStatus kvStore_Get(
   ffi.Pointer<ffi.Pointer<kvEntry>> new_entry,
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<ffi.Char> key,
-) =>
-    natsStatus.fromValue(_kvStore_Get(
-      new_entry,
-      kv,
-      key,
-    ));
+) => natsStatus.fromValue(_kvStore_Get(new_entry, kv, key));
 
 /// \brief Returns the entry at the specific revision for the key.
 ///
@@ -3089,11 +2770,13 @@ natsStatus kvStore_Get(
 /// @param key the name of the key.
 /// @param revision the revision of the entry (must be > 0).
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<kvEntry>>,
-        ffi.Pointer<kvStore>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Uint64)>(symbol: 'kvStore_GetRevision')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<kvEntry>>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Uint64,
+  )
+>(symbol: 'kvStore_GetRevision')
 external int _kvStore_GetRevision(
   ffi.Pointer<ffi.Pointer<kvEntry>> new_entry,
   ffi.Pointer<kvStore> kv,
@@ -3106,13 +2789,7 @@ natsStatus kvStore_GetRevision(
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<ffi.Char> key,
   int revision,
-) =>
-    natsStatus.fromValue(_kvStore_GetRevision(
-      new_entry,
-      kv,
-      key,
-      revision,
-    ));
+) => natsStatus.fromValue(_kvStore_GetRevision(new_entry, kv, key, revision));
 
 /// \brief Places the new value for the key into the store.
 ///
@@ -3124,12 +2801,14 @@ natsStatus kvStore_GetRevision(
 /// @param data the pointer to the data in memory.
 /// @param len the number of bytes to copy from the data's memory location.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Uint64>,
-        ffi.Pointer<kvStore>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Void>,
-        ffi.Int)>(symbol: 'kvStore_Put')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Void>,
+    ffi.Int,
+  )
+>(symbol: 'kvStore_Put')
 external int _kvStore_Put(
   ffi.Pointer<ffi.Uint64> rev,
   ffi.Pointer<kvStore> kv,
@@ -3144,14 +2823,7 @@ natsStatus kvStore_Put(
   ffi.Pointer<ffi.Char> key,
   ffi.Pointer<ffi.Void> data,
   int len,
-) =>
-    natsStatus.fromValue(_kvStore_Put(
-      rev,
-      kv,
-      key,
-      data,
-      len,
-    ));
+) => natsStatus.fromValue(_kvStore_Put(rev, kv, key, data, len));
 
 /// \brief Places the new value (as a string) for the key into the store.
 ///
@@ -3166,11 +2838,13 @@ natsStatus kvStore_Put(
 /// @param key the name of the key.
 /// @param data the pointer to the string to store.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Uint64>,
-        ffi.Pointer<kvStore>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>)>(symbol: 'kvStore_PutString')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'kvStore_PutString')
 external int _kvStore_PutString(
   ffi.Pointer<ffi.Uint64> rev,
   ffi.Pointer<kvStore> kv,
@@ -3183,13 +2857,7 @@ natsStatus kvStore_PutString(
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<ffi.Char> key,
   ffi.Pointer<ffi.Char> data,
-) =>
-    natsStatus.fromValue(_kvStore_PutString(
-      rev,
-      kv,
-      key,
-      data,
-    ));
+) => natsStatus.fromValue(_kvStore_PutString(rev, kv, key, data));
 
 /// \brief Places the value for the key into the store if and only if the key does not exist.
 ///
@@ -3201,12 +2869,14 @@ natsStatus kvStore_PutString(
 /// @param data the pointer to the data in memory.
 /// @param len the number of bytes to copy from the data's memory location.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Uint64>,
-        ffi.Pointer<kvStore>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Void>,
-        ffi.Int)>(symbol: 'kvStore_Create')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Void>,
+    ffi.Int,
+  )
+>(symbol: 'kvStore_Create')
 external int _kvStore_Create(
   ffi.Pointer<ffi.Uint64> rev,
   ffi.Pointer<kvStore> kv,
@@ -3221,14 +2891,7 @@ natsStatus kvStore_Create(
   ffi.Pointer<ffi.Char> key,
   ffi.Pointer<ffi.Void> data,
   int len,
-) =>
-    natsStatus.fromValue(_kvStore_Create(
-      rev,
-      kv,
-      key,
-      data,
-      len,
-    ));
+) => natsStatus.fromValue(_kvStore_Create(rev, kv, key, data, len));
 
 /// \brief Places the value (as a string) for the key into the store if and only if the key does not exist.
 ///
@@ -3243,11 +2906,13 @@ natsStatus kvStore_Create(
 /// @param key the name of the key.
 /// @param data the pointer to the string.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Uint64>,
-        ffi.Pointer<kvStore>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>)>(symbol: 'kvStore_CreateString')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'kvStore_CreateString')
 external int _kvStore_CreateString(
   ffi.Pointer<ffi.Uint64> rev,
   ffi.Pointer<kvStore> kv,
@@ -3260,13 +2925,7 @@ natsStatus kvStore_CreateString(
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<ffi.Char> key,
   ffi.Pointer<ffi.Char> data,
-) =>
-    natsStatus.fromValue(_kvStore_CreateString(
-      rev,
-      kv,
-      key,
-      data,
-    ));
+) => natsStatus.fromValue(_kvStore_CreateString(rev, kv, key, data));
 
 /// \brief Updates the value for the key into the store if and only if the latest revision matches.
 ///
@@ -3279,13 +2938,15 @@ natsStatus kvStore_CreateString(
 /// @param len the number of bytes to copy from the data's memory location.
 /// @param last the expected latest revision prior to the update.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Uint64>,
-        ffi.Pointer<kvStore>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Void>,
-        ffi.Int,
-        ffi.Uint64)>(symbol: 'kvStore_Update')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Void>,
+    ffi.Int,
+    ffi.Uint64,
+  )
+>(symbol: 'kvStore_Update')
 external int _kvStore_Update(
   ffi.Pointer<ffi.Uint64> rev,
   ffi.Pointer<kvStore> kv,
@@ -3302,15 +2963,7 @@ natsStatus kvStore_Update(
   ffi.Pointer<ffi.Void> data,
   int len,
   int last,
-) =>
-    natsStatus.fromValue(_kvStore_Update(
-      rev,
-      kv,
-      key,
-      data,
-      len,
-      last,
-    ));
+) => natsStatus.fromValue(_kvStore_Update(rev, kv, key, data, len, last));
 
 /// \brief Updates the value (as a string) for the key into the store if and only if the latest revision matches.
 ///
@@ -3326,12 +2979,14 @@ natsStatus kvStore_Update(
 /// @param data the pointer to the string.
 /// @param last the expected latest revision prior to the update.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Uint64>,
-        ffi.Pointer<kvStore>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Uint64)>(symbol: 'kvStore_UpdateString')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Uint64,
+  )
+>(symbol: 'kvStore_UpdateString')
 external int _kvStore_UpdateString(
   ffi.Pointer<ffi.Uint64> rev,
   ffi.Pointer<kvStore> kv,
@@ -3346,14 +3001,7 @@ natsStatus kvStore_UpdateString(
   ffi.Pointer<ffi.Char> key,
   ffi.Pointer<ffi.Char> data,
   int last,
-) =>
-    natsStatus.fromValue(_kvStore_UpdateString(
-      rev,
-      kv,
-      key,
-      data,
-      last,
-    ));
+) => natsStatus.fromValue(_kvStore_UpdateString(rev, kv, key, data, last));
 
 /// \brief Deletes a key by placing a delete marker and leaving all revisions.
 ///
@@ -3362,21 +3010,15 @@ natsStatus kvStore_UpdateString(
 /// @param kv the pointer to the #kvStore object.
 /// @param key the name of the key.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<kvStore>, ffi.Pointer<ffi.Char>)>(symbol: 'kvStore_Delete')
+  ffi.UnsignedInt Function(ffi.Pointer<kvStore>, ffi.Pointer<ffi.Char>)
+>(symbol: 'kvStore_Delete')
 external int _kvStore_Delete(
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<ffi.Char> key,
 );
 
-natsStatus kvStore_Delete(
-  ffi.Pointer<kvStore> kv,
-  ffi.Pointer<ffi.Char> key,
-) =>
-    natsStatus.fromValue(_kvStore_Delete(
-      kv,
-      key,
-    ));
+natsStatus kvStore_Delete(ffi.Pointer<kvStore> kv, ffi.Pointer<ffi.Char> key) =>
+    natsStatus.fromValue(_kvStore_Delete(kv, key));
 
 /// \brief Deletes a key by placing a purge marker and removing all revisions.
 ///
@@ -3386,8 +3028,12 @@ natsStatus kvStore_Delete(
 /// @param key the name of the key.
 /// @param opts the pointer to the #kvPurgeOptions, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<kvStore>, ffi.Pointer<ffi.Char>,
-        ffi.Pointer<kvPurgeOptions>)>(symbol: 'kvStore_Purge')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<kvPurgeOptions>,
+  )
+>(symbol: 'kvStore_Purge')
 external int _kvStore_Purge(
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<ffi.Char> key,
@@ -3398,12 +3044,7 @@ natsStatus kvStore_Purge(
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<ffi.Char> key,
   ffi.Pointer<kvPurgeOptions> opts,
-) =>
-    natsStatus.fromValue(_kvStore_Purge(
-      kv,
-      key,
-      opts,
-    ));
+) => natsStatus.fromValue(_kvStore_Purge(kv, key, opts));
 
 /// \brief Initializes a KeyValue watcher options structure.
 ///
@@ -3412,17 +3053,12 @@ natsStatus kvStore_Purge(
 ///
 /// @param opts the pointer to the #kvWatchOptions to initialize.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<kvWatchOptions>)>(
-    symbol: 'kvWatchOptions_Init')
-external int _kvWatchOptions_Init(
-  ffi.Pointer<kvWatchOptions> opts,
-);
+  symbol: 'kvWatchOptions_Init',
+)
+external int _kvWatchOptions_Init(ffi.Pointer<kvWatchOptions> opts);
 
-natsStatus kvWatchOptions_Init(
-  ffi.Pointer<kvWatchOptions> opts,
-) =>
-    natsStatus.fromValue(_kvWatchOptions_Init(
-      opts,
-    ));
+natsStatus kvWatchOptions_Init(ffi.Pointer<kvWatchOptions> opts) =>
+    natsStatus.fromValue(_kvWatchOptions_Init(opts));
 
 /// \brief Initializes a KeyValue purge options structure.
 ///
@@ -3431,17 +3067,12 @@ natsStatus kvWatchOptions_Init(
 ///
 /// @param opts the pointer to the #kvPurgeOptions to initialize.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<kvPurgeOptions>)>(
-    symbol: 'kvPurgeOptions_Init')
-external int _kvPurgeOptions_Init(
-  ffi.Pointer<kvPurgeOptions> opts,
-);
+  symbol: 'kvPurgeOptions_Init',
+)
+external int _kvPurgeOptions_Init(ffi.Pointer<kvPurgeOptions> opts);
 
-natsStatus kvPurgeOptions_Init(
-  ffi.Pointer<kvPurgeOptions> opts,
-) =>
-    natsStatus.fromValue(_kvPurgeOptions_Init(
-      opts,
-    ));
+natsStatus kvPurgeOptions_Init(ffi.Pointer<kvPurgeOptions> opts) =>
+    natsStatus.fromValue(_kvPurgeOptions_Init(opts));
 
 /// \brief Returns a watcher for any updates to keys that match the `keys` argument.
 ///
@@ -3459,11 +3090,13 @@ natsStatus kvPurgeOptions_Init(
 /// @param keys the keys (wildcard possible) to create the watcher for.
 /// @param opts the watcher options, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<kvWatcher>>,
-        ffi.Pointer<kvStore>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<kvWatchOptions>)>(symbol: 'kvStore_Watch')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<kvWatcher>>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<kvWatchOptions>,
+  )
+>(symbol: 'kvStore_Watch')
 external int _kvStore_Watch(
   ffi.Pointer<ffi.Pointer<kvWatcher>> new_watcher,
   ffi.Pointer<kvStore> kv,
@@ -3476,13 +3109,7 @@ natsStatus kvStore_Watch(
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<ffi.Char> keys,
   ffi.Pointer<kvWatchOptions> opts,
-) =>
-    natsStatus.fromValue(_kvStore_Watch(
-      new_watcher,
-      kv,
-      keys,
-      opts,
-    ));
+) => natsStatus.fromValue(_kvStore_Watch(new_watcher, kv, keys, opts));
 
 /// \brief Returns a watcher for any updates to any keys of the KeyValue store bucket.
 ///
@@ -3498,10 +3125,12 @@ natsStatus kvStore_Watch(
 /// @param kv the pointer to the #kvStore object.
 /// @param opts the watcher options, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<ffi.Pointer<kvWatcher>>,
-        ffi.Pointer<kvStore>,
-        ffi.Pointer<kvWatchOptions>)>(symbol: 'kvStore_WatchAll')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<kvWatcher>>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<kvWatchOptions>,
+  )
+>(symbol: 'kvStore_WatchAll')
 external int _kvStore_WatchAll(
   ffi.Pointer<ffi.Pointer<kvWatcher>> new_watcher,
   ffi.Pointer<kvStore> kv,
@@ -3512,12 +3141,7 @@ natsStatus kvStore_WatchAll(
   ffi.Pointer<ffi.Pointer<kvWatcher>> new_watcher,
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<kvWatchOptions> opts,
-) =>
-    natsStatus.fromValue(_kvStore_WatchAll(
-      new_watcher,
-      kv,
-      opts,
-    ));
+) => natsStatus.fromValue(_kvStore_WatchAll(new_watcher, kv, opts));
 
 /// \brief Returns all keys in the bucket.
 ///
@@ -3537,8 +3161,12 @@ natsStatus kvStore_WatchAll(
 /// @param kv the pointer to the #kvStore object.
 /// @param opts the history options, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<kvKeysList>, ffi.Pointer<kvStore>,
-        ffi.Pointer<kvWatchOptions>)>(symbol: 'kvStore_Keys')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<kvKeysList>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<kvWatchOptions>,
+  )
+>(symbol: 'kvStore_Keys')
 external int _kvStore_Keys(
   ffi.Pointer<kvKeysList> list,
   ffi.Pointer<kvStore> kv,
@@ -3549,12 +3177,7 @@ natsStatus kvStore_Keys(
   ffi.Pointer<kvKeysList> list,
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<kvWatchOptions> opts,
-) =>
-    natsStatus.fromValue(_kvStore_Keys(
-      list,
-      kv,
-      opts,
-    ));
+) => natsStatus.fromValue(_kvStore_Keys(list, kv, opts));
 
 /// \brief Destroys this list of KeyValue store key strings.
 ///
@@ -3567,9 +3190,7 @@ natsStatus kvStore_Keys(
 ///
 /// @param list the #kvKeysList list of key strings to destroy.
 @ffi.Native<ffi.Void Function(ffi.Pointer<kvKeysList>)>()
-external void kvKeysList_Destroy(
-  ffi.Pointer<kvKeysList> list,
-);
+external void kvKeysList_Destroy(ffi.Pointer<kvKeysList> list);
 
 /// \brief Returns all historical entries for the key.
 ///
@@ -3593,11 +3214,13 @@ external void kvKeysList_Destroy(
 /// @param key the key for which the history is requested.
 /// @param opts the history options, possibly `NULL`.
 @ffi.Native<
-    ffi.UnsignedInt Function(
-        ffi.Pointer<kvEntryList>,
-        ffi.Pointer<kvStore>,
-        ffi.Pointer<ffi.Char>,
-        ffi.Pointer<kvWatchOptions>)>(symbol: 'kvStore_History')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<kvEntryList>,
+    ffi.Pointer<kvStore>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<kvWatchOptions>,
+  )
+>(symbol: 'kvStore_History')
 external int _kvStore_History(
   ffi.Pointer<kvEntryList> list,
   ffi.Pointer<kvStore> kv,
@@ -3610,13 +3233,7 @@ natsStatus kvStore_History(
   ffi.Pointer<kvStore> kv,
   ffi.Pointer<ffi.Char> key,
   ffi.Pointer<kvWatchOptions> opts,
-) =>
-    natsStatus.fromValue(_kvStore_History(
-      list,
-      kv,
-      key,
-      opts,
-    ));
+) => natsStatus.fromValue(_kvStore_History(list, kv, key, opts));
 
 /// \brief Destroys this list of KeyValue store entries.
 ///
@@ -3629,9 +3246,7 @@ natsStatus kvStore_History(
 ///
 /// @param list the #kvEntryList list of #kvEntry objects to destroy.
 @ffi.Native<ffi.Void Function(ffi.Pointer<kvEntryList>)>()
-external void kvEntryList_Destroy(
-  ffi.Pointer<kvEntryList> list,
-);
+external void kvEntryList_Destroy(ffi.Pointer<kvEntryList> list);
 
 /// \brief Returns the bucket name of this KeyValue store object.
 ///
@@ -3642,9 +3257,7 @@ external void kvEntryList_Destroy(
 ///
 /// @param kv the pointer to the #kvStore object.
 @ffi.Native<ffi.Pointer<ffi.Char> Function(ffi.Pointer<kvStore>)>()
-external ffi.Pointer<ffi.Char> kvStore_Bucket(
-  ffi.Pointer<kvStore> kv,
-);
+external ffi.Pointer<ffi.Char> kvStore_Bucket(ffi.Pointer<kvStore> kv);
 
 /// \brief Returns the next entry for this watcher.
 ///
@@ -3661,8 +3274,12 @@ external ffi.Pointer<ffi.Char> kvStore_Bucket(
 /// @param w the pointer to the #kvWatcher object.
 /// @param timeout how long to wait (in milliseconds) for the next entry.
 @ffi.Native<
-    ffi.UnsignedInt Function(ffi.Pointer<ffi.Pointer<kvEntry>>,
-        ffi.Pointer<kvWatcher>, ffi.Int64)>(symbol: 'kvWatcher_Next')
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<kvEntry>>,
+    ffi.Pointer<kvWatcher>,
+    ffi.Int64,
+  )
+>(symbol: 'kvWatcher_Next')
 external int _kvWatcher_Next(
   ffi.Pointer<ffi.Pointer<kvEntry>> new_entry,
   ffi.Pointer<kvWatcher> w,
@@ -3673,12 +3290,7 @@ natsStatus kvWatcher_Next(
   ffi.Pointer<ffi.Pointer<kvEntry>> new_entry,
   ffi.Pointer<kvWatcher> w,
   int timeout,
-) =>
-    natsStatus.fromValue(_kvWatcher_Next(
-      new_entry,
-      w,
-      timeout,
-    ));
+) => natsStatus.fromValue(_kvWatcher_Next(new_entry, w, timeout));
 
 /// \brief Stops the watcher.
 ///
@@ -3689,17 +3301,12 @@ natsStatus kvWatcher_Next(
 ///
 /// @param w the pointer to the #kvWatcher object.
 @ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<kvWatcher>)>(
-    symbol: 'kvWatcher_Stop')
-external int _kvWatcher_Stop(
-  ffi.Pointer<kvWatcher> w,
-);
+  symbol: 'kvWatcher_Stop',
+)
+external int _kvWatcher_Stop(ffi.Pointer<kvWatcher> w);
 
-natsStatus kvWatcher_Stop(
-  ffi.Pointer<kvWatcher> w,
-) =>
-    natsStatus.fromValue(_kvWatcher_Stop(
-      w,
-    ));
+natsStatus kvWatcher_Stop(ffi.Pointer<kvWatcher> w) =>
+    natsStatus.fromValue(_kvWatcher_Stop(w));
 
 /// \brief Destroys the KeyValue watcher object.
 ///
@@ -3707,9 +3314,7 @@ natsStatus kvWatcher_Stop(
 ///
 /// @param w the pointer to the #kvWatcher object.
 @ffi.Native<ffi.Void Function(ffi.Pointer<kvWatcher>)>()
-external void kvWatcher_Destroy(
-  ffi.Pointer<kvWatcher> w,
-);
+external void kvWatcher_Destroy(ffi.Pointer<kvWatcher> w);
 
 /// The connection state
 enum natsConnStatus {
@@ -3738,15 +3343,15 @@ enum natsConnStatus {
   const natsConnStatus(this.value);
 
   static natsConnStatus fromValue(int value) => switch (value) {
-        0 => NATS_CONN_STATUS_DISCONNECTED,
-        1 => NATS_CONN_STATUS_CONNECTING,
-        2 => NATS_CONN_STATUS_CONNECTED,
-        3 => NATS_CONN_STATUS_CLOSED,
-        4 => NATS_CONN_STATUS_RECONNECTING,
-        5 => NATS_CONN_STATUS_DRAINING_SUBS,
-        6 => NATS_CONN_STATUS_DRAINING_PUBS,
-        _ => throw ArgumentError('Unknown value for natsConnStatus: $value'),
-      };
+    0 => NATS_CONN_STATUS_DISCONNECTED,
+    1 => NATS_CONN_STATUS_CONNECTING,
+    2 => NATS_CONN_STATUS_CONNECTED,
+    3 => NATS_CONN_STATUS_CLOSED,
+    4 => NATS_CONN_STATUS_RECONNECTING,
+    5 => NATS_CONN_STATUS_DRAINING_SUBS,
+    6 => NATS_CONN_STATUS_DRAINING_PUBS,
+    _ => throw ArgumentError('Unknown value for natsConnStatus: $value'),
+  };
 }
 
 /// Status returned by most of the APIs
@@ -3875,48 +3480,48 @@ enum natsStatus {
   const natsStatus(this.value);
 
   static natsStatus fromValue(int value) => switch (value) {
-        0 => NATS_OK,
-        1 => NATS_ERR,
-        2 => NATS_PROTOCOL_ERROR,
-        3 => NATS_IO_ERROR,
-        4 => NATS_LINE_TOO_LONG,
-        5 => NATS_CONNECTION_CLOSED,
-        6 => NATS_NO_SERVER,
-        7 => NATS_STALE_CONNECTION,
-        8 => NATS_SECURE_CONNECTION_WANTED,
-        9 => NATS_SECURE_CONNECTION_REQUIRED,
-        10 => NATS_CONNECTION_DISCONNECTED,
-        11 => NATS_CONNECTION_AUTH_FAILED,
-        12 => NATS_NOT_PERMITTED,
-        13 => NATS_NOT_FOUND,
-        14 => NATS_ADDRESS_MISSING,
-        15 => NATS_INVALID_SUBJECT,
-        16 => NATS_INVALID_ARG,
-        17 => NATS_INVALID_SUBSCRIPTION,
-        18 => NATS_INVALID_TIMEOUT,
-        19 => NATS_ILLEGAL_STATE,
-        20 => NATS_SLOW_CONSUMER,
-        21 => NATS_MAX_PAYLOAD,
-        22 => NATS_MAX_DELIVERED_MSGS,
-        23 => NATS_INSUFFICIENT_BUFFER,
-        24 => NATS_NO_MEMORY,
-        25 => NATS_SYS_ERROR,
-        26 => NATS_TIMEOUT,
-        27 => NATS_FAILED_TO_INITIALIZE,
-        28 => NATS_NOT_INITIALIZED,
-        29 => NATS_SSL_ERROR,
-        30 => NATS_NO_SERVER_SUPPORT,
-        31 => NATS_NOT_YET_CONNECTED,
-        32 => NATS_DRAINING,
-        33 => NATS_INVALID_QUEUE_NAME,
-        34 => NATS_NO_RESPONDERS,
-        35 => NATS_MISMATCH,
-        36 => NATS_MISSED_HEARTBEAT,
-        37 => NATS_LIMIT_REACHED,
-        38 => NATS_PIN_ID_MISMATCH,
-        39 => NATS_MAX_STATUS_VALUE,
-        _ => throw ArgumentError('Unknown value for natsStatus: $value'),
-      };
+    0 => NATS_OK,
+    1 => NATS_ERR,
+    2 => NATS_PROTOCOL_ERROR,
+    3 => NATS_IO_ERROR,
+    4 => NATS_LINE_TOO_LONG,
+    5 => NATS_CONNECTION_CLOSED,
+    6 => NATS_NO_SERVER,
+    7 => NATS_STALE_CONNECTION,
+    8 => NATS_SECURE_CONNECTION_WANTED,
+    9 => NATS_SECURE_CONNECTION_REQUIRED,
+    10 => NATS_CONNECTION_DISCONNECTED,
+    11 => NATS_CONNECTION_AUTH_FAILED,
+    12 => NATS_NOT_PERMITTED,
+    13 => NATS_NOT_FOUND,
+    14 => NATS_ADDRESS_MISSING,
+    15 => NATS_INVALID_SUBJECT,
+    16 => NATS_INVALID_ARG,
+    17 => NATS_INVALID_SUBSCRIPTION,
+    18 => NATS_INVALID_TIMEOUT,
+    19 => NATS_ILLEGAL_STATE,
+    20 => NATS_SLOW_CONSUMER,
+    21 => NATS_MAX_PAYLOAD,
+    22 => NATS_MAX_DELIVERED_MSGS,
+    23 => NATS_INSUFFICIENT_BUFFER,
+    24 => NATS_NO_MEMORY,
+    25 => NATS_SYS_ERROR,
+    26 => NATS_TIMEOUT,
+    27 => NATS_FAILED_TO_INITIALIZE,
+    28 => NATS_NOT_INITIALIZED,
+    29 => NATS_SSL_ERROR,
+    30 => NATS_NO_SERVER_SUPPORT,
+    31 => NATS_NOT_YET_CONNECTED,
+    32 => NATS_DRAINING,
+    33 => NATS_INVALID_QUEUE_NAME,
+    34 => NATS_NO_RESPONDERS,
+    35 => NATS_MISMATCH,
+    36 => NATS_MISSED_HEARTBEAT,
+    37 => NATS_LIMIT_REACHED,
+    38 => NATS_PIN_ID_MISMATCH,
+    39 => NATS_MAX_STATUS_VALUE,
+    _ => throw ArgumentError('Unknown value for natsStatus: $value'),
+  };
 }
 
 enum jsErrCode {
@@ -4416,172 +4021,172 @@ enum jsErrCode {
   const jsErrCode(this.value);
 
   static jsErrCode fromValue(int value) => switch (value) {
-        10002 => JSAccountResourcesExceededErr,
-        10003 => JSBadRequestErr,
-        10004 => JSClusterIncompleteErr,
-        10005 => JSClusterNoPeersErr,
-        10006 => JSClusterNotActiveErr,
-        10007 => JSClusterNotAssignedErr,
-        10008 => JSClusterNotAvailErr,
-        10009 => JSClusterNotLeaderErr,
-        10010 => JSClusterRequiredErr,
-        10011 => JSClusterTagsErr,
-        10012 => JSConsumerCreateErr,
-        10013 => JSConsumerNameExistErr,
-        10014 => JSConsumerNotFoundErr,
-        10015 => JSSnapshotDeliverSubjectInvalidErr,
-        10016 => JSConsumerDurableNameNotInSubjectErr,
-        10017 => JSConsumerDurableNameNotMatchSubjectErr,
-        10018 => JSConsumerDurableNameNotSetErr,
-        10019 => JSConsumerEphemeralWithDurableInSubjectErr,
-        10020 => JSConsumerEphemeralWithDurableNameErr,
-        10021 => JSStreamExternalApiOverlapErr,
-        10022 => JSStreamExternalDelPrefixOverlapsErr,
-        10023 => JSInsufficientResourcesErr,
-        10024 => JSStreamInvalidExternalDeliverySubjErr,
-        10025 => JSInvalidJSONErr,
-        10026 => JSMaximumConsumersLimitErr,
-        10027 => JSMaximumStreamsLimitErr,
-        10028 => JSMemoryResourcesExceededErr,
-        10029 => JSMirrorConsumerSetupFailedErr,
-        10030 => JSMirrorMaxMessageSizeTooBigErr,
-        10031 => JSMirrorWithSourcesErr,
-        10032 => JSMirrorWithStartSeqAndTimeErr,
-        10033 => JSMirrorWithSubjectFiltersErr,
-        10034 => JSMirrorWithSubjectsErr,
-        10035 => JSNoAccountErr,
-        10036 => JSClusterUnSupportFeatureErr,
-        10037 => JSNoMessageFoundErr,
-        10038 => JSNotEmptyRequestErr,
-        10039 => JSNotEnabledForAccountErr,
-        10040 => JSClusterPeerNotMemberErr,
-        10041 => JSRaftGeneralErr,
-        10042 => JSRestoreSubscribeFailedErr,
-        10043 => JSSequenceNotFoundErr,
-        10044 => JSClusterServerNotMemberErr,
-        10045 => JSSourceConsumerSetupFailedErr,
-        10046 => JSSourceMaxMessageSizeTooBigErr,
-        10047 => JSStorageResourcesExceededErr,
-        10048 => JSStreamAssignmentErr,
-        10049 => JSStreamCreateErr,
-        10050 => JSStreamDeleteErr,
-        10051 => JSStreamGeneralError,
-        10052 => JSStreamInvalidConfig,
-        10053 => JSStreamLimitsErr,
-        10054 => JSStreamMessageExceedsMaximumErr,
-        10055 => JSStreamMirrorNotUpdatableErr,
-        10056 => JSStreamMismatchErr,
-        10057 => JSStreamMsgDeleteFailed,
-        10058 => JSStreamNameExistErr,
-        10059 => JSStreamNotFoundErr,
-        10060 => JSStreamNotMatchErr,
-        10061 => JSStreamReplicasNotUpdatableErr,
-        10062 => JSStreamRestoreErr,
-        10063 => JSStreamSequenceNotMatchErr,
-        10064 => JSStreamSnapshotErr,
-        10065 => JSStreamSubjectOverlapErr,
-        10066 => JSStreamTemplateCreateErr,
-        10067 => JSStreamTemplateDeleteErr,
-        10068 => JSStreamTemplateNotFoundErr,
-        10069 => JSStreamUpdateErr,
-        10070 => JSStreamWrongLastMsgIDErr,
-        10071 => JSStreamWrongLastSequenceErr,
-        10072 => JSTempStorageFailedErr,
-        10073 => JSTemplateNameNotMatchSubjectErr,
-        10074 => JSStreamReplicasNotSupportedErr,
-        10075 => JSPeerRemapErr,
-        10076 => JSNotEnabledErr,
-        10077 => JSStreamStoreFailedErr,
-        10078 => JSConsumerConfigRequiredErr,
-        10079 => JSConsumerDeliverToWildcardsErr,
-        10080 => JSConsumerPushMaxWaitingErr,
-        10081 => JSConsumerDeliverCycleErr,
-        10082 => JSConsumerMaxPendingAckPolicyRequiredErr,
-        10083 => JSConsumerSmallHeartbeatErr,
-        10084 => JSConsumerPullRequiresAckErr,
-        10085 => JSConsumerPullNotDurableErr,
-        10086 => JSConsumerPullWithRateLimitErr,
-        10087 => JSConsumerMaxWaitingNegativeErr,
-        10088 => JSConsumerHBRequiresPushErr,
-        10089 => JSConsumerFCRequiresPushErr,
-        10090 => JSConsumerDirectRequiresPushErr,
-        10091 => JSConsumerDirectRequiresEphemeralErr,
-        10092 => JSConsumerOnMappedErr,
-        10093 => JSConsumerFilterNotSubsetErr,
-        10094 => JSConsumerInvalidPolicyErr,
-        10095 => JSConsumerInvalidSamplingErr,
-        10096 => JSStreamInvalidErr,
-        10098 => JSConsumerWQRequiresExplicitAckErr,
-        10099 => JSConsumerWQMultipleUnfilteredErr,
-        10100 => JSConsumerWQConsumerNotUniqueErr,
-        10101 => JSConsumerWQConsumerNotDeliverAllErr,
-        10102 => JSConsumerNameTooLongErr,
-        10103 => JSConsumerBadDurableNameErr,
-        10104 => JSConsumerStoreFailedErr,
-        10105 => JSConsumerExistingActiveErr,
-        10106 => JSConsumerReplacementWithDifferentNameErr,
-        10107 => JSConsumerDescriptionTooLongErr,
-        10108 => JSConsumerWithFlowControlNeedsHeartbeatsErr,
-        10109 => JSStreamSealedErr,
-        10110 => JSStreamPurgeFailedErr,
-        10111 => JSStreamRollupFailedErr,
-        10112 => JSConsumerInvalidDeliverSubjectErr,
-        10113 => JSStreamMaxBytesRequiredErr,
-        10114 => JSConsumerMaxRequestBatchNegativeErr,
-        10115 => JSConsumerMaxRequestExpiresToSmallErr,
-        10116 => JSConsumerMaxDeliverBackoffErr,
-        10117 => JSStreamInfoMaxSubjectsErr,
-        10118 => JSStreamOfflineErr,
-        10119 => JSConsumerOfflineErr,
-        10120 => JSNoLimitsErr,
-        10121 => JSConsumerMaxPendingAckExcessErr,
-        10122 => JSStreamMaxStreamBytesExceededErr,
-        10123 => JSStreamMoveAndScaleErr,
-        10124 => JSStreamMoveInProgressErr,
-        10125 => JSConsumerMaxRequestBatchExceededErr,
-        10126 => JSConsumerReplicasExceedsStreamErr,
-        10127 => JSConsumerNameContainsPathSeparatorsErr,
-        10128 => JSStreamNameContainsPathSeparatorsErr,
-        10129 => JSStreamMoveNotInProgressErr,
-        10130 => JSStreamNameExistRestoreFailedErr,
-        10131 => JSConsumerCreateFilterSubjectMismatchErr,
-        10132 => JSConsumerCreateDurableAndNameMismatchErr,
-        10133 => JSReplicasCountCannotBeNegativeErr,
-        10134 => JSConsumerReplicasShouldMatchStreamErr,
-        10135 => JSConsumerMetadataLengthErr,
-        10136 => JSConsumerDuplicateFilterSubjectsErr,
-        10137 => JSConsumerMultipleFiltersNotAllowedErr,
-        10138 => JSConsumerOverlappingSubjectFiltersErr,
-        10139 => JSConsumerEmptyFilterErr,
-        10140 => JSSourceDuplicateDetectedErr,
-        10141 => JSSourceInvalidStreamNameErr,
-        10142 => JSMirrorInvalidStreamNameErr,
-        10144 => JSSourceMultipleFiltersNotAllowedErr,
-        10145 => JSSourceInvalidSubjectFilterErr,
-        10146 => JSSourceInvalidTransformDestinationErr,
-        10147 => JSSourceOverlappingSubjectFiltersErr,
-        10148 => JSConsumerAlreadyExistsErr,
-        10149 => JSConsumerDoesNotExistErr,
-        10150 => JSMirrorMultipleFiltersNotAllowedErr,
-        10151 => JSMirrorInvalidSubjectFilterErr,
-        10152 => JSMirrorOverlappingSubjectFiltersErr,
-        10153 => JSConsumerInactiveThresholdExcessErr,
-        10154 => JSMirrorInvalidTransformDestinationErr,
-        10155 => JSStreamTransformInvalidSourceErr,
-        10156 => JSStreamTransformInvalidDestinationErr,
-        10157 => JSPedanticErr,
-        10158 => JSStreamDuplicateMessageConflictErr,
-        10159 => JSConsumerPriorityPolicyWithoutGroupErr,
-        10160 => JSConsumerInvalidPriorityGroupErr,
-        10161 => JSConsumerEmptyGroupNameErr,
-        10162 => JSConsumerInvalidGroupNameErr,
-        10163 => JSStreamExpectedLastSeqPerSubjectNotReadyErr,
-        10164 => JSStreamWrongLastSequenceConstantErr,
-        10165 => JSMessageTTLInvalidErr,
-        10166 => JSMessageTTLDisabledErr,
-        10167 => JSStreamTooManyRequestsErr,
-        _ => throw ArgumentError('Unknown value for jsErrCode: $value'),
-      };
+    10002 => JSAccountResourcesExceededErr,
+    10003 => JSBadRequestErr,
+    10004 => JSClusterIncompleteErr,
+    10005 => JSClusterNoPeersErr,
+    10006 => JSClusterNotActiveErr,
+    10007 => JSClusterNotAssignedErr,
+    10008 => JSClusterNotAvailErr,
+    10009 => JSClusterNotLeaderErr,
+    10010 => JSClusterRequiredErr,
+    10011 => JSClusterTagsErr,
+    10012 => JSConsumerCreateErr,
+    10013 => JSConsumerNameExistErr,
+    10014 => JSConsumerNotFoundErr,
+    10015 => JSSnapshotDeliverSubjectInvalidErr,
+    10016 => JSConsumerDurableNameNotInSubjectErr,
+    10017 => JSConsumerDurableNameNotMatchSubjectErr,
+    10018 => JSConsumerDurableNameNotSetErr,
+    10019 => JSConsumerEphemeralWithDurableInSubjectErr,
+    10020 => JSConsumerEphemeralWithDurableNameErr,
+    10021 => JSStreamExternalApiOverlapErr,
+    10022 => JSStreamExternalDelPrefixOverlapsErr,
+    10023 => JSInsufficientResourcesErr,
+    10024 => JSStreamInvalidExternalDeliverySubjErr,
+    10025 => JSInvalidJSONErr,
+    10026 => JSMaximumConsumersLimitErr,
+    10027 => JSMaximumStreamsLimitErr,
+    10028 => JSMemoryResourcesExceededErr,
+    10029 => JSMirrorConsumerSetupFailedErr,
+    10030 => JSMirrorMaxMessageSizeTooBigErr,
+    10031 => JSMirrorWithSourcesErr,
+    10032 => JSMirrorWithStartSeqAndTimeErr,
+    10033 => JSMirrorWithSubjectFiltersErr,
+    10034 => JSMirrorWithSubjectsErr,
+    10035 => JSNoAccountErr,
+    10036 => JSClusterUnSupportFeatureErr,
+    10037 => JSNoMessageFoundErr,
+    10038 => JSNotEmptyRequestErr,
+    10039 => JSNotEnabledForAccountErr,
+    10040 => JSClusterPeerNotMemberErr,
+    10041 => JSRaftGeneralErr,
+    10042 => JSRestoreSubscribeFailedErr,
+    10043 => JSSequenceNotFoundErr,
+    10044 => JSClusterServerNotMemberErr,
+    10045 => JSSourceConsumerSetupFailedErr,
+    10046 => JSSourceMaxMessageSizeTooBigErr,
+    10047 => JSStorageResourcesExceededErr,
+    10048 => JSStreamAssignmentErr,
+    10049 => JSStreamCreateErr,
+    10050 => JSStreamDeleteErr,
+    10051 => JSStreamGeneralError,
+    10052 => JSStreamInvalidConfig,
+    10053 => JSStreamLimitsErr,
+    10054 => JSStreamMessageExceedsMaximumErr,
+    10055 => JSStreamMirrorNotUpdatableErr,
+    10056 => JSStreamMismatchErr,
+    10057 => JSStreamMsgDeleteFailed,
+    10058 => JSStreamNameExistErr,
+    10059 => JSStreamNotFoundErr,
+    10060 => JSStreamNotMatchErr,
+    10061 => JSStreamReplicasNotUpdatableErr,
+    10062 => JSStreamRestoreErr,
+    10063 => JSStreamSequenceNotMatchErr,
+    10064 => JSStreamSnapshotErr,
+    10065 => JSStreamSubjectOverlapErr,
+    10066 => JSStreamTemplateCreateErr,
+    10067 => JSStreamTemplateDeleteErr,
+    10068 => JSStreamTemplateNotFoundErr,
+    10069 => JSStreamUpdateErr,
+    10070 => JSStreamWrongLastMsgIDErr,
+    10071 => JSStreamWrongLastSequenceErr,
+    10072 => JSTempStorageFailedErr,
+    10073 => JSTemplateNameNotMatchSubjectErr,
+    10074 => JSStreamReplicasNotSupportedErr,
+    10075 => JSPeerRemapErr,
+    10076 => JSNotEnabledErr,
+    10077 => JSStreamStoreFailedErr,
+    10078 => JSConsumerConfigRequiredErr,
+    10079 => JSConsumerDeliverToWildcardsErr,
+    10080 => JSConsumerPushMaxWaitingErr,
+    10081 => JSConsumerDeliverCycleErr,
+    10082 => JSConsumerMaxPendingAckPolicyRequiredErr,
+    10083 => JSConsumerSmallHeartbeatErr,
+    10084 => JSConsumerPullRequiresAckErr,
+    10085 => JSConsumerPullNotDurableErr,
+    10086 => JSConsumerPullWithRateLimitErr,
+    10087 => JSConsumerMaxWaitingNegativeErr,
+    10088 => JSConsumerHBRequiresPushErr,
+    10089 => JSConsumerFCRequiresPushErr,
+    10090 => JSConsumerDirectRequiresPushErr,
+    10091 => JSConsumerDirectRequiresEphemeralErr,
+    10092 => JSConsumerOnMappedErr,
+    10093 => JSConsumerFilterNotSubsetErr,
+    10094 => JSConsumerInvalidPolicyErr,
+    10095 => JSConsumerInvalidSamplingErr,
+    10096 => JSStreamInvalidErr,
+    10098 => JSConsumerWQRequiresExplicitAckErr,
+    10099 => JSConsumerWQMultipleUnfilteredErr,
+    10100 => JSConsumerWQConsumerNotUniqueErr,
+    10101 => JSConsumerWQConsumerNotDeliverAllErr,
+    10102 => JSConsumerNameTooLongErr,
+    10103 => JSConsumerBadDurableNameErr,
+    10104 => JSConsumerStoreFailedErr,
+    10105 => JSConsumerExistingActiveErr,
+    10106 => JSConsumerReplacementWithDifferentNameErr,
+    10107 => JSConsumerDescriptionTooLongErr,
+    10108 => JSConsumerWithFlowControlNeedsHeartbeatsErr,
+    10109 => JSStreamSealedErr,
+    10110 => JSStreamPurgeFailedErr,
+    10111 => JSStreamRollupFailedErr,
+    10112 => JSConsumerInvalidDeliverSubjectErr,
+    10113 => JSStreamMaxBytesRequiredErr,
+    10114 => JSConsumerMaxRequestBatchNegativeErr,
+    10115 => JSConsumerMaxRequestExpiresToSmallErr,
+    10116 => JSConsumerMaxDeliverBackoffErr,
+    10117 => JSStreamInfoMaxSubjectsErr,
+    10118 => JSStreamOfflineErr,
+    10119 => JSConsumerOfflineErr,
+    10120 => JSNoLimitsErr,
+    10121 => JSConsumerMaxPendingAckExcessErr,
+    10122 => JSStreamMaxStreamBytesExceededErr,
+    10123 => JSStreamMoveAndScaleErr,
+    10124 => JSStreamMoveInProgressErr,
+    10125 => JSConsumerMaxRequestBatchExceededErr,
+    10126 => JSConsumerReplicasExceedsStreamErr,
+    10127 => JSConsumerNameContainsPathSeparatorsErr,
+    10128 => JSStreamNameContainsPathSeparatorsErr,
+    10129 => JSStreamMoveNotInProgressErr,
+    10130 => JSStreamNameExistRestoreFailedErr,
+    10131 => JSConsumerCreateFilterSubjectMismatchErr,
+    10132 => JSConsumerCreateDurableAndNameMismatchErr,
+    10133 => JSReplicasCountCannotBeNegativeErr,
+    10134 => JSConsumerReplicasShouldMatchStreamErr,
+    10135 => JSConsumerMetadataLengthErr,
+    10136 => JSConsumerDuplicateFilterSubjectsErr,
+    10137 => JSConsumerMultipleFiltersNotAllowedErr,
+    10138 => JSConsumerOverlappingSubjectFiltersErr,
+    10139 => JSConsumerEmptyFilterErr,
+    10140 => JSSourceDuplicateDetectedErr,
+    10141 => JSSourceInvalidStreamNameErr,
+    10142 => JSMirrorInvalidStreamNameErr,
+    10144 => JSSourceMultipleFiltersNotAllowedErr,
+    10145 => JSSourceInvalidSubjectFilterErr,
+    10146 => JSSourceInvalidTransformDestinationErr,
+    10147 => JSSourceOverlappingSubjectFiltersErr,
+    10148 => JSConsumerAlreadyExistsErr,
+    10149 => JSConsumerDoesNotExistErr,
+    10150 => JSMirrorMultipleFiltersNotAllowedErr,
+    10151 => JSMirrorInvalidSubjectFilterErr,
+    10152 => JSMirrorOverlappingSubjectFiltersErr,
+    10153 => JSConsumerInactiveThresholdExcessErr,
+    10154 => JSMirrorInvalidTransformDestinationErr,
+    10155 => JSStreamTransformInvalidSourceErr,
+    10156 => JSStreamTransformInvalidDestinationErr,
+    10157 => JSPedanticErr,
+    10158 => JSStreamDuplicateMessageConflictErr,
+    10159 => JSConsumerPriorityPolicyWithoutGroupErr,
+    10160 => JSConsumerInvalidPriorityGroupErr,
+    10161 => JSConsumerEmptyGroupNameErr,
+    10162 => JSConsumerInvalidGroupNameErr,
+    10163 => JSStreamExpectedLastSeqPerSubjectNotReadyErr,
+    10164 => JSStreamWrongLastSequenceConstantErr,
+    10165 => JSMessageTTLInvalidErr,
+    10166 => JSMessageTTLDisabledErr,
+    10167 => JSStreamTooManyRequestsErr,
+    _ => throw ArgumentError('Unknown value for jsErrCode: $value'),
+  };
 }
 
 final class __natsConnection extends ffi.Opaque {}
@@ -4724,11 +4329,11 @@ enum jsRetentionPolicy {
   const jsRetentionPolicy(this.value);
 
   static jsRetentionPolicy fromValue(int value) => switch (value) {
-        0 => js_LimitsPolicy,
-        1 => js_InterestPolicy,
-        2 => js_WorkQueuePolicy,
-        _ => throw ArgumentError('Unknown value for jsRetentionPolicy: $value'),
-      };
+    0 => js_LimitsPolicy,
+    1 => js_InterestPolicy,
+    2 => js_WorkQueuePolicy,
+    _ => throw ArgumentError('Unknown value for jsRetentionPolicy: $value'),
+  };
 }
 
 /// Determines how to proceed when limits of messages or bytes are reached.
@@ -4743,10 +4348,10 @@ enum jsDiscardPolicy {
   const jsDiscardPolicy(this.value);
 
   static jsDiscardPolicy fromValue(int value) => switch (value) {
-        0 => js_DiscardOld,
-        1 => js_DiscardNew,
-        _ => throw ArgumentError('Unknown value for jsDiscardPolicy: $value'),
-      };
+    0 => js_DiscardOld,
+    1 => js_DiscardNew,
+    _ => throw ArgumentError('Unknown value for jsDiscardPolicy: $value'),
+  };
 }
 
 /// Determines how messages are stored for retention.
@@ -4761,10 +4366,10 @@ enum jsStorageType {
   const jsStorageType(this.value);
 
   static jsStorageType fromValue(int value) => switch (value) {
-        0 => js_FileStorage,
-        1 => js_MemoryStorage,
-        _ => throw ArgumentError('Unknown value for jsStorageType: $value'),
-      };
+    0 => js_FileStorage,
+    1 => js_MemoryStorage,
+    _ => throw ArgumentError('Unknown value for jsStorageType: $value'),
+  };
 }
 
 /// Determines how messages are compressed when stored for retention.
@@ -4779,11 +4384,10 @@ enum jsStorageCompression {
   const jsStorageCompression(this.value);
 
   static jsStorageCompression fromValue(int value) => switch (value) {
-        0 => js_StorageCompressionNone,
-        1 => js_StorageCompressionS2,
-        _ =>
-          throw ArgumentError('Unknown value for jsStorageCompression: $value'),
-      };
+    0 => js_StorageCompressionNone,
+    1 => js_StorageCompressionS2,
+    _ => throw ArgumentError('Unknown value for jsStorageCompression: $value'),
+  };
 }
 
 /// Determines how the consumer should select the first message to deliver.
@@ -4810,14 +4414,14 @@ enum jsDeliverPolicy {
   const jsDeliverPolicy(this.value);
 
   static jsDeliverPolicy fromValue(int value) => switch (value) {
-        0 => js_DeliverAll,
-        1 => js_DeliverLast,
-        2 => js_DeliverNew,
-        3 => js_DeliverByStartSequence,
-        4 => js_DeliverByStartTime,
-        5 => js_DeliverLastPerSubject,
-        _ => throw ArgumentError('Unknown value for jsDeliverPolicy: $value'),
-      };
+    0 => js_DeliverAll,
+    1 => js_DeliverLast,
+    2 => js_DeliverNew,
+    3 => js_DeliverByStartSequence,
+    4 => js_DeliverByStartTime,
+    5 => js_DeliverLastPerSubject,
+    _ => throw ArgumentError('Unknown value for jsDeliverPolicy: $value'),
+  };
 }
 
 /// Determines how the consumer should acknowledge delivered messages.
@@ -4835,11 +4439,11 @@ enum jsAckPolicy {
   const jsAckPolicy(this.value);
 
   static jsAckPolicy fromValue(int value) => switch (value) {
-        0 => js_AckExplicit,
-        1 => js_AckNone,
-        2 => js_AckAll,
-        _ => throw ArgumentError('Unknown value for jsAckPolicy: $value'),
-      };
+    0 => js_AckExplicit,
+    1 => js_AckNone,
+    2 => js_AckAll,
+    _ => throw ArgumentError('Unknown value for jsAckPolicy: $value'),
+  };
 }
 
 /// Determines how the consumer should replay messages it already has queued in the stream.
@@ -4854,10 +4458,10 @@ enum jsReplayPolicy {
   const jsReplayPolicy(this.value);
 
   static jsReplayPolicy fromValue(int value) => switch (value) {
-        0 => js_ReplayInstant,
-        1 => js_ReplayOriginal,
-        _ => throw ArgumentError('Unknown value for jsReplayPolicy: $value'),
-      };
+    0 => js_ReplayInstant,
+    1 => js_ReplayOriginal,
+    _ => throw ArgumentError('Unknown value for jsReplayPolicy: $value'),
+  };
 }
 
 /// Used to guide placement of streams in clustered JetStream.
@@ -5866,28 +5470,40 @@ final class jsPubAckErr extends ffi.Struct {
   external ffi.Pointer<ffi.Char> ErrText;
 }
 
-typedef jsPubAckErrHandlerFunction = ffi.Void Function(ffi.Pointer<jsCtx> js,
-    ffi.Pointer<jsPubAckErr> pae, ffi.Pointer<ffi.Void> closure);
-typedef DartjsPubAckErrHandlerFunction = void Function(ffi.Pointer<jsCtx> js,
-    ffi.Pointer<jsPubAckErr> pae, ffi.Pointer<ffi.Void> closure);
+typedef jsPubAckErrHandlerFunction =
+    ffi.Void Function(
+      ffi.Pointer<jsCtx> js,
+      ffi.Pointer<jsPubAckErr> pae,
+      ffi.Pointer<ffi.Void> closure,
+    );
+typedef DartjsPubAckErrHandlerFunction =
+    void Function(
+      ffi.Pointer<jsCtx> js,
+      ffi.Pointer<jsPubAckErr> pae,
+      ffi.Pointer<ffi.Void> closure,
+    );
 
 /// Forward declarations
-typedef jsPubAckErrHandler
-    = ffi.Pointer<ffi.NativeFunction<jsPubAckErrHandlerFunction>>;
-typedef jsPubAckHandlerFunction = ffi.Void Function(
-    ffi.Pointer<jsCtx> js,
-    ffi.Pointer<natsMsg> msg,
-    ffi.Pointer<jsPubAck> pa,
-    ffi.Pointer<jsPubAckErr> pae,
-    ffi.Pointer<ffi.Void> closure);
-typedef DartjsPubAckHandlerFunction = void Function(
-    ffi.Pointer<jsCtx> js,
-    ffi.Pointer<natsMsg> msg,
-    ffi.Pointer<jsPubAck> pa,
-    ffi.Pointer<jsPubAckErr> pae,
-    ffi.Pointer<ffi.Void> closure);
-typedef jsPubAckHandler
-    = ffi.Pointer<ffi.NativeFunction<jsPubAckHandlerFunction>>;
+typedef jsPubAckErrHandler =
+    ffi.Pointer<ffi.NativeFunction<jsPubAckErrHandlerFunction>>;
+typedef jsPubAckHandlerFunction =
+    ffi.Void Function(
+      ffi.Pointer<jsCtx> js,
+      ffi.Pointer<natsMsg> msg,
+      ffi.Pointer<jsPubAck> pa,
+      ffi.Pointer<jsPubAckErr> pae,
+      ffi.Pointer<ffi.Void> closure,
+    );
+typedef DartjsPubAckHandlerFunction =
+    void Function(
+      ffi.Pointer<jsCtx> js,
+      ffi.Pointer<natsMsg> msg,
+      ffi.Pointer<jsPubAck> pa,
+      ffi.Pointer<jsPubAckErr> pae,
+      ffi.Pointer<ffi.Void> closure,
+    );
+typedef jsPubAckHandler =
+    ffi.Pointer<ffi.NativeFunction<jsPubAckHandlerFunction>>;
 
 /// Options for the js_DirectGetMsg() call, which retrieves a message
 /// from any server (not only the leader) as long as the stream has
@@ -5946,16 +5562,20 @@ final class jsFetchRequest extends ffi.Struct {
   external ffi.Pointer<ffi.Char> Group;
 }
 
-typedef jsFetchCompleteHandlerFunction = ffi.Void Function(
-    ffi.Pointer<natsConnection> nc,
-    ffi.Pointer<natsSubscription> sub,
-    ffi.UnsignedInt s,
-    ffi.Pointer<ffi.Void> closure);
-typedef DartjsFetchCompleteHandlerFunction = void Function(
-    ffi.Pointer<natsConnection> nc,
-    ffi.Pointer<natsSubscription> sub,
-    natsStatus s,
-    ffi.Pointer<ffi.Void> closure);
+typedef jsFetchCompleteHandlerFunction =
+    ffi.Void Function(
+      ffi.Pointer<natsConnection> nc,
+      ffi.Pointer<natsSubscription> sub,
+      ffi.UnsignedInt s,
+      ffi.Pointer<ffi.Void> closure,
+    );
+typedef DartjsFetchCompleteHandlerFunction =
+    void Function(
+      ffi.Pointer<natsConnection> nc,
+      ffi.Pointer<natsSubscription> sub,
+      natsStatus s,
+      ffi.Pointer<ffi.Void> closure,
+    );
 
 /// \brief Callback used to indicate that the work of js_PullSubscribeAsync is
 /// done.
@@ -5977,18 +5597,22 @@ typedef DartjsFetchCompleteHandlerFunction = void Function(
 /// @param closure completeClosure that was passed to js_PullSubscribeAsync
 ///
 /// @see js_PullSubscribeAsync
-typedef jsFetchCompleteHandler
-    = ffi.Pointer<ffi.NativeFunction<jsFetchCompleteHandlerFunction>>;
-typedef jsFetchNextHandlerFunction = ffi.Bool Function(
-    ffi.Pointer<ffi.Int> messages,
-    ffi.Pointer<ffi.Int64> maxBytes,
-    ffi.Pointer<natsSubscription> sub,
-    ffi.Pointer<ffi.Void> closure);
-typedef DartjsFetchNextHandlerFunction = bool Function(
-    ffi.Pointer<ffi.Int> messages,
-    ffi.Pointer<ffi.Int64> maxBytes,
-    ffi.Pointer<natsSubscription> sub,
-    ffi.Pointer<ffi.Void> closure);
+typedef jsFetchCompleteHandler =
+    ffi.Pointer<ffi.NativeFunction<jsFetchCompleteHandlerFunction>>;
+typedef jsFetchNextHandlerFunction =
+    ffi.Bool Function(
+      ffi.Pointer<ffi.Int> messages,
+      ffi.Pointer<ffi.Int64> maxBytes,
+      ffi.Pointer<natsSubscription> sub,
+      ffi.Pointer<ffi.Void> closure,
+    );
+typedef DartjsFetchNextHandlerFunction =
+    bool Function(
+      ffi.Pointer<ffi.Int> messages,
+      ffi.Pointer<ffi.Int64> maxBytes,
+      ffi.Pointer<natsSubscription> sub,
+      ffi.Pointer<ffi.Void> closure,
+    );
 
 /// \brief Callback used to customize flow control for js_PullSubscribeAsync.
 ///
@@ -5999,8 +5623,8 @@ typedef DartjsFetchNextHandlerFunction = bool Function(
 /// maxBytes should be set to the number of messages and max bytes to fetch.
 ///
 /// @see js_PullSubscribeAsync
-typedef jsFetchNextHandler
-    = ffi.Pointer<ffi.NativeFunction<jsFetchNextHandlerFunction>>;
+typedef jsFetchNextHandler =
+    ffi.Pointer<ffi.NativeFunction<jsFetchNextHandlerFunction>>;
 
 /// Async pull subscriber options.
 ///
@@ -6209,12 +5833,12 @@ enum kvOperation {
   const kvOperation(this.value);
 
   static kvOperation fromValue(int value) => switch (value) {
-        0 => kvOp_Unknown,
-        1 => kvOp_Put,
-        2 => kvOp_Delete,
-        3 => kvOp_Purge,
-        _ => throw ArgumentError('Unknown value for kvOperation: $value'),
-      };
+    0 => kvOp_Unknown,
+    1 => kvOp_Put,
+    2 => kvOp_Delete,
+    3 => kvOp_Purge,
+    _ => throw ArgumentError('Unknown value for kvOperation: $value'),
+  };
 }
 
 /// KeyValue configuration object.
@@ -6358,13 +5982,17 @@ final class kvKeysList extends ffi.Struct {
 /// @see natsConnection_Subscribe()
 /// @see natsConnection_QueueSubscribe()
 /// @see natsMsg_IsNoResponders()
-typedef natsMsgHandler = ffi.Pointer<
-    ffi.NativeFunction<
+typedef natsMsgHandler =
+    ffi.Pointer<
+      ffi.NativeFunction<
         ffi.Void Function(
-            ffi.Pointer<natsConnection> nc,
-            ffi.Pointer<natsSubscription> sub,
-            ffi.Pointer<natsMsg> msg,
-            ffi.Pointer<ffi.Void> closure)>>;
+          ffi.Pointer<natsConnection> nc,
+          ffi.Pointer<natsSubscription> sub,
+          ffi.Pointer<natsMsg> msg,
+          ffi.Pointer<ffi.Void> closure,
+        )
+      >
+    >;
 
 /// \brief Callback used to notify the user of asynchronous connection events.
 ///
@@ -6378,22 +6006,31 @@ typedef natsMsgHandler = ffi.Pointer<
 /// \warning Such callback is invoked from a dedicated thread and the state
 /// of the connection that triggered the event may have changed since
 /// that event was generated.
-typedef natsConnectionHandler = ffi.Pointer<
-    ffi.NativeFunction<
+typedef natsConnectionHandler =
+    ffi.Pointer<
+      ffi.NativeFunction<
         ffi.Void Function(
-            ffi.Pointer<natsConnection> nc, ffi.Pointer<ffi.Void> closure)>>;
+          ffi.Pointer<natsConnection> nc,
+          ffi.Pointer<ffi.Void> closure,
+        )
+      >
+    >;
 
 /// \brief Callback used to notify the user of errors encountered while processing
 /// inbound messages.
 ///
 /// This callback is used to process asynchronous errors encountered while processing
 /// inbound messages, such as #NATS_SLOW_CONSUMER.
-typedef natsErrHandler = ffi.Pointer<
-    ffi.NativeFunction<
+typedef natsErrHandler =
+    ffi.Pointer<
+      ffi.NativeFunction<
         ffi.Void Function(
-            ffi.Pointer<natsConnection> nc,
-            ffi.Pointer<natsSubscription> subscription,
-            ffi.UnsignedInt err,
-            ffi.Pointer<ffi.Void> closure)>>;
+          ffi.Pointer<natsConnection> nc,
+          ffi.Pointer<natsSubscription> subscription,
+          ffi.UnsignedInt err,
+          ffi.Pointer<ffi.Void> closure,
+        )
+      >
+    >;
 
 const String NATS_DEFAULT_URL = 'nats://localhost:4222';

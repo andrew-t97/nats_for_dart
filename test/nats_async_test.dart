@@ -48,9 +48,7 @@ void main() {
       publisher.flush();
 
       // Wait for the message on the stream.
-      final msg = await sub.messages.first.timeout(
-        const Duration(seconds: 5),
-      );
+      final msg = await sub.messages.first.timeout(const Duration(seconds: 5));
       expect(msg.subject, equals('test.async.basic'));
       expect(msg.dataAsString, equals('hello async'));
     });
@@ -110,13 +108,10 @@ void main() {
       final received = <NatsMessage>[];
       final firstMsg = Completer<void>();
       final streamDone = Completer<void>();
-      final listener = sub.messages.listen(
-        (msg) {
-          received.add(msg);
-          if (!firstMsg.isCompleted) firstMsg.complete();
-        },
-        onDone: streamDone.complete,
-      );
+      final listener = sub.messages.listen((msg) {
+        received.add(msg);
+        if (!firstMsg.isCompleted) firstMsg.complete();
+      }, onDone: streamDone.complete);
 
       publisher.publish('test.async.unsub', 'before-unsub');
       publisher.flush();
@@ -277,9 +272,7 @@ void main() {
       publisher.publish('test.async.pending', 'after-limits');
       publisher.flush();
 
-      final msg = await sub.messages.first.timeout(
-        const Duration(seconds: 5),
-      );
+      final msg = await sub.messages.first.timeout(const Duration(seconds: 5));
       expect(msg.dataAsString, equals('after-limits'));
     });
 
@@ -295,8 +288,7 @@ void main() {
   });
 
   group('Async message eager copy', () {
-    test(
-        'message fields are accessible after client is closed '
+    test('message fields are accessible after client is closed '
         '(async subscription)', () async {
       final client = NatsClient.connect('nats://localhost:4222');
 
@@ -306,9 +298,7 @@ void main() {
       client.publish('test.eager.async', 'Async eager copy');
       client.flush();
 
-      final msg = await sub.messages.first.timeout(
-        const Duration(seconds: 5),
-      );
+      final msg = await sub.messages.first.timeout(const Duration(seconds: 5));
 
       // Close everything.
       await sub.close();

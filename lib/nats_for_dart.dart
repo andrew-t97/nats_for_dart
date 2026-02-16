@@ -1,4 +1,4 @@
-/// NATS FFI Experiment — Dart bindings to the NATS C client library.
+/// Dart FFI bindings for the NATS C client library.
 ///
 /// Provides synchronous and asynchronous pub/sub, JetStream, and KeyValue
 /// via a Dart-friendly wrapper around the native `libnats` shared library.
@@ -21,8 +21,7 @@ export 'src/nats_bindings.g.dart'
         jsAckPolicy,
         jsReplayPolicy,
         kvOperation;
-export 'src/js_message.dart'
-    show JsMessage, JsMessageMetadata, JsPubAckResult;
+export 'src/js_message.dart' show JsMessage, JsMessageMetadata, JsPubAckResult;
 export 'src/jetstream_context.dart'
     show
         JetStreamContext,

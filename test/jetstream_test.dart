@@ -37,11 +37,13 @@ void main() {
     });
 
     test('publish returns valid pub ack with sequence', () {
-      js.addStream(JsStreamConfig(
-        name: 'TEST_JS',
-        subjects: ['test.js.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TEST_JS',
+          subjects: ['test.js.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       final ack1 = js.publishString('test.js.hello', 'msg1');
       expect(ack1.stream, equals('TEST_JS'));
@@ -53,11 +55,13 @@ void main() {
     });
 
     test('pull subscribe fetches messages', () {
-      js.addStream(JsStreamConfig(
-        name: 'TEST_JS',
-        subjects: ['test.js.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TEST_JS',
+          subjects: ['test.js.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       for (var i = 1; i <= 5; i++) {
         js.publishString('test.js.pull', 'message $i');
@@ -76,11 +80,13 @@ void main() {
     });
 
     test('nak causes redelivery', () {
-      js.addStream(JsStreamConfig(
-        name: 'TEST_JS',
-        subjects: ['test.js.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TEST_JS',
+          subjects: ['test.js.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       js.publishString('test.js.nak', 'retry-me');
 
@@ -104,11 +110,13 @@ void main() {
     });
 
     test('sync subscribe receives messages', () {
-      js.addStream(JsStreamConfig(
-        name: 'TEST_JS',
-        subjects: ['test.js.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TEST_JS',
+          subjects: ['test.js.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       js.publishString('test.js.sync', 'sync-msg');
 
@@ -121,11 +129,13 @@ void main() {
     });
 
     test('async subscribe receives messages via stream', () async {
-      js.addStream(JsStreamConfig(
-        name: 'TEST_JS',
-        subjects: ['test.js.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TEST_JS',
+          subjects: ['test.js.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       final asyncSub = js.subscribe('test.js.async');
       addTearDown(() => asyncSub.close());
@@ -135,18 +145,19 @@ void main() {
         js.publishString('test.js.async', 'async-msg');
       });
 
-      final msg = await asyncSub.messages.first
-          .timeout(Duration(seconds: 5));
+      final msg = await asyncSub.messages.first.timeout(Duration(seconds: 5));
       expect(msg.dataAsString, equals('async-msg'));
       msg.ack();
     });
 
     test('message metadata is correct', () {
-      js.addStream(JsStreamConfig(
-        name: 'TEST_JS',
-        subjects: ['test.js.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TEST_JS',
+          subjects: ['test.js.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       js.publishString('test.js.meta', 'with-metadata');
 
@@ -184,12 +195,14 @@ void main() {
     });
 
     test('create, info, and delete stream', () {
-      final created = js.addStream(JsStreamConfig(
-        name: 'MGMT_TEST',
-        subjects: ['mgmt.>'],
-        storage: jsStorageType.js_MemoryStorage,
-        replicas: 1,
-      ));
+      final created = js.addStream(
+        JsStreamConfig(
+          name: 'MGMT_TEST',
+          subjects: ['mgmt.>'],
+          storage: jsStorageType.js_MemoryStorage,
+          replicas: 1,
+        ),
+      );
       expect(created.name, equals('MGMT_TEST'));
       expect(created.messages, equals(0));
 
@@ -210,11 +223,13 @@ void main() {
     });
 
     test('purge stream removes messages', () {
-      js.addStream(JsStreamConfig(
-        name: 'MGMT_TEST',
-        subjects: ['mgmt.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'MGMT_TEST',
+          subjects: ['mgmt.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       for (var i = 0; i < 10; i++) {
         js.publishString('mgmt.purge', 'msg-$i');
@@ -237,11 +252,13 @@ void main() {
     setUp(() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
-      js.addStream(JsStreamConfig(
-        name: 'TEST_JS',
-        subjects: ['test.js.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TEST_JS',
+          subjects: ['test.js.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
     });
 
     tearDown(() {
@@ -275,18 +292,25 @@ void main() {
       'term': (msg) => msg.term(),
     };
 
-    for (final MapEntry(key: name, value: terminalAck)
-        in terminalOps.entries) {
+    for (final MapEntry(key: name, value: terminalAck) in terminalOps.entries) {
       test('$name auto-destroys and prevents further ack operations', () {
         final msg = publishAndFetchOne(
-            js, 'test.js.auto', 'auto-$name', 'payload');
+          js,
+          'test.js.auto',
+          'auto-$name',
+          'payload',
+        );
         terminalAck(msg);
         expect(() => msg.ack(), throwsStateError);
       });
 
       test('data fields and metadata accessible after $name', () {
         final msg = publishAndFetchOne(
-            js, 'test.js.auto', 'data-$name', 'test-data');
+          js,
+          'test.js.auto',
+          'data-$name',
+          'test-data',
+        );
         terminalAck(msg);
         expect(msg.dataAsString, equals('test-data'));
         expect(msg.subject, equals('test.js.auto'));
@@ -296,14 +320,22 @@ void main() {
 
     test('inProgress does NOT auto-destroy — can still ack after', () {
       final msg = publishAndFetchOne(
-          js, 'test.js.auto', 'auto-progress', 'in-progress');
+        js,
+        'test.js.auto',
+        'auto-progress',
+        'in-progress',
+      );
       msg.inProgress();
       msg.ack(); // should not throw
     });
 
     test('metadata returns cached instance across calls', () {
       final msg = publishAndFetchOne(
-          js, 'test.js.auto', 'meta-cache', 'cache-test');
+        js,
+        'test.js.auto',
+        'meta-cache',
+        'cache-test',
+      );
       final meta1 = msg.metadata();
       final meta2 = msg.metadata();
       expect(meta1, same(meta2));
@@ -319,11 +351,13 @@ void main() {
     setUp(() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
-      js.addStream(JsStreamConfig(
-        name: 'MGMT_TEST',
-        subjects: ['consumer.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'MGMT_TEST',
+          subjects: ['consumer.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
     });
 
     tearDown(() {
@@ -374,26 +408,29 @@ void main() {
     });
 
     final streamConfigCases =
-        <String, ({JsStreamConfig config, void Function(JsStreamInfoResult) verify})>{
-      'with description': (
-        config: JsStreamConfig(
-          name: 'CFG_DESC',
-          subjects: ['cfg.desc.>'],
-          storage: jsStorageType.js_MemoryStorage,
-          description: 'A test stream with description',
-        ),
-        verify: (info) => expect(info.name, equals('CFG_DESC')),
-      ),
-      'with maxAge': (
-        config: JsStreamConfig(
-          name: 'CFG_MAXAGE',
-          subjects: ['cfg.maxage.>'],
-          storage: jsStorageType.js_MemoryStorage,
-          maxAge: Duration(hours: 1),
-        ),
-        verify: (info) => expect(info.name, equals('CFG_MAXAGE')),
-      ),
-    };
+        <
+          String,
+          ({JsStreamConfig config, void Function(JsStreamInfoResult) verify})
+        >{
+          'with description': (
+            config: JsStreamConfig(
+              name: 'CFG_DESC',
+              subjects: ['cfg.desc.>'],
+              storage: jsStorageType.js_MemoryStorage,
+              description: 'A test stream with description',
+            ),
+            verify: (info) => expect(info.name, equals('CFG_DESC')),
+          ),
+          'with maxAge': (
+            config: JsStreamConfig(
+              name: 'CFG_MAXAGE',
+              subjects: ['cfg.maxage.>'],
+              storage: jsStorageType.js_MemoryStorage,
+              maxAge: Duration(hours: 1),
+            ),
+            verify: (info) => expect(info.name, equals('CFG_MAXAGE')),
+          ),
+        };
 
     for (final MapEntry(key: label, value: tc) in streamConfigCases.entries) {
       test('addStream $label', () {
@@ -403,19 +440,23 @@ void main() {
     }
 
     test('updateStream changes stream config', () {
-      js.addStream(JsStreamConfig(
-        name: 'CFG_UPDATE',
-        subjects: ['cfg.update.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'CFG_UPDATE',
+          subjects: ['cfg.update.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
-      final updated = js.updateStream(JsStreamConfig(
-        name: 'CFG_UPDATE',
-        subjects: ['cfg.update.>'],
-        storage: jsStorageType.js_MemoryStorage,
-        description: 'Updated description',
-        maxAge: Duration(hours: 2),
-      ));
+      final updated = js.updateStream(
+        JsStreamConfig(
+          name: 'CFG_UPDATE',
+          subjects: ['cfg.update.>'],
+          storage: jsStorageType.js_MemoryStorage,
+          description: 'Updated description',
+          maxAge: Duration(hours: 2),
+        ),
+      );
       expect(updated.name, equals('CFG_UPDATE'));
     });
   });
@@ -427,11 +468,13 @@ void main() {
     setUp(() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
-      js.addStream(JsStreamConfig(
-        name: 'CONS_CFG',
-        subjects: ['cons.cfg.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'CONS_CFG',
+          subjects: ['cons.cfg.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
     });
 
     tearDown(() {
@@ -482,11 +525,13 @@ void main() {
     setUp(() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
-      js.addStream(JsStreamConfig(
-        name: 'SUB_PARAMS',
-        subjects: ['sub.params.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'SUB_PARAMS',
+          subjects: ['sub.params.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
     });
 
     tearDown(() {
@@ -540,8 +585,7 @@ void main() {
         js.publishString('sub.params.async', 'async-msg');
       });
 
-      final msg = await asyncSub.messages.first
-          .timeout(Duration(seconds: 5));
+      final msg = await asyncSub.messages.first.timeout(Duration(seconds: 5));
       expect(msg.dataAsString, equals('async-msg'));
       msg.ack();
     });
@@ -554,11 +598,13 @@ void main() {
     setUp(() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
-      js.addStream(JsStreamConfig(
-        name: 'TEST_JS',
-        subjects: ['test.js.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TEST_JS',
+          subjects: ['test.js.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
     });
 
     tearDown(() {
@@ -610,41 +656,51 @@ void main() {
     });
 
     test('JsStreamInfoResult.toString() matches expected format', () {
-      final info = js.addStream(JsStreamConfig(
-        name: 'TOSTR_TEST',
-        subjects: ['tostr.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      final info = js.addStream(
+        JsStreamConfig(
+          name: 'TOSTR_TEST',
+          subjects: ['tostr.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
       expect(
         info.toString(),
-        equals('JsStreamInfoResult(name: TOSTR_TEST, messages: 0, '
-            'firstSeq: 0, lastSeq: 0)'),
+        equals(
+          'JsStreamInfoResult(name: TOSTR_TEST, messages: 0, '
+          'firstSeq: 0, lastSeq: 0)',
+        ),
       );
     });
 
     test('JsConsumerInfoResult.toString() matches expected format', () {
-      js.addStream(JsStreamConfig(
-        name: 'TOSTR_TEST',
-        subjects: ['tostr.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TOSTR_TEST',
+          subjects: ['tostr.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
       final consumerInfo = js.addConsumer(
         'TOSTR_TEST',
         JsConsumerConfig(durable: 'tostr-consumer'),
       );
       expect(
         consumerInfo.toString(),
-        equals('JsConsumerInfoResult(stream: TOSTR_TEST, name: tostr-consumer, '
-            'pending: 0, ackPending: 0)'),
+        equals(
+          'JsConsumerInfoResult(stream: TOSTR_TEST, name: tostr-consumer, '
+          'pending: 0, ackPending: 0)',
+        ),
       );
     });
 
     test('JsMessage.toString() matches expected format', () {
-      js.addStream(JsStreamConfig(
-        name: 'TOSTR_TEST',
-        subjects: ['tostr.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TOSTR_TEST',
+          subjects: ['tostr.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       js.publishString('tostr.msg', 'hello-str');
       final pullSub = js.pullSubscribe('tostr.msg', 'tostr-msg-consumer');
@@ -657,18 +713,22 @@ void main() {
       final replyTo = messages[0].replyTo;
       expect(
         messages[0].toString(),
-        equals('JsMessage(subject: tostr.msg, replyTo: $replyTo, '
-            'data: hello-str)'),
+        equals(
+          'JsMessage(subject: tostr.msg, replyTo: $replyTo, '
+          'data: hello-str)',
+        ),
       );
       messages[0].ack();
     });
 
     test('JsMessageMetadata.toString() matches expected format', () {
-      js.addStream(JsStreamConfig(
-        name: 'TOSTR_TEST',
-        subjects: ['tostr.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TOSTR_TEST',
+          subjects: ['tostr.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       js.publishString('tostr.meta', 'meta-msg');
       final pullSub = js.pullSubscribe('tostr.meta', 'tostr-meta-consumer');
@@ -678,24 +738,30 @@ void main() {
       final meta = messages[0].metadata();
       expect(
         meta.toString(),
-        equals('JsMessageMetadata(stream: TOSTR_TEST, seq: 1, '
-            'consumer: tostr-meta-consumer, delivered: 1)'),
+        equals(
+          'JsMessageMetadata(stream: TOSTR_TEST, seq: 1, '
+          'consumer: tostr-meta-consumer, delivered: 1)',
+        ),
       );
       messages[0].ack();
     });
 
     test('JsPubAckResult.toString() matches expected format', () {
-      js.addStream(JsStreamConfig(
-        name: 'TOSTR_TEST',
-        subjects: ['tostr.>'],
-        storage: jsStorageType.js_MemoryStorage,
-      ));
+      js.addStream(
+        JsStreamConfig(
+          name: 'TOSTR_TEST',
+          subjects: ['tostr.>'],
+          storage: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       final ack = js.publishString('tostr.ack', 'ack-msg');
       expect(
         ack.toString(),
-        equals('JsPubAckResult(stream: TOSTR_TEST, sequence: 1, '
-            'duplicate: false)'),
+        equals(
+          'JsPubAckResult(stream: TOSTR_TEST, sequence: 1, '
+          'duplicate: false)',
+        ),
       );
     });
   });

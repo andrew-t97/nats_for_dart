@@ -1,18 +1,12 @@
-# Standard exclusions
 test/
+coverage/
+docs/
 doc/
-examples/
-
-# Plan and review documents
-*-plan.md
-*-review.md
-
-# Upgrade tooling (not needed by consumers)
 scripts/
-
-# Leftover submodule artifacts
+*.md
+!README.md
+!CHANGELOG.md
 .gitmodules
 .gitattributes
-
-# Development config
 justfile
+ffigen.yaml

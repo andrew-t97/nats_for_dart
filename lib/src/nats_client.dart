@@ -53,10 +53,7 @@ final class NatsClient implements Finalizable {
     final ncPtrPtr = calloc<Pointer<natsConnection>>();
     final urlNative = url.toNativeUtf8();
     try {
-      final status = natsConnection_ConnectTo(
-        ncPtrPtr,
-        urlNative.cast(),
-      );
+      final status = natsConnection_ConnectTo(ncPtrPtr, urlNative.cast());
       checkStatus(status, 'natsConnection_ConnectTo');
       client._nc = ncPtrPtr.value;
       _finalizer.attach(client, client._nc!.cast(), detach: client);
@@ -112,10 +109,7 @@ final class NatsClient implements Finalizable {
       final ncPtrPtr = calloc<Pointer<natsConnection>>();
       final urlNative = url.toNativeUtf8();
       try {
-        final status = natsConnection_ConnectTo(
-          ncPtrPtr,
-          urlNative.cast(),
-        );
+        final status = natsConnection_ConnectTo(ncPtrPtr, urlNative.cast());
         checkStatus(status, 'natsConnection_ConnectTo');
         return ncPtrPtr.value.address;
       } finally {
@@ -149,9 +143,7 @@ final class NatsClient implements Finalizable {
   ///   ..setMaxReconnect(5);
   /// final client = await NatsClient.connectWithOptionsAsync(opts);
   /// ```
-  static Future<NatsClient> connectWithOptionsAsync(
-    NatsOptions options,
-  ) async {
+  static Future<NatsClient> connectWithOptionsAsync(NatsOptions options) async {
     final optionsAddress = options.nativePtr.address;
     final connectionAddress = await Isolate.run(() {
       final ncPtrPtr = calloc<Pointer<natsConnection>>();
@@ -217,10 +209,7 @@ final class NatsClient implements Finalizable {
   void flush({Duration? timeout}) {
     _ensureOpen();
     if (timeout != null) {
-      final status = natsConnection_FlushTimeout(
-        _nc!,
-        timeout.inMilliseconds,
-      );
+      final status = natsConnection_FlushTimeout(_nc!, timeout.inMilliseconds);
       checkStatus(status, 'natsConnection_FlushTimeout');
     } else {
       final status = natsConnection_Flush(_nc!);
@@ -396,9 +385,7 @@ final class NatsClient implements Finalizable {
       _options = null;
     }
 
-    return streamFutures.isEmpty
-        ? Future.value()
-        : Future.wait(streamFutures);
+    return streamFutures.isEmpty ? Future.value() : Future.wait(streamFutures);
   }
 
   /// Sends a string [message] as a request on [subject] and waits for a reply.
@@ -415,24 +402,20 @@ final class NatsClient implements Finalizable {
     String message, {
     Duration timeout = const Duration(seconds: 5),
   }) {
-    return _requestImpl(
-      subject,
-      (subjectPtr, inboxPtr) {
-        final messageNative = message.toNativeUtf8();
-        try {
-          final status = natsConnection_PublishRequestString(
-            _nc!,
-            subjectPtr,
-            inboxPtr,
-            messageNative.cast(),
-          );
-          checkStatus(status, 'natsConnection_PublishRequestString');
-        } finally {
-          calloc.free(messageNative);
-        }
-      },
-      timeout: timeout,
-    );
+    return _requestImpl(subject, (subjectPtr, inboxPtr) {
+      final messageNative = message.toNativeUtf8();
+      try {
+        final status = natsConnection_PublishRequestString(
+          _nc!,
+          subjectPtr,
+          inboxPtr,
+          messageNative.cast(),
+        );
+        checkStatus(status, 'natsConnection_PublishRequestString');
+      } finally {
+        calloc.free(messageNative);
+      }
+    }, timeout: timeout);
   }
 
   /// Sends raw [data] bytes as a request on [subject] and waits for a reply.
@@ -443,26 +426,22 @@ final class NatsClient implements Finalizable {
     Uint8List data, {
     Duration timeout = const Duration(seconds: 5),
   }) {
-    return _requestImpl(
-      subject,
-      (subjectPtr, inboxPtr) {
-        final dataPtr = malloc<Uint8>(data.length);
-        try {
-          dataPtr.asTypedList(data.length).setAll(0, data);
-          final status = natsConnection_PublishRequest(
-            _nc!,
-            subjectPtr,
-            inboxPtr,
-            dataPtr.cast(),
-            data.length,
-          );
-          checkStatus(status, 'natsConnection_PublishRequest');
-        } finally {
-          malloc.free(dataPtr);
-        }
-      },
-      timeout: timeout,
-    );
+    return _requestImpl(subject, (subjectPtr, inboxPtr) {
+      final dataPtr = malloc<Uint8>(data.length);
+      try {
+        dataPtr.asTypedList(data.length).setAll(0, data);
+        final status = natsConnection_PublishRequest(
+          _nc!,
+          subjectPtr,
+          inboxPtr,
+          dataPtr.cast(),
+          data.length,
+        );
+        checkStatus(status, 'natsConnection_PublishRequest');
+      } finally {
+        malloc.free(dataPtr);
+      }
+    }, timeout: timeout);
   }
 
   /// Shared implementation for [request] and [requestBytes].
@@ -473,7 +452,7 @@ final class NatsClient implements Finalizable {
   Future<NatsMessage> _requestImpl(
     String subject,
     void Function(Pointer<Char> subjectPtr, Pointer<Char> inboxPtr)
-        publishWithReplyTo, {
+    publishWithReplyTo, {
     required Duration timeout,
   }) async {
     _ensureOpen();

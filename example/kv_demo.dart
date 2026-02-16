@@ -14,11 +14,13 @@ void main() async {
 
   try {
     // 1. Create a KV bucket
-    final kv = js.createKeyValue(KvConfig(
-      bucket: 'config',
-      history: 5,
-      storageType: jsStorageType.js_MemoryStorage,
-    ));
+    final kv = js.createKeyValue(
+      KvConfig(
+        bucket: 'config',
+        history: 5,
+        storageType: jsStorageType.js_MemoryStorage,
+      ),
+    );
     print('Created bucket: ${kv.bucket}');
 
     // 2. Put and get

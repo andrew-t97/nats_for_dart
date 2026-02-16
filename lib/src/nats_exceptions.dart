@@ -13,7 +13,7 @@ final class NatsException implements Exception {
   final String message;
 
   NatsException(this.status, [String? message])
-      : message = message ?? 'NATS error: ${status.name} (${status.value})';
+    : message = message ?? 'NATS error: ${status.name} (${status.value})';
 
   @override
   String toString() => 'NatsException($message)';
@@ -24,8 +24,10 @@ final class NatsException implements Exception {
 /// subscriber is available on the target subject.
 final class NatsNoRespondersException extends NatsException {
   NatsNoRespondersException(String subject)
-      : super(natsStatus.NATS_NO_RESPONDERS,
-              'No responders on subject: $subject');
+    : super(
+        natsStatus.NATS_NO_RESPONDERS,
+        'No responders on subject: $subject',
+      );
 }
 
 /// Checks a [natsStatus] value and throws a [NatsException] if it is not
@@ -46,11 +48,7 @@ void checkStatus(natsStatus status, [String? context]) {
       // If we can't read the native error, fall back to the status name.
     }
 
-    final parts = <String>[
-      ?context,
-      status.name,
-      ?nativeError,
-    ];
+    final parts = <String>[?context, status.name, ?nativeError];
     throw NatsException(status, parts.join(': '));
   }
 }

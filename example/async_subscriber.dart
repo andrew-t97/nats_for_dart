@@ -35,8 +35,10 @@ Future<void> main() async {
 
     final listener = subscription.messages.listen((msg) {
       received.add(msg);
-      print('  [${received.length}] Received on "${msg.subject}": '
-          '${msg.dataAsString}');
+      print(
+        '  [${received.length}] Received on "${msg.subject}": '
+        '${msg.dataAsString}',
+      );
       if (received.length >= 10) {
         completer.complete();
       }

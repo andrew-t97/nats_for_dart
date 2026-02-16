@@ -45,14 +45,13 @@ final class NatsMessage {
     final subject = natsMsg_GetSubject(msgPtr).cast<Utf8>().toDartString();
     final dataLen = natsMsg_GetDataLength(msgPtr);
     final dataPtr = natsMsg_GetData(msgPtr);
-    final data = Uint8List.fromList(
-      dataPtr.cast<Uint8>().asTypedList(dataLen),
-    );
+    final data = Uint8List.fromList(dataPtr.cast<Uint8>().asTypedList(dataLen));
 
     // Eagerly copy the reply-to subject if present.
     final replyPtr = natsMsg_GetReply(msgPtr);
-    final replyTo =
-        replyPtr == nullptr ? null : replyPtr.cast<Utf8>().toDartString();
+    final replyTo = replyPtr == nullptr
+        ? null
+        : replyPtr.cast<Utf8>().toDartString();
 
     natsMsg_Destroy(msgPtr);
     return NatsMessage._(subject, data, replyTo);

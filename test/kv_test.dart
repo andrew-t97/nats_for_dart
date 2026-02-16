@@ -30,11 +30,13 @@ void main() {
     setUp(() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
-      kv = js.createKeyValue(KvConfig(
-        bucket: 'test-kv',
-        history: 5,
-        storageType: jsStorageType.js_MemoryStorage,
-      ));
+      kv = js.createKeyValue(
+        KvConfig(
+          bucket: 'test-kv',
+          history: 5,
+          storageType: jsStorageType.js_MemoryStorage,
+        ),
+      );
     });
 
     tearDown(() {
@@ -124,11 +126,13 @@ void main() {
     setUp(() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
-      kv = js.createKeyValue(KvConfig(
-        bucket: 'test-kv-bytes',
-        history: 5,
-        storageType: jsStorageType.js_MemoryStorage,
-      ));
+      kv = js.createKeyValue(
+        KvConfig(
+          bucket: 'test-kv-bytes',
+          history: 5,
+          storageType: jsStorageType.js_MemoryStorage,
+        ),
+      );
     });
 
     tearDown(() {
@@ -142,12 +146,11 @@ void main() {
 
     final bytesCrudOps =
         <String, int Function(KeyValueStore kv, String key, Uint8List value)>{
-      'put': (kv, key, value) => kv.put(key, value),
-      'create': (kv, key, value) => kv.create(key, value),
-    };
+          'put': (kv, key, value) => kv.put(key, value),
+          'create': (kv, key, value) => kv.create(key, value),
+        };
 
-    for (final MapEntry(key: opName, value: writeOp)
-        in bytesCrudOps.entries) {
+    for (final MapEntry(key: opName, value: writeOp) in bytesCrudOps.entries) {
       test('$opName writes and reads back raw bytes', () {
         final data = toBytes('bytes-$opName');
         final rev = writeOp(kv, 'key-$opName', data);
@@ -197,11 +200,13 @@ void main() {
     setUp(() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
-      kv = js.createKeyValue(KvConfig(
-        bucket: 'test-kv-list',
-        history: 5,
-        storageType: jsStorageType.js_MemoryStorage,
-      ));
+      kv = js.createKeyValue(
+        KvConfig(
+          bucket: 'test-kv-list',
+          history: 5,
+          storageType: jsStorageType.js_MemoryStorage,
+        ),
+      );
     });
 
     tearDown(() {
@@ -257,10 +262,12 @@ void main() {
     });
 
     test('open re-opens existing bucket and reads back data', () {
-      final kv1 = js.createKeyValue(KvConfig(
-        bucket: 'test-kv-open',
-        storageType: jsStorageType.js_MemoryStorage,
-      ));
+      final kv1 = js.createKeyValue(
+        KvConfig(
+          bucket: 'test-kv-open',
+          storageType: jsStorageType.js_MemoryStorage,
+        ),
+      );
       kv1.putString('survive', 'reopened');
       kv1.close();
 
@@ -272,10 +279,12 @@ void main() {
     });
 
     test('bucket getter returns correct bucket name', () {
-      final kv = js.createKeyValue(KvConfig(
-        bucket: 'test-kv-open',
-        storageType: jsStorageType.js_MemoryStorage,
-      ));
+      final kv = js.createKeyValue(
+        KvConfig(
+          bucket: 'test-kv-open',
+          storageType: jsStorageType.js_MemoryStorage,
+        ),
+      );
       expect(kv.bucket, equals('test-kv-open'));
       kv.close();
     });
@@ -289,11 +298,13 @@ void main() {
     setUp(() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
-      kv = js.createKeyValue(KvConfig(
-        bucket: 'test-kv-watch',
-        history: 5,
-        storageType: jsStorageType.js_MemoryStorage,
-      ));
+      kv = js.createKeyValue(
+        KvConfig(
+          bucket: 'test-kv-watch',
+          history: 5,
+          storageType: jsStorageType.js_MemoryStorage,
+        ),
+      );
     });
 
     tearDown(() {
@@ -381,10 +392,12 @@ void main() {
     });
 
     test('closing KV store cancels active watchers', () async {
-      final kv = js.createKeyValue(KvConfig(
-        bucket: 'test-kv-close-watch',
-        storageType: jsStorageType.js_MemoryStorage,
-      ));
+      final kv = js.createKeyValue(
+        KvConfig(
+          bucket: 'test-kv-close-watch',
+          storageType: jsStorageType.js_MemoryStorage,
+        ),
+      );
       kv.putString('key', 'val');
 
       // Start a watcher but don't cancel it
@@ -407,10 +420,12 @@ void main() {
     setUp(() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
-      kv = js.createKeyValue(KvConfig(
-        bucket: 'test-kv-tostring',
-        storageType: jsStorageType.js_MemoryStorage,
-      ));
+      kv = js.createKeyValue(
+        KvConfig(
+          bucket: 'test-kv-tostring',
+          storageType: jsStorageType.js_MemoryStorage,
+        ),
+      );
     });
 
     tearDown(() {
@@ -454,14 +469,16 @@ void main() {
     });
 
     test('creates bucket with description, maxValueSize, ttl, maxBytes', () {
-      final kv = js.createKeyValue(KvConfig(
-        bucket: 'test-kv-cfg',
-        description: 'A test bucket',
-        maxValueSize: 1024,
-        ttl: Duration(hours: 1),
-        maxBytes: 1024 * 1024,
-        storageType: jsStorageType.js_MemoryStorage,
-      ));
+      final kv = js.createKeyValue(
+        KvConfig(
+          bucket: 'test-kv-cfg',
+          description: 'A test bucket',
+          maxValueSize: 1024,
+          ttl: Duration(hours: 1),
+          maxBytes: 1024 * 1024,
+          storageType: jsStorageType.js_MemoryStorage,
+        ),
+      );
 
       // Verify the bucket is functional
       final rev = kv.putString('cfg-key', 'cfg-val');

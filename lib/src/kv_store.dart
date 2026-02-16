@@ -137,8 +137,8 @@ final class _KvWatcherHandle {
 
 /// A KeyValue store backed by JetStream.
 ///
-/// Obtain via [JetStreamContext.createKeyValue] or
-/// [JetStreamContext.keyValue].
+/// Obtain via [KeyValueStore.create] or [KeyValueStore.open],
+/// or use the [JetStreamKeyValue] extension methods on [JetStreamContext].
 ///
 /// Must be closed via [close] when no longer needed. A [NativeFinalizer]
 /// serves as a safety net if [close] is not called, but relying on GC
@@ -236,8 +236,13 @@ final class KeyValueStore implements Finalizable {
     try {
       dataPtr.asTypedList(value.length).setAll(0, value);
       checkStatus(
-        kvStore_Put(revPtr, _kv!, keyNative.cast(), dataPtr.cast(),
-            value.length),
+        kvStore_Put(
+          revPtr,
+          _kv!,
+          keyNative.cast(),
+          dataPtr.cast(),
+          value.length,
+        ),
         'kvStore_Put',
       );
       return revPtr.value;
@@ -256,12 +261,7 @@ final class KeyValueStore implements Finalizable {
     final revPtr = calloc<Uint64>();
     try {
       checkStatus(
-        kvStore_PutString(
-          revPtr,
-          _kv!,
-          keyNative.cast(),
-          valueNative.cast(),
-        ),
+        kvStore_PutString(revPtr, _kv!, keyNative.cast(), valueNative.cast()),
         'kvStore_PutString',
       );
       return revPtr.value;
@@ -278,8 +278,7 @@ final class KeyValueStore implements Finalizable {
     final keyNative = key.toNativeUtf8();
     final entryPtrPtr = calloc<Pointer<kvEntry>>();
     try {
-      final status =
-          kvStore_Get(entryPtrPtr, _kv!, keyNative.cast());
+      final status = kvStore_Get(entryPtrPtr, _kv!, keyNative.cast());
       if (status == natsStatus.NATS_NOT_FOUND) return null;
       checkStatus(status, 'kvStore_Get');
       return KvEntry._fromNativePtr(entryPtrPtr.value);
@@ -402,10 +401,7 @@ final class KeyValueStore implements Finalizable {
     _ensureOpen();
     final keyNative = key.toNativeUtf8();
     try {
-      checkStatus(
-        kvStore_Delete(_kv!, keyNative.cast()),
-        'kvStore_Delete',
-      );
+      checkStatus(kvStore_Delete(_kv!, keyNative.cast()), 'kvStore_Delete');
     } finally {
       calloc.free(keyNative);
     }
@@ -432,10 +428,7 @@ final class KeyValueStore implements Finalizable {
     _ensureOpen();
     final keysList = calloc<kvKeysList>();
     try {
-      checkStatus(
-        kvStore_Keys(keysList, _kv!, nullptr),
-        'kvStore_Keys',
-      );
+      checkStatus(kvStore_Keys(keysList, _kv!, nullptr), 'kvStore_Keys');
       final result = <String>[];
       for (var i = 0; i < keysList.ref.Count; i++) {
         result.add(keysList.ref.Keys[i].cast<Utf8>().toDartString());
@@ -483,12 +476,7 @@ final class KeyValueStore implements Finalizable {
     return _createWatchStream((watcherPtrPtr, watchOpts) {
       final keyNative = keyPattern.toNativeUtf8();
       try {
-        return kvStore_Watch(
-          watcherPtrPtr,
-          _kv!,
-          keyNative.cast(),
-          watchOpts,
-        );
+        return kvStore_Watch(watcherPtrPtr, _kv!, keyNative.cast(), watchOpts);
       } finally {
         calloc.free(keyNative);
       }
@@ -507,7 +495,8 @@ final class KeyValueStore implements Finalizable {
     natsStatus Function(
       Pointer<Pointer<kvWatcher>> watcherPtrPtr,
       Pointer<kvWatchOptions> watchOpts,
-    ) createWatcher,
+    )
+    createWatcher,
   ) {
     final watcherPtrPtr = calloc<Pointer<kvWatcher>>();
     final watchOpts = calloc<kvWatchOptions>();

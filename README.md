@@ -23,8 +23,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  nats_for_dart:
-    path: ../nats_for_dart  # or your path / git ref
+  nats_for_dart: ^1.0.0
 ```
 
 Then run:
@@ -85,30 +84,9 @@ just test
 just test-single nats_client_test.dart
 ```
 
-## Upgrading the vendored nats.c
+## Contributing
 
-The native C source lives in `third_party/nats_c/` as a vendored copy (currently v3.12.0). To upgrade to a new nats.c release:
-
-1. **Clone or download** the new [nats.c release](https://github.com/nats-io/nats.c/releases).
-
-2. **Run the update script:**
-   ```bash
-   ./scripts/update_vendor.sh /path/to/nats.c
-   ```
-
-3. **Check for added or removed `.c` files** and update the `_sources` list in `hook/build.dart` accordingly. The script will print file counts to help you spot differences.
-
-4. **Regenerate FFI bindings:**
-   ```bash
-   dart run ffigen --config ffigen.yaml
-   ```
-
-5. **Run the test suite:**
-   ```bash
-   just test
-   ```
-
-> **Note:** If upgrading from a release where `version.h` is not pre-generated (only `version.h.in` exists), manually create `version.h` from `version.h.in` by substituting the version values before building.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development and maintenance workflows, including how to upgrade the vendored nats.c library.
 
 ## License
 

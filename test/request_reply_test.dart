@@ -34,7 +34,8 @@ void main() {
     });
 
     test('basic string request-reply', () async {
-      final subject = 'test.reqrep.string.${DateTime.now().millisecondsSinceEpoch}';
+      final subject =
+          'test.reqrep.string.${DateTime.now().millisecondsSinceEpoch}';
 
       // Set up the responder: subscribe, read request, reply to replyTo.
       final sub = responder.subscribe(subject);
@@ -53,7 +54,8 @@ void main() {
     });
 
     test('basic bytes request-reply', () async {
-      final subject = 'test.reqrep.bytes.${DateTime.now().millisecondsSinceEpoch}';
+      final subject =
+          'test.reqrep.bytes.${DateTime.now().millisecondsSinceEpoch}';
 
       final sub = responder.subscribe(subject);
       sub.messages.listen((msg) {
@@ -71,7 +73,8 @@ void main() {
     });
 
     test('no responders detection', () async {
-      final subject = 'test.reqrep.noresp.${DateTime.now().millisecondsSinceEpoch}';
+      final subject =
+          'test.reqrep.noresp.${DateTime.now().millisecondsSinceEpoch}';
 
       // No subscriber on this subject — NATS 2.2+ returns 503 immediately
       // instead of waiting for a timeout.
@@ -82,7 +85,8 @@ void main() {
     });
 
     test('respond convenience method', () async {
-      final subject = 'test.reqrep.respond.${DateTime.now().millisecondsSinceEpoch}';
+      final subject =
+          'test.reqrep.respond.${DateTime.now().millisecondsSinceEpoch}';
 
       // Use the respond() convenience method instead of manual publish.
       final sub = responder.subscribe(subject);
@@ -98,7 +102,8 @@ void main() {
     });
 
     test('respondBytes convenience method', () async {
-      final subject = 'test.reqrep.respondbytes.${DateTime.now().millisecondsSinceEpoch}';
+      final subject =
+          'test.reqrep.respondbytes.${DateTime.now().millisecondsSinceEpoch}';
 
       final sub = responder.subscribe(subject);
       sub.messages.listen((msg) {
@@ -131,7 +136,8 @@ void main() {
     });
 
     test('multiple concurrent requests get independent replies', () async {
-      final subject = 'test.reqrep.concurrent.${DateTime.now().millisecondsSinceEpoch}';
+      final subject =
+          'test.reqrep.concurrent.${DateTime.now().millisecondsSinceEpoch}';
 
       // Responder echoes with a prefix.
       final sub = responder.subscribe(subject);

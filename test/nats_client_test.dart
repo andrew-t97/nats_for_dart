@@ -74,11 +74,13 @@ void main() {
 
       expect(
         () => sub.nextMessage(timeout: const Duration(milliseconds: 100)),
-        throwsA(isA<NatsException>().having(
-          (e) => e.status,
-          'status',
-          equals(natsStatus.NATS_TIMEOUT),
-        )),
+        throwsA(
+          isA<NatsException>().having(
+            (e) => e.status,
+            'status',
+            equals(natsStatus.NATS_TIMEOUT),
+          ),
+        ),
       );
     });
 
@@ -133,20 +135,14 @@ void main() {
       final closedClient = NatsClient.connect('nats://localhost:4222');
       await closedClient.close();
 
-      expect(
-        () => closedClient.subscribeSync('test.closed'),
-        throwsStateError,
-      );
+      expect(() => closedClient.subscribeSync('test.closed'), throwsStateError);
     });
 
     test('flush on closed client throws StateError', () async {
       final closedClient = NatsClient.connect('nats://localhost:4222');
       await closedClient.close();
 
-      expect(
-        () => closedClient.flush(),
-        throwsStateError,
-      );
+      expect(() => closedClient.flush(), throwsStateError);
     });
 
     test('closing client closes all sync subscriptions', () async {
@@ -254,59 +250,60 @@ void main() {
       );
     });
 
-    test('NatsMessage.toString() with replyTo matches expected format', () async {
-      // Set up a responder so we can get a message with a replyTo
-      final responder = client.subscribeSync('test.msg.tostring.req');
-      addTearDown(responder.close);
+    test(
+      'NatsMessage.toString() with replyTo matches expected format',
+      () async {
+        // Set up a responder so we can get a message with a replyTo
+        final responder = client.subscribeSync('test.msg.tostring.req');
+        addTearDown(responder.close);
 
-      client.publish('test.msg.tostring', 'ignored');
+        client.publish('test.msg.tostring', 'ignored');
 
-      // Use request/respond to get a message that has replyTo set
-      final sub = client.subscribe('test.msg.tostring.req');
-      addTearDown(() => sub.close());
+        // Use request/respond to get a message that has replyTo set
+        final sub = client.subscribe('test.msg.tostring.req');
+        addTearDown(() => sub.close());
 
-      await Future.delayed(const Duration(milliseconds: 200));
+        await Future.delayed(const Duration(milliseconds: 200));
 
-      // Publish a request (has replyTo set to the inbox)
-      client.publish('test.msg.tostring', 'no-reply');
+        // Publish a request (has replyTo set to the inbox)
+        client.publish('test.msg.tostring', 'no-reply');
 
-      // Get a message via sync sub — it won't have replyTo.
-      // Instead, listen on the responder for a request message.
-      final requestFuture = client.request(
-        'test.msg.tostring.req',
-        'request-body',
-        timeout: const Duration(seconds: 5),
-      );
+        // Get a message via sync sub — it won't have replyTo.
+        // Instead, listen on the responder for a request message.
+        final requestFuture = client.request(
+          'test.msg.tostring.req',
+          'request-body',
+          timeout: const Duration(seconds: 5),
+        );
 
-      final reqMsg = responder.nextMessage(timeout: const Duration(seconds: 5));
-      expect(reqMsg.replyTo, isNotNull);
-      expect(
-        reqMsg.toString(),
-        equals('NatsMessage(subject: test.msg.tostring.req, '
-            'replyTo: ${reqMsg.replyTo}, data: request-body)'),
-      );
+        final reqMsg = responder.nextMessage(
+          timeout: const Duration(seconds: 5),
+        );
+        expect(reqMsg.replyTo, isNotNull);
+        expect(
+          reqMsg.toString(),
+          equals(
+            'NatsMessage(subject: test.msg.tostring.req, '
+            'replyTo: ${reqMsg.replyTo}, data: request-body)',
+          ),
+        );
 
-      // Respond so the request future completes
-      client.respond(reqMsg, 'response');
-      await requestFuture;
-    });
+        // Respond so the request future completes
+        client.respond(reqMsg, 'response');
+        await requestFuture;
+      },
+    );
   });
 
   group('NatsError.toString()', () {
     test('NatsError.toString() matches expected format', () {
       final error = NatsError(natsStatus.NATS_OK);
-      expect(
-        error.toString(),
-        equals('NatsError(NATS_OK)'),
-      );
+      expect(error.toString(), equals('NatsError(NATS_OK)'));
     });
 
     test('NatsError.toString() with error status matches expected format', () {
       final error = NatsError(natsStatus.NATS_TIMEOUT);
-      expect(
-        error.toString(),
-        equals('NatsError(NATS_TIMEOUT)'),
-      );
+      expect(error.toString(), equals('NatsError(NATS_TIMEOUT)'));
     });
   });
 
@@ -446,10 +443,7 @@ void main() {
   group('NatsException', () {
     test('default message includes status name and value', () {
       final exception = NatsException(natsStatus.NATS_TIMEOUT);
-      expect(
-        exception.message,
-        equals('NATS error: NATS_TIMEOUT (26)'),
-      );
+      expect(exception.message, equals('NATS error: NATS_TIMEOUT (26)'));
     });
 
     test('toString() wraps the message', () {
