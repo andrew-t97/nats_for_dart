@@ -65,6 +65,52 @@ void _onMessage(
   }
 }
 
+/// Shared [NativeCallable] singleton for all async subscriptions.
+///
+/// Because [_onMessage] demuxes by subscription ID via the closure pointer,
+/// every subscription can share the same native callback. This avoids a race
+/// where the C dispatcher invokes a per-subscription callable that Dart has
+/// already closed.
+NativeCallable<
+  Void Function(
+    Pointer<natsConnection>,
+    Pointer<natsSubscription>,
+    Pointer<natsMsg>,
+    Pointer<Void>,
+  )
+>? _sharedMessageCallable;
+
+/// Lazily initialises and returns the shared message callable.
+NativeCallable<
+  Void Function(
+    Pointer<natsConnection>,
+    Pointer<natsSubscription>,
+    Pointer<natsMsg>,
+    Pointer<Void>,
+  )
+> _getSharedMessageCallable() {
+  return _sharedMessageCallable ??=
+      NativeCallable<
+        Void Function(
+          Pointer<natsConnection>,
+          Pointer<natsSubscription>,
+          Pointer<natsMsg>,
+          Pointer<Void>,
+        )
+      >.listener(_onMessage);
+}
+
+/// Closes the shared message callable.
+///
+/// Must only be called after `nats_CloseAndWait()` guarantees all C threads
+/// have exited. Sets to `null` so a subsequent `_getSharedMessageCallable()`
+/// re-creates it (e.g. in tests that open multiple libraries).
+@internal
+void closeSharedMessageCallable() {
+  _sharedMessageCallable?.close();
+  _sharedMessageCallable = null;
+}
+
 /// An asynchronous subscription that delivers messages via a Dart [Stream].
 ///
 /// Messages are received on internal NATS threads and safely bridged to the
@@ -81,18 +127,6 @@ final class NatsAsyncSubscription implements Finalizable {
   final int _id;
   final StreamController<NatsMessage> _controller;
 
-  /// The [NativeCallable] that must stay alive while the subscription is
-  /// active. Prevent GC from collecting it.
-  final NativeCallable<
-    Void Function(
-      Pointer<natsConnection>,
-      Pointer<natsSubscription>,
-      Pointer<natsMsg>,
-      Pointer<Void>,
-    )
-  >
-  _nativeCallable;
-
   /// Callback invoked on close to remove this subscription from
   /// the owning client's active-subscription set.
   void Function()? _onClose;
@@ -101,18 +135,17 @@ final class NatsAsyncSubscription implements Finalizable {
     this._sub,
     this._id,
     this._controller,
-    this._nativeCallable,
     this._onClose,
   );
 
   /// Creates a new [NatsAsyncSubscription] by allocating a routing slot and
-  /// creating a [NativeCallable.listener].
+  /// ensuring the shared [NativeCallable.listener] exists.
   ///
   /// The native subscription pointer is **not** set until [updateSubPtr] is
   /// called after the C subscribe call succeeds. If the C call fails,
   /// calling [close] on the returned object cleanly releases the routing
-  /// slot, [StreamController], and [NativeCallable] without attempting to
-  /// destroy a native subscription.
+  /// slot and [StreamController] without attempting to destroy a native
+  /// subscription.
   ///
   /// This is intended to be called from [NatsClient.subscribe] and
   /// [NatsClient.queueSubscribe].
@@ -122,32 +155,25 @@ final class NatsAsyncSubscription implements Finalizable {
     final controller = StreamController<NatsMessage>();
     _subscriptionRoutes[id] = controller;
 
-    final callable =
-        NativeCallable<
-          Void Function(
-            Pointer<natsConnection>,
-            Pointer<natsSubscription>,
-            Pointer<natsMsg>,
-            Pointer<Void>,
-          )
-        >.listener(_onMessage);
+    // Ensure the shared callable exists (lazy-init).
+    _getSharedMessageCallable();
 
     final sub = NatsAsyncSubscription._(
       null,
       id,
       controller,
-      callable,
       onClose,
     );
     return sub;
   }
 
-  /// Returns the native callback pointer for [sub], suitable for passing to
+  /// Returns the shared native callback pointer, suitable for passing to
   /// the C subscribe functions (e.g. `natsConnection_Subscribe`).
   ///
-  /// Must be called after [create] and before the C subscribe call.
-  static natsMsgHandler nativeCallbackFor(NatsAsyncSubscription sub) {
-    return sub._nativeCallable.nativeFunction;
+  /// Must be called after [create] (which ensures the shared callable
+  /// exists) and before the C subscribe call.
+  static natsMsgHandler nativeCallbackFor() {
+    return _getSharedMessageCallable().nativeFunction;
   }
 
   /// Returns the closure pointer (carrying the subscription ID) for [sub],
@@ -193,8 +219,7 @@ final class NatsAsyncSubscription implements Finalizable {
   /// Whether this subscription has been closed.
   bool get isClosed => _closed;
 
-  /// Unsubscribes and destroys this subscription, closing the message stream
-  /// and releasing the native callback.
+  /// Unsubscribes and destroys this subscription, closing the message stream.
   ///
   /// Native resources are freed synchronously. The returned [Future]
   /// completes when the stream controller has finished notifying listeners.
@@ -211,9 +236,8 @@ final class NatsAsyncSubscription implements Finalizable {
     //    the native message themselves.
     _subscriptionRoutes.remove(_id);
 
-    // 2. Unsubscribe and destroy the native subscription first — this
-    //    tells the C library to stop delivering messages, which must
-    //    happen *before* we close the NativeCallable.
+    // 2. Unsubscribe and destroy the native subscription — this tells
+    //    the C library to stop delivering messages.
     if (_sub != null) {
       final subPtr = _sub!;
       _sub = null;
@@ -231,15 +255,11 @@ final class NatsAsyncSubscription implements Finalizable {
       }
     }
 
-    // 3. Now safe to close the native callable — no more C callbacks
-    //    will be invoked because the subscription has been destroyed.
-    _nativeCallable.close();
-
-    // 4. Remove from owning client's active set.
+    // 3. Remove from owning client's active set.
     _onClose?.call();
     _onClose = null;
 
-    // 5. Close the stream to notify listeners. For a single-subscription
+    // 4. Close the stream to notify listeners. For a single-subscription
     //    StreamController, close() only completes when the done event is
     //    delivered to a subscriber. If nobody is listening, return
     //    immediately to avoid hanging indefinitely.

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
+import 'package:meta/meta.dart';
 
 import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
@@ -62,6 +63,91 @@ void _onError(
   }
 }
 
+// ── Shared NativeCallable singletons for lifecycle callbacks ───────────
+//
+// Each lifecycle callback type needs its own shared callable because it
+// routes through a distinct top-level function. They are created lazily
+// and only closed at NatsLibrary.close() time, after nats_CloseAndWait()
+// guarantees all C threads have exited.
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
+    _sharedDisconnectedCallable;
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
+    _getSharedDisconnectedCallable() {
+  return _sharedDisconnectedCallable ??=
+      NativeCallable<
+        Void Function(Pointer<natsConnection>, Pointer<Void>)
+      >.listener(_onDisconnected);
+}
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
+    _sharedReconnectedCallable;
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
+    _getSharedReconnectedCallable() {
+  return _sharedReconnectedCallable ??=
+      NativeCallable<
+        Void Function(Pointer<natsConnection>, Pointer<Void>)
+      >.listener(_onReconnected);
+}
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
+    _sharedClosedCallable;
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
+    _getSharedClosedCallable() {
+  return _sharedClosedCallable ??=
+      NativeCallable<
+        Void Function(Pointer<natsConnection>, Pointer<Void>)
+      >.listener(_onClosed);
+}
+
+NativeCallable<
+  Void Function(
+    Pointer<natsConnection>,
+    Pointer<natsSubscription>,
+    UnsignedInt,
+    Pointer<Void>,
+  )
+>? _sharedErrorCallable;
+
+NativeCallable<
+  Void Function(
+    Pointer<natsConnection>,
+    Pointer<natsSubscription>,
+    UnsignedInt,
+    Pointer<Void>,
+  )
+> _getSharedErrorCallable() {
+  return _sharedErrorCallable ??=
+      NativeCallable<
+        Void Function(
+          Pointer<natsConnection>,
+          Pointer<natsSubscription>,
+          UnsignedInt,
+          Pointer<Void>,
+        )
+      >.listener(_onError);
+}
+
+/// Closes all shared lifecycle callables.
+///
+/// Must only be called after `nats_CloseAndWait()` guarantees all C threads
+/// have exited. Sets each to `null` so subsequent lazy getters re-create
+/// them (e.g. in tests that open multiple libraries).
+@internal
+void closeSharedLifecycleCallables() {
+  _sharedDisconnectedCallable?.close();
+  _sharedDisconnectedCallable = null;
+  _sharedReconnectedCallable?.close();
+  _sharedReconnectedCallable = null;
+  _sharedClosedCallable?.close();
+  _sharedClosedCallable = null;
+  _sharedErrorCallable?.close();
+  _sharedErrorCallable = null;
+}
+
 /// Builder-style wrapper around `natsOptions` for configuring connections.
 ///
 /// Exposes lifecycle event streams (`onDisconnected`, `onReconnected`,
@@ -95,30 +181,15 @@ final class NatsOptions implements Finalizable {
 
   int? _disconnectedId;
   StreamController<void>? _disconnectedController;
-  NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-  _disconnectedCallable;
 
   int? _reconnectedId;
   StreamController<void>? _reconnectedController;
-  NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-  _reconnectedCallable;
 
   int? _closedId;
   StreamController<void>? _closedController;
-  NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-  _closedCallable;
 
   int? _errorId;
   StreamController<NatsError>? _errorController;
-  NativeCallable<
-    Void Function(
-      Pointer<natsConnection>,
-      Pointer<natsSubscription>,
-      UnsignedInt,
-      Pointer<Void>,
-    )
-  >?
-  _errorCallable;
 
   /// Creates a new [NatsOptions] with default settings.
   NatsOptions() {
@@ -372,15 +443,10 @@ final class NatsOptions implements Finalizable {
       _disconnectedController = StreamController<void>.broadcast();
       _lifecycleRoutes[_disconnectedId!] = _disconnectedController!;
 
-      _disconnectedCallable =
-          NativeCallable<
-            Void Function(Pointer<natsConnection>, Pointer<Void>)
-          >.listener(_onDisconnected);
-
       checkStatus(
         natsOptions_SetDisconnectedCB(
           _opts!,
-          _disconnectedCallable!.nativeFunction,
+          _getSharedDisconnectedCallable().nativeFunction,
           Pointer.fromAddress(_disconnectedId!),
         ),
         'natsOptions_SetDisconnectedCB',
@@ -403,15 +469,10 @@ final class NatsOptions implements Finalizable {
       _reconnectedController = StreamController<void>.broadcast();
       _lifecycleRoutes[_reconnectedId!] = _reconnectedController!;
 
-      _reconnectedCallable =
-          NativeCallable<
-            Void Function(Pointer<natsConnection>, Pointer<Void>)
-          >.listener(_onReconnected);
-
       checkStatus(
         natsOptions_SetReconnectedCB(
           _opts!,
-          _reconnectedCallable!.nativeFunction,
+          _getSharedReconnectedCallable().nativeFunction,
           Pointer.fromAddress(_reconnectedId!),
         ),
         'natsOptions_SetReconnectedCB',
@@ -434,15 +495,10 @@ final class NatsOptions implements Finalizable {
       _closedController = StreamController<void>.broadcast();
       _lifecycleRoutes[_closedId!] = _closedController!;
 
-      _closedCallable =
-          NativeCallable<
-            Void Function(Pointer<natsConnection>, Pointer<Void>)
-          >.listener(_onClosed);
-
       checkStatus(
         natsOptions_SetClosedCB(
           _opts!,
-          _closedCallable!.nativeFunction,
+          _getSharedClosedCallable().nativeFunction,
           Pointer.fromAddress(_closedId!),
         ),
         'natsOptions_SetClosedCB',
@@ -464,20 +520,10 @@ final class NatsOptions implements Finalizable {
       _errorController = StreamController<NatsError>.broadcast();
       _errorRoutes[_errorId!] = _errorController!;
 
-      _errorCallable =
-          NativeCallable<
-            Void Function(
-              Pointer<natsConnection>,
-              Pointer<natsSubscription>,
-              UnsignedInt,
-              Pointer<Void>,
-            )
-          >.listener(_onError);
-
       checkStatus(
         natsOptions_SetErrorHandler(
           _opts!,
-          _errorCallable!.nativeFunction,
+          _getSharedErrorCallable().nativeFunction,
           Pointer.fromAddress(_errorId!),
         ),
         'natsOptions_SetErrorHandler',
@@ -514,15 +560,7 @@ final class NatsOptions implements Finalizable {
       if (_errorController != null) _errorController!.close(),
     ];
 
-    // 3. Close NativeCallables last — keeps them alive long enough for
-    //    any already-posted callbacks to be delivered (they'll no-op
-    //    because the routing table entries are gone).
-    _disconnectedCallable?.close();
-    _reconnectedCallable?.close();
-    _closedCallable?.close();
-    _errorCallable?.close();
-
-    // 4. Destroy the native options pointer.
+    // 3. Destroy the native options pointer.
     if (_opts != null) {
       _finalizer.detach(this);
       natsOptions_Destroy(_opts!);
