@@ -281,7 +281,7 @@ final class NatsClient implements Finalizable {
         subPtrPtr,
         _nc!,
         subjectNative.cast(),
-        NatsAsyncSubscription.nativeCallbackFor(asyncSub),
+        NatsAsyncSubscription.nativeCallbackFor(),
         NatsAsyncSubscription.closureFor(asyncSub),
       );
       checkStatus(status, 'natsConnection_Subscribe');
@@ -324,7 +324,7 @@ final class NatsClient implements Finalizable {
         _nc!,
         subjectNative.cast(),
         queueNative.cast(),
-        NatsAsyncSubscription.nativeCallbackFor(asyncSub),
+        NatsAsyncSubscription.nativeCallbackFor(),
         NatsAsyncSubscription.closureFor(asyncSub),
       );
       checkStatus(status, 'natsConnection_QueueSubscribe');
