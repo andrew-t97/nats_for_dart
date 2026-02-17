@@ -78,7 +78,8 @@ NativeCallable<
     Pointer<natsMsg>,
     Pointer<Void>,
   )
->? _sharedMessageCallable;
+>?
+_sharedMessageCallable;
 
 /// Lazily initialises and returns the shared message callable.
 NativeCallable<
@@ -88,7 +89,8 @@ NativeCallable<
     Pointer<natsMsg>,
     Pointer<Void>,
   )
-> _getSharedMessageCallable() {
+>
+_getSharedMessageCallable() {
   return _sharedMessageCallable ??=
       NativeCallable<
         Void Function(
@@ -131,12 +133,7 @@ final class NatsAsyncSubscription implements Finalizable {
   /// the owning client's active-subscription set.
   void Function()? _onClose;
 
-  NatsAsyncSubscription._(
-    this._sub,
-    this._id,
-    this._controller,
-    this._onClose,
-  );
+  NatsAsyncSubscription._(this._sub, this._id, this._controller, this._onClose);
 
   /// Creates a new [NatsAsyncSubscription] by allocating a routing slot and
   /// ensuring the shared [NativeCallable.listener] exists.
@@ -158,12 +155,7 @@ final class NatsAsyncSubscription implements Finalizable {
     // Ensure the shared callable exists (lazy-init).
     _getSharedMessageCallable();
 
-    final sub = NatsAsyncSubscription._(
-      null,
-      id,
-      controller,
-      onClose,
-    );
+    final sub = NatsAsyncSubscription._(null, id, controller, onClose);
     return sub;
   }
 

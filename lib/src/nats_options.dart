@@ -71,10 +71,10 @@ void _onError(
 // guarantees all C threads have exited.
 
 NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-    _sharedDisconnectedCallable;
+_sharedDisconnectedCallable;
 
 NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
-    _getSharedDisconnectedCallable() {
+_getSharedDisconnectedCallable() {
   return _sharedDisconnectedCallable ??=
       NativeCallable<
         Void Function(Pointer<natsConnection>, Pointer<Void>)
@@ -82,10 +82,10 @@ NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
 }
 
 NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-    _sharedReconnectedCallable;
+_sharedReconnectedCallable;
 
 NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
-    _getSharedReconnectedCallable() {
+_getSharedReconnectedCallable() {
   return _sharedReconnectedCallable ??=
       NativeCallable<
         Void Function(Pointer<natsConnection>, Pointer<Void>)
@@ -93,10 +93,10 @@ NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
 }
 
 NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-    _sharedClosedCallable;
+_sharedClosedCallable;
 
 NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
-    _getSharedClosedCallable() {
+_getSharedClosedCallable() {
   return _sharedClosedCallable ??=
       NativeCallable<
         Void Function(Pointer<natsConnection>, Pointer<Void>)
@@ -110,7 +110,8 @@ NativeCallable<
     UnsignedInt,
     Pointer<Void>,
   )
->? _sharedErrorCallable;
+>?
+_sharedErrorCallable;
 
 NativeCallable<
   Void Function(
@@ -119,7 +120,8 @@ NativeCallable<
     UnsignedInt,
     Pointer<Void>,
   )
-> _getSharedErrorCallable() {
+>
+_getSharedErrorCallable() {
   return _sharedErrorCallable ??=
       NativeCallable<
         Void Function(

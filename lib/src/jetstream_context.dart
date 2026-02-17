@@ -220,7 +220,8 @@ final class JsAsyncSubscription implements Finalizable {
       Pointer<natsMsg>,
       Pointer<Void>,
     )
-  >? _sharedJsCallable;
+  >?
+  _sharedJsCallable;
 
   /// Lazily initialises and returns the shared JetStream callable.
   static NativeCallable<
@@ -230,7 +231,8 @@ final class JsAsyncSubscription implements Finalizable {
       Pointer<natsMsg>,
       Pointer<Void>,
     )
-  > _getSharedJsCallable() {
+  >
+  _getSharedJsCallable() {
     return _sharedJsCallable ??=
         NativeCallable<
           Void Function(
@@ -273,11 +275,7 @@ final class JsAsyncSubscription implements Finalizable {
   final int _id;
   final StreamController<JsMessage> _controller;
 
-  JsAsyncSubscription._(
-    this._sub,
-    this._id,
-    this._controller,
-  );
+  JsAsyncSubscription._(this._sub, this._id, this._controller);
 
   /// Creates a new JsAsyncSubscription with a pre-allocated routing slot.
   factory JsAsyncSubscription._create() {
