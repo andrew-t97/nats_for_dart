@@ -48,7 +48,7 @@ void main() {
         JsStreamConfig(
           name: 'TEST_JS',
           subjects: ['test.js.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 
@@ -66,7 +66,7 @@ void main() {
         JsStreamConfig(
           name: 'TEST_JS',
           subjects: ['test.js.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 
@@ -91,7 +91,7 @@ void main() {
         JsStreamConfig(
           name: 'TEST_JS',
           subjects: ['test.js.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 
@@ -121,7 +121,7 @@ void main() {
         JsStreamConfig(
           name: 'TEST_JS',
           subjects: ['test.js.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 
@@ -140,7 +140,7 @@ void main() {
         JsStreamConfig(
           name: 'TEST_JS',
           subjects: ['test.js.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 
@@ -162,7 +162,7 @@ void main() {
         JsStreamConfig(
           name: 'TEST_JS',
           subjects: ['test.js.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 
@@ -206,7 +206,7 @@ void main() {
         JsStreamConfig(
           name: 'MGMT_TEST',
           subjects: ['mgmt.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
           replicas: 1,
         ),
       );
@@ -234,7 +234,7 @@ void main() {
         JsStreamConfig(
           name: 'MGMT_TEST',
           subjects: ['mgmt.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 
@@ -263,7 +263,7 @@ void main() {
         JsStreamConfig(
           name: 'TEST_JS',
           subjects: ['test.js.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
     });
@@ -362,7 +362,7 @@ void main() {
         JsStreamConfig(
           name: 'MGMT_TEST',
           subjects: ['consumer.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
     });
@@ -423,7 +423,7 @@ void main() {
             config: JsStreamConfig(
               name: 'CFG_DESC',
               subjects: ['cfg.desc.>'],
-              storage: jsStorageType.js_MemoryStorage,
+              storage: StorageType.memory,
               description: 'A test stream with description',
             ),
             verify: (info) => expect(info.name, equals('CFG_DESC')),
@@ -432,7 +432,7 @@ void main() {
             config: JsStreamConfig(
               name: 'CFG_MAXAGE',
               subjects: ['cfg.maxage.>'],
-              storage: jsStorageType.js_MemoryStorage,
+              storage: StorageType.memory,
               maxAge: Duration(hours: 1),
             ),
             verify: (info) => expect(info.name, equals('CFG_MAXAGE')),
@@ -451,7 +451,7 @@ void main() {
         JsStreamConfig(
           name: 'CFG_UPDATE',
           subjects: ['cfg.update.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 
@@ -459,7 +459,7 @@ void main() {
         JsStreamConfig(
           name: 'CFG_UPDATE',
           subjects: ['cfg.update.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
           description: 'Updated description',
           maxAge: Duration(hours: 2),
         ),
@@ -479,7 +479,7 @@ void main() {
         JsStreamConfig(
           name: 'CONS_CFG',
           subjects: ['cons.cfg.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
     });
@@ -536,7 +536,7 @@ void main() {
         JsStreamConfig(
           name: 'SUB_PARAMS',
           subjects: ['sub.params.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
     });
@@ -609,7 +609,7 @@ void main() {
         JsStreamConfig(
           name: 'TEST_JS',
           subjects: ['test.js.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
     });
@@ -667,7 +667,7 @@ void main() {
         JsStreamConfig(
           name: 'TOSTR_TEST',
           subjects: ['tostr.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
       expect(
@@ -684,7 +684,7 @@ void main() {
         JsStreamConfig(
           name: 'TOSTR_TEST',
           subjects: ['tostr.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
       final consumerInfo = js.addConsumer(
@@ -705,7 +705,7 @@ void main() {
         JsStreamConfig(
           name: 'TOSTR_TEST',
           subjects: ['tostr.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 
@@ -733,7 +733,7 @@ void main() {
         JsStreamConfig(
           name: 'TOSTR_TEST',
           subjects: ['tostr.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 
@@ -758,7 +758,7 @@ void main() {
         JsStreamConfig(
           name: 'TOSTR_TEST',
           subjects: ['tostr.>'],
-          storage: jsStorageType.js_MemoryStorage,
+          storage: StorageType.memory,
         ),
       );
 

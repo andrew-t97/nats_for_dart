@@ -16,7 +16,7 @@ void main() {
       JsStreamConfig(
         name: 'ORDERS',
         subjects: ['orders.>'],
-        storage: jsStorageType.js_MemoryStorage,
+        storage: StorageType.memory,
       ),
     );
     print('Created stream: ${streamInfo.name}');

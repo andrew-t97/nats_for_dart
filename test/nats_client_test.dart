@@ -82,7 +82,7 @@ void main() {
           isA<NatsException>().having(
             (e) => e.status,
             'status',
-            equals(natsStatus.NATS_TIMEOUT),
+            equals(NatsStatus.timeout),
           ),
         ),
       );
@@ -301,13 +301,13 @@ void main() {
 
   group('NatsError.toString()', () {
     test('NatsError.toString() matches expected format', () {
-      final error = NatsError(natsStatus.NATS_OK);
-      expect(error.toString(), equals('NatsError(NATS_OK)'));
+      final error = NatsError(NatsStatus.ok);
+      expect(error.toString(), equals('NatsError(ok)'));
     });
 
     test('NatsError.toString() with error status matches expected format', () {
-      final error = NatsError(natsStatus.NATS_TIMEOUT);
-      expect(error.toString(), equals('NatsError(NATS_TIMEOUT)'));
+      final error = NatsError(NatsStatus.timeout);
+      expect(error.toString(), equals('NatsError(timeout)'));
     });
   });
 
@@ -446,15 +446,15 @@ void main() {
 
   group('NatsException', () {
     test('default message includes status name and value', () {
-      final exception = NatsException(natsStatus.NATS_TIMEOUT);
-      expect(exception.message, equals('NATS error: NATS_TIMEOUT (26)'));
+      final exception = NatsException(NatsStatus.timeout);
+      expect(exception.message, equals('NATS error: timeout (26)'));
     });
 
     test('toString() wraps the message', () {
-      final exception = NatsException(natsStatus.NATS_TIMEOUT);
+      final exception = NatsException(NatsStatus.timeout);
       expect(
         exception.toString(),
-        equals('NatsException(NATS error: NATS_TIMEOUT (26))'),
+        equals('NatsException(NATS error: timeout (26))'),
       );
     });
   });

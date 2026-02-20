@@ -41,7 +41,7 @@ void main() {
         KvConfig(
           bucket: 'test-kv',
           history: 5,
-          storageType: jsStorageType.js_MemoryStorage,
+          storageType: StorageType.memory,
         ),
       );
     });
@@ -64,7 +64,7 @@ void main() {
       expect(entry!.key, equals('key1'));
       expect(entry.valueAsString, equals('value1'));
       expect(entry.revision, equals(rev));
-      expect(entry.operation, equals(kvOperation.kvOp_Put));
+      expect(entry.operation, equals(KvOperation.put));
     });
 
     test('get returns null for non-existent key', () {
@@ -137,7 +137,7 @@ void main() {
         KvConfig(
           bucket: 'test-kv-bytes',
           history: 5,
-          storageType: jsStorageType.js_MemoryStorage,
+          storageType: StorageType.memory,
         ),
       );
     });
@@ -211,7 +211,7 @@ void main() {
         KvConfig(
           bucket: 'test-kv-list',
           history: 5,
-          storageType: jsStorageType.js_MemoryStorage,
+          storageType: StorageType.memory,
         ),
       );
     });
@@ -270,10 +270,7 @@ void main() {
 
     test('open re-opens existing bucket and reads back data', () {
       final kv1 = js.createKeyValue(
-        KvConfig(
-          bucket: 'test-kv-open',
-          storageType: jsStorageType.js_MemoryStorage,
-        ),
+        KvConfig(bucket: 'test-kv-open', storageType: StorageType.memory),
       );
       kv1.putString('survive', 'reopened');
       kv1.close();
@@ -287,10 +284,7 @@ void main() {
 
     test('bucket getter returns correct bucket name', () {
       final kv = js.createKeyValue(
-        KvConfig(
-          bucket: 'test-kv-open',
-          storageType: jsStorageType.js_MemoryStorage,
-        ),
+        KvConfig(bucket: 'test-kv-open', storageType: StorageType.memory),
       );
       expect(kv.bucket, equals('test-kv-open'));
       kv.close();
@@ -309,7 +303,7 @@ void main() {
         KvConfig(
           bucket: 'test-kv-watch',
           history: 5,
-          storageType: jsStorageType.js_MemoryStorage,
+          storageType: StorageType.memory,
         ),
       );
     });
@@ -402,7 +396,7 @@ void main() {
       final kv = js.createKeyValue(
         KvConfig(
           bucket: 'test-kv-close-watch',
-          storageType: jsStorageType.js_MemoryStorage,
+          storageType: StorageType.memory,
         ),
       );
       kv.putString('key', 'val');
@@ -428,10 +422,7 @@ void main() {
       client = NatsClient.connect('nats://localhost:4222');
       js = client.jetStream();
       kv = js.createKeyValue(
-        KvConfig(
-          bucket: 'test-kv-tostring',
-          storageType: jsStorageType.js_MemoryStorage,
-        ),
+        KvConfig(bucket: 'test-kv-tostring', storageType: StorageType.memory),
       );
     });
 
@@ -452,7 +443,7 @@ void main() {
         str,
         equals(
           'KvEntry(key: ts-key, revision: 1, '
-          'operation: kvOp_Put, value: ts-val)',
+          'operation: put, value: ts-val)',
         ),
       );
     });
@@ -483,7 +474,7 @@ void main() {
           maxValueSize: 1024,
           ttl: Duration(hours: 1),
           maxBytes: 1024 * 1024,
-          storageType: jsStorageType.js_MemoryStorage,
+          storageType: StorageType.memory,
         ),
       );
 

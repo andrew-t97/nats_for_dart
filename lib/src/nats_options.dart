@@ -6,12 +6,13 @@ import 'package:meta/meta.dart';
 
 import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
+import 'nats_status.dart';
 
 /// Represents an error reported by the NATS C library's asynchronous error
 /// handler.
 final class NatsError {
-  /// The [natsStatus] error code.
-  final natsStatus status;
+  /// The [NatsStatus] error code.
+  final NatsStatus status;
 
   NatsError(this.status);
 
@@ -59,7 +60,7 @@ void _onError(
   final id = closure.address;
   final controller = NatsOptions._errorRoutes[id];
   if (controller != null && !controller.isClosed) {
-    controller.add(NatsError(natsStatus.fromValue(err)));
+    controller.add(NatsError(NatsStatus.fromValue(err)));
   }
 }
 

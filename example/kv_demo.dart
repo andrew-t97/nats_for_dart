@@ -15,11 +15,7 @@ void main() async {
   try {
     // 1. Create a KV bucket
     final kv = js.createKeyValue(
-      KvConfig(
-        bucket: 'config',
-        history: 5,
-        storageType: jsStorageType.js_MemoryStorage,
-      ),
+      KvConfig(bucket: 'config', history: 5, storageType: StorageType.memory),
     );
     print('Created bucket: ${kv.bucket}');
 

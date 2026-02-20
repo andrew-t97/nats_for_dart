@@ -6,8 +6,11 @@ import 'package:ffi/ffi.dart';
 import 'package:meta/meta.dart';
 
 import 'jetstream_context.dart';
+import 'kv_operation.dart';
 import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
+import 'nats_status.dart';
+import 'storage_type.dart';
 
 // ── Dart-friendly KV data classes ───────────────────────────────────────
 
@@ -20,7 +23,7 @@ final class KvConfig {
   final int history;
   final Duration? ttl;
   final int? maxBytes;
-  final jsStorageType storageType;
+  final StorageType storageType;
   final int replicas;
 
   const KvConfig({
@@ -30,7 +33,7 @@ final class KvConfig {
     this.history = 1,
     this.ttl,
     this.maxBytes,
-    this.storageType = jsStorageType.js_FileStorage,
+    this.storageType = StorageType.file,
     this.replicas = 1,
   });
 }
@@ -54,7 +57,7 @@ final class KvEntry {
   final int created;
 
   /// The operation that produced this entry.
-  final kvOperation operation;
+  final KvOperation operation;
 
   /// Number of deltas from the latest revision.
   final int delta;
@@ -89,7 +92,7 @@ final class KvEntry {
         : Uint8List(0);
     final revision = kvEntry_Revision(entryPtr);
     final created = kvEntry_Created(entryPtr);
-    final operation = kvOperation.fromValue(kvEntry_Operation(entryPtr).value);
+    final operation = KvOperation.fromValue(kvEntry_Operation(entryPtr).value);
     final delta = kvEntry_Delta(entryPtr);
 
     return KvEntry._(
@@ -546,7 +549,9 @@ final class KeyValueStore implements Finalizable {
         final status = kvWatcher_Next(entryPtrPtr, handle.watcherPtr, 1);
         if (status == natsStatus.NATS_TIMEOUT) return;
         if (status != natsStatus.NATS_OK) {
-          handle.controller.addError(NatsException(status, 'kvWatcher_Next'));
+          handle.controller.addError(
+            NatsException(fromCStatus(status), 'kvWatcher_Next'),
+          );
           handle.controller.close();
           return;
         }

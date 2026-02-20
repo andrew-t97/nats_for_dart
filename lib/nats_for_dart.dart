@@ -6,21 +6,19 @@ library;
 
 export 'src/nats_async_subscription.dart' show NatsAsyncSubscription;
 export 'src/nats_client.dart' show NatsClient;
-export 'src/nats_exceptions.dart';
+export 'src/nats_exceptions.dart' show NatsException, NatsNoRespondersException;
 export 'src/nats_library.dart' show NatsLibrary;
 export 'src/nats_message.dart' show NatsMessage;
 export 'src/nats_sync_subscription.dart' show NatsSyncSubscription;
 export 'src/nats_options.dart' show NatsOptions, NatsError;
-export 'src/nats_bindings.g.dart'
-    show
-        natsStatus,
-        jsRetentionPolicy,
-        jsDiscardPolicy,
-        jsStorageType,
-        jsDeliverPolicy,
-        jsAckPolicy,
-        jsReplayPolicy,
-        kvOperation;
+export 'src/ack_policy.dart';
+export 'src/deliver_policy.dart';
+export 'src/discard_policy.dart';
+export 'src/kv_operation.dart';
+export 'src/nats_status.dart' show NatsStatus;
+export 'src/replay_policy.dart';
+export 'src/retention_policy.dart';
+export 'src/storage_type.dart';
 export 'src/js_message.dart' show JsMessage, JsMessageMetadata, JsPubAckResult;
 export 'src/jetstream_context.dart'
     show

@@ -5,9 +5,15 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:meta/meta.dart';
 
+import 'ack_policy.dart';
+import 'deliver_policy.dart';
+import 'discard_policy.dart';
 import 'js_message.dart';
 import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
+import 'replay_policy.dart';
+import 'retention_policy.dart';
+import 'storage_type.dart';
 
 // ── Dart-friendly config classes ────────────────────────────────────────
 
@@ -17,15 +23,15 @@ final class JsStreamConfig {
   final String name;
   final List<String> subjects;
   final String? description;
-  final jsRetentionPolicy retention;
+  final RetentionPolicy retention;
   final int maxConsumers;
   final int maxMsgs;
   final int maxBytes;
   final Duration? maxAge;
   final int maxMsgsPerSubject;
   final int maxMsgSize;
-  final jsDiscardPolicy discard;
-  final jsStorageType storage;
+  final DiscardPolicy discard;
+  final StorageType storage;
   final int replicas;
   final bool noAck;
 
@@ -33,15 +39,15 @@ final class JsStreamConfig {
     required this.name,
     this.subjects = const [],
     this.description,
-    this.retention = jsRetentionPolicy.js_LimitsPolicy,
+    this.retention = RetentionPolicy.limits,
     this.maxConsumers = -1,
     this.maxMsgs = -1,
     this.maxBytes = -1,
     this.maxAge,
     this.maxMsgsPerSubject = -1,
     this.maxMsgSize = -1,
-    this.discard = jsDiscardPolicy.js_DiscardOld,
-    this.storage = jsStorageType.js_FileStorage,
+    this.discard = DiscardPolicy.discardOld,
+    this.storage = StorageType.file,
     this.replicas = 1,
     this.noAck = false,
   });
@@ -53,9 +59,9 @@ final class JsConsumerConfig {
   final String? name;
   final String? durable;
   final String? description;
-  final jsDeliverPolicy deliverPolicy;
-  final jsAckPolicy ackPolicy;
-  final jsReplayPolicy replayPolicy;
+  final DeliverPolicy deliverPolicy;
+  final AckPolicy ackPolicy;
+  final ReplayPolicy replayPolicy;
   final String? filterSubject;
   final int? maxDeliver;
   final Duration? ackWait;
@@ -67,9 +73,9 @@ final class JsConsumerConfig {
     this.name,
     this.durable,
     this.description,
-    this.deliverPolicy = jsDeliverPolicy.js_DeliverAll,
-    this.ackPolicy = jsAckPolicy.js_AckExplicit,
-    this.replayPolicy = jsReplayPolicy.js_ReplayInstant,
+    this.deliverPolicy = DeliverPolicy.deliverAll,
+    this.ackPolicy = AckPolicy.explicit,
+    this.replayPolicy = ReplayPolicy.instant,
     this.filterSubject,
     this.maxDeliver,
     this.ackWait,
