@@ -1,1 +1,2 @@
 third_party/nats_c/** linguist-vendored
+third_party/libressl/** linguist-vendored
