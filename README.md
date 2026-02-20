@@ -1,7 +1,5 @@
 # nats_for_dart
 
-[![CI](https://github.com/andrew-t97/nats_for_dart/workflows/CI/badge.svg)](https://github.com/andrew-t97/nats_for_dart/actions)
-
 Dart FFI bindings for [nats.c](https://github.com/nats-io/nats.c), the official C client for [NATS](https://nats.io/).
 
 ## Features

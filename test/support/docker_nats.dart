@@ -1,22 +1,13 @@
-/// NATS server lifecycle management for tests.
+/// Docker-based NATS server lifecycle management for tests.
 ///
-/// If a NATS server is already reachable on port 4222 (e.g. a native
-/// `nats-server` process), Docker is skipped entirely. Otherwise a Docker
-/// container with JetStream enabled is started automatically.
-///
-/// Uses reference counting so the server stays alive until the last
+/// Automatically starts a Docker NATS container with JetStream enabled.
+/// Uses reference counting so the container stays alive until the last
 /// consumer calls [DockerNats.stop].
 library;
 
 import 'dart:io';
 
-/// Manages a NATS server for integration tests.
-///
-/// When [start] is called, the class first checks whether a NATS server is
-/// already listening on port 4222. If so, it reuses that server and skips
-/// all Docker operations — including [stop], which becomes a no-op. This
-/// makes tests work on environments without Docker (e.g. macOS CI with a
-/// Homebrew-installed `nats-server`).
+/// Manages a Docker NATS container for integration tests.
 ///
 /// Usage:
 /// ```dart
@@ -61,7 +52,6 @@ class DockerNats {
   static const _retryDelay = Duration(milliseconds: 500);
 
   static int _refCount = 0;
-  static bool _externalServer = false;
 
   /// The NATS URL to connect to.
   final String url = 'nats://$_host:$_port';
@@ -88,11 +78,8 @@ class DockerNats {
 
     if (_refCount <= 0) {
       _refCount = 0;
-      if (!_externalServer) {
-        await Process.run(_docker, _stopArgs);
-        await Process.run(_docker, _removeArgs);
-      }
-      _externalServer = false;
+      await Process.run(_docker, _stopArgs);
+      await Process.run(_docker, _removeArgs);
     }
   }
 
@@ -100,21 +87,13 @@ class DockerNats {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  /// Starts a NATS server for tests.
-  ///
-  /// If port 4222 is already reachable, assumes an external server is running
-  /// and skips Docker entirely. Otherwise starts a Docker container.
+  /// Starts the Docker container, cleaning up any stale one first.
   static Future<void> _startContainer() async {
-    if (await _isPortReachable(_host, _port)) {
-      _externalServer = true;
-      return;
-    }
-
     final dockerCheck = await Process.run(_docker, _checkArgs);
     if (dockerCheck.exitCode != 0) {
       throw StateError(
-        '[DockerNats] No NATS server running on port $_port and Docker is '
-        'not available. Either start nats-server or install Docker.\n'
+        '[DockerNats] Docker is not available. '
+        'Install Docker to run the test suite.\n'
         'stderr: ${dockerCheck.stderr}',
       );
     }

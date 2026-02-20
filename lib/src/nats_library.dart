@@ -1,8 +1,5 @@
-import 'jetstream_context.dart';
-import 'nats_async_subscription.dart';
 import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
-import 'nats_options.dart';
 
 /// Global library initialisation and teardown for the NATS C client.
 ///
@@ -24,10 +21,5 @@ final class NatsLibrary {
   /// Pass `0` to wait indefinitely.
   static void close({int timeoutMs = 0}) {
     checkStatus(nats_CloseAndWait(timeoutMs), 'nats_CloseAndWait');
-
-    // All C threads have exited — safe to close shared NativeCallables.
-    closeSharedMessageCallable();
-    JsAsyncSubscription.closeSharedCallable();
-    closeSharedLifecycleCallables();
   }
 }
