@@ -29,9 +29,13 @@ class DockerNats {
   static const _containerName = 'nats-dart-test';
   static const _host = 'localhost';
   static const _port = 4222;
+  static const _monitoringPort = 8222;
   static const _image = 'nats:latest';
   static const _jetstreamFlag = '-js';
+  static const _monitoringFlag = '-m';
+  static const _monitoringPortStr = '$_monitoringPort';
   static const _portMapping = '$_port:$_port';
+  static const _monitoringPortMapping = '$_monitoringPort:$_monitoringPort';
 
   // Docker commands
   static const _docker = 'docker';
@@ -42,8 +46,12 @@ class DockerNats {
     _containerName,
     '-p',
     _portMapping,
+    '-p',
+    _monitoringPortMapping,
     _image,
     _jetstreamFlag,
+    _monitoringFlag,
+    _monitoringPortStr,
   ];
   static const _stopArgs = ['stop', _containerName];
   static const _removeArgs = ['rm', '-f', _containerName];
@@ -127,10 +135,10 @@ class DockerNats {
     await _waitForReady();
   }
 
-  /// Waits for NATS to accept TCP connections, retrying with a fixed delay.
+  /// Waits for NATS to be fully ready by polling its HTTP health endpoint.
   static Future<void> _waitForReady() async {
     for (var attempt = 1; attempt <= _maxRetries; attempt++) {
-      if (await _isPortReachable(_host, _port)) return;
+      if (await _isServerHealthy()) return;
       if (attempt < _maxRetries) {
         await Future<void>.delayed(_retryDelay);
       }
@@ -142,19 +150,19 @@ class DockerNats {
     );
   }
 
-  /// Returns `true` if a TCP connection to [host]:[port] succeeds.
-  static Future<bool> _isPortReachable(String host, int port) async {
+  /// Returns `true` if the NATS monitoring endpoint reports healthy.
+  static Future<bool> _isServerHealthy() async {
     try {
-      final socket = await Socket.connect(
-        host,
-        port,
-        timeout: const Duration(milliseconds: 500),
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(milliseconds: 500);
+      final request = await client.getUrl(
+        Uri.parse('http://$_host:$_monitoringPort/healthz'),
       );
-      await socket.close();
-      return true;
-    } on SocketException {
-      return false;
-    } on OSError {
+      final response = await request.close();
+      await response.drain<void>();
+      client.close();
+      return response.statusCode == 200;
+    } on Exception {
       return false;
     }
   }
