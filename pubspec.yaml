@@ -10,6 +10,8 @@ topics:
   - pubsub
   - jetstream
 
+license: Apache-2.0
+
 environment:
   sdk: ^3.10.8
 

@@ -6,6 +6,7 @@ scripts/
 *.md
 !README.md
 !CHANGELOG.md
+!NOTICE.md
 .gitmodules
 .gitattributes
 justfile

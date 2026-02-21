@@ -1,23 +1,31 @@
 # nats_for_dart
 
-Dart FFI bindings for [nats.c](https://github.com/nats-io/nats.c), the official C client for [NATS](https://nats.io/).
+[![pub.dev](https://img.shields.io/pub/v/nats_for_dart.svg)](https://pub.dev/packages/nats_for_dart)
+[![CI](https://github.com/andrew-t97/nats_for_dart/actions/workflows/ci.yml/badge.svg)](https://github.com/andrew-t97/nats_for_dart/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Dart SDK](https://img.shields.io/badge/dart-%5E3.10.8-00B4AB.svg)](https://dart.dev)
 
-## Features
+Idiomatic Dart bindings for [NATS](https://nats.io/) — pub/sub, JetStream, and KeyValue built on [nats.c v3.12.0](https://github.com/nats-io/nats.c), with no system OpenSSL required.
 
-- **Core pub/sub** — synchronous and asynchronous subscriptions with wildcard support
-- **Request-reply** — simple request/response messaging
-- **JetStream** — publish, pull subscribe, stream and consumer CRUD management
-- **KeyValue store** — get, put, delete, watch, history, and optimistic concurrency
-- **Connection lifecycle** — disconnect, reconnect, close, and error event streams via `NatsOptions`
+## ⚡ Features
 
-## Prerequisites
+- **Pub/sub** — synchronous and asynchronous subscriptions, wildcard subjects (`foo.*`, `foo.>`)
+- **Request-reply** — single-call request/response pattern
+- **JetStream** — durable streams, consumers, publish with ack, and pull subscribe
+- **KeyValue store** — get, put, delete, watch, history, and optimistic concurrency with revision checks
+- **Connection lifecycle** — disconnect, reconnect, close, and async error event streams
 
-- **Dart SDK** `^3.10.8` (with native assets support)
-- **`nats-server`** running on localhost — start with the `-js` flag for JetStream and KeyValue features
+## 📋 Requirements
 
-The native C library (nats.c v3.12.0) and LibreSSL are vendored and compiled automatically by the Dart build hook. No system OpenSSL, `pkg-config`, or manual C compilation is required.
+| Requirement | Detail                                                                       |
+| ----------- | ---------------------------------------------------------------------------- |
+| Dart SDK    | `^3.10.8` — native assets support required                                   |
+| NATS server | `nats-server` on `localhost:4222`; use `-js` flag for JetStream and KeyValue |
+| Docker      | Optional — only needed to run the test suite                                 |
 
-## Installation
+> **No C toolchain setup required.** nats.c v3.12.0 and LibreSSL v4.1.0 are vendored and compiled automatically by the Dart build hook. No system OpenSSL or `pkg-config` needed.
+
+## 📦 Installation
 
 Add the package to your `pubspec.yaml`:
 
@@ -32,47 +40,52 @@ Then run:
 dart pub get
 ```
 
-## Quick start
+> The native `libnats` shared library is compiled on first build. This can take 30–60 seconds while LibreSSL and nats.c are compiled from source.
+
+## 🚀 Quick Start
 
 ```dart
 import 'package:nats_for_dart/nats_for_dart.dart';
 
-Future<void> main() async {
+void main() {
+  // 1. Initialise the library once per process.
   NatsLibrary.init();
 
   final client = NatsClient.connect('nats://localhost:4222');
 
-  // Subscribe asynchronously
-  final subscription = client.subscribe('greet.*');
-  subscription.messages.listen((msg) {
-    print('${msg.subject}: ${msg.dataAsString}');
-  });
+  // 2. Subscribe synchronously on a subject.
+  final sub = client.subscribeSync('greet.hello');
 
-  // Publish
-  client.publish('greet.hello', 'world');
-  client.flush();
+  // 3. Publish a message.
+  client.publish('greet.hello', 'Hello, NATS!');
 
-  // Wait a moment for delivery, then clean up
-  await Future.delayed(Duration(seconds: 1));
-  await subscription.close();
-  await client.close();
+  // 4. Receive the next message (blocks up to 2 seconds).
+  final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+  print('${msg.subject}: ${msg.dataAsString}');
+  // → greet.hello: Hello, NATS!
+
+  // 5. Clean up.
+  sub.close();
+  client.close();
   NatsLibrary.close(timeoutMs: 5000);
 }
 ```
 
-## Examples
+For async (Stream-based) subscriptions, see [`example/async_subscriber.dart`](example/async_subscriber.dart). For JetStream and KeyValue examples, see [Examples](#-examples) below.
 
-| Example                                                  | Description                             | Run command                               |
-| -------------------------------------------------------- | --------------------------------------- | ----------------------------------------- |
-| [main.dart](example/main.dart)                           | Synchronous pub/sub                     | `dart run example/main.dart`              |
-| [async_subscriber.dart](example/async_subscriber.dart)   | Async subscription with `Stream`        | `dart run example/async_subscriber.dart`  |
-| [lifecycle_demo.dart](example/lifecycle_demo.dart)       | Connection lifecycle events             | `dart run example/lifecycle_demo.dart`    |
-| [jetstream_pub_sub.dart](example/jetstream_pub_sub.dart) | JetStream publish and pull subscribe    | `dart run example/jetstream_pub_sub.dart` |
-| [kv_demo.dart](example/kv_demo.dart)                     | KeyValue store CRUD, watch, and history | `dart run example/kv_demo.dart`           |
+## 💡 Examples
 
-All examples except `main.dart` require `nats-server -js`.
+| Example                                                    | Description                                                                    | Run                                       |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------- |
+| [`main.dart`](example/main.dart)                           | Synchronous pub/sub — publish and receive in one process                       | `dart run example/main.dart`              |
+| [`async_subscriber.dart`](example/async_subscriber.dart)   | Async subscription via Dart `Stream` with wildcard subject                     | `dart run example/async_subscriber.dart`  |
+| [`lifecycle_demo.dart`](example/lifecycle_demo.dart)       | Connection lifecycle events — stop/restart the server while running to observe | `dart run example/lifecycle_demo.dart`    |
+| [`jetstream_pub_sub.dart`](example/jetstream_pub_sub.dart) | JetStream stream creation, publish with ack, and pull subscribe                | `dart run example/jetstream_pub_sub.dart` |
+| [`kv_demo.dart`](example/kv_demo.dart)                     | KeyValue CRUD, optimistic update, watch, history, delete, and purge            | `dart run example/kv_demo.dart`           |
 
-## Running tests
+> `main.dart` and `async_subscriber.dart` require only a plain `nats-server`. All other examples require `nats-server -js` (JetStream enabled).
+
+## 🧪 Testing
 
 Tests automatically start a Docker NATS container with JetStream enabled. Docker must be installed and running.
 
@@ -84,10 +97,89 @@ just test
 just test-single nats_client_test.dart
 ```
 
-## Contributing
+## 🗺️ Roadmap
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development and maintenance workflows, including how to upgrade the vendored nats.c library.
+`nats_for_dart` v0.1.0 covers the core use cases. The following tracks progress toward production readiness and full parity with the NATS C client.
 
-## License
+### 🔐 Production Essentials
 
-Apache 2.0
+These features are required for secure, production-grade deployments.
+
+| Feature                    | Why it matters                                                                    |
+| -------------------------- | --------------------------------------------------------------------------------- |
+| TLS Enable/Disable         | Encrypted connections for any non-development deployment                          |
+| CA Certificates            | Server identity verification — prevents MITM attacks                              |
+| Client Certificates (mTLS) | Mutual TLS authentication for zero-trust environments                             |
+| TLS Configuration          | Cipher selection, hostname verification, and skip-verify options                  |
+| Message Headers            | Metadata, distributed tracing, and deduplication — used widely in NATS ecosystems |
+
+### ✨ Coming Next
+
+These additions complete the JetStream management API and round out connection options.
+
+| Feature          | Why it matters                                                                |
+| ---------------- | ----------------------------------------------------------------------------- |
+| Consumer Update  | FFI binding already exists — only the Dart wrapper is missing                 |
+| Stream Listing   | Discover and manage all streams programmatically                              |
+| Consumer Listing | Enumerate consumers per stream for monitoring and tooling                     |
+| Reconnect Jitter | Prevents thundering-herd reconnects in large deployments                      |
+| No Echo          | Suppress delivery of your own published messages to your own subscribers      |
+| Direct NKey Auth | Alternative to credentials files — sign challenges directly with an NKey seed |
+
+<details><summary>Priority 3 and 4 — Future Additions</summary>
+
+### Priority 3 — Valuable Additions
+
+| Feature                     | Why it matters                                           |
+| --------------------------- | -------------------------------------------------------- |
+| Object Store                | Large object (file/blob) storage over NATS via JetStream |
+| Dynamic Server Discovery    | Auto-discover new cluster members without restarting     |
+| Lame Duck Mode Callback     | Graceful shutdown notification from departing servers    |
+| Allow/Disable Reconnect     | Explicit control over whether reconnection is attempted  |
+| Custom Reconnect Delay      | Callback-driven exponential backoff or custom logic      |
+| Fail Requests on Disconnect | Fail-fast behavior instead of buffering requests         |
+| Ordered Consumers           | Simplified exactly-once-delivery consumer configuration  |
+
+### Priority 4 — Nice to Have
+
+| Feature                     | Why it matters                                                  |
+| --------------------------- | --------------------------------------------------------------- |
+| Token Refresh Handler       | Dynamic token generation on each reconnect                      |
+| Custom Credentials Callback | Generate credentials programmatically                           |
+| Send As Soon As Possible    | TCP_NODELAY for latency-sensitive workloads                     |
+| Retry on Failed Connect     | Auto-retry the initial connection attempt                       |
+| Max Pending Msgs/Bytes      | Per-subscription flow control                                   |
+| Micro Service API           | Built-in NATS microservice framework (`micro_AddService`, etc.) |
+| WebSocket Transport         | Browser-compatible NATS connections                             |
+
+</details>
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, pre-commit hooks, and instructions for upgrading the vendored nats.c and LibreSSL libraries.
+
+## 📄 License
+
+This package is licensed under the [Apache License, Version 2.0](LICENSE).
+
+### Third-Party Notices
+
+This package vendors the following C libraries, compiled into the native `libnats`
+shared library:
+
+- [**nats.c v3.12.0**](https://github.com/nats-io/nats.c) — [Apache License 2.0](third_party/nats_c/LICENSE)
+  Copyright 2015–2025 The NATS Authors
+- [**LibreSSL v4.1.0**](https://www.libressl.org/) — [ISC / OpenSSL / SSLeay](third_party/libressl/LICENSE)
+
+LibreSSL includes code derived from OpenSSL and SSLeay. In compliance with those
+licenses:
+
+> This product includes software developed by the OpenSSL Project
+> for use in the OpenSSL Toolkit (http://www.openssl.org/)
+
+> This product includes cryptographic software written by Eric Young
+> (eay@cryptsoft.com).
+
+See [NOTICE](NOTICE.md) for full third-party attribution notices.
