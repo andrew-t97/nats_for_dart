@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# update_vendor.sh — Refresh vendored nats.c sources from a local checkout.
+# update_nats.sh — Refresh vendored nats.c sources from a local checkout.
 #
 # Usage:
-#   ./scripts/update_vendor.sh /path/to/nats.c
+#   ./scripts/update_nats.sh /path/to/nats.c
 #
 # This copies the subset of files needed for compilation into
 # third_party/nats_c/, replacing whatever was there before.
