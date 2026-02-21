@@ -36,20 +36,17 @@ deps-outdated:
 deps-upgrade:
     dart pub upgrade
 
-# Upgrade dependencies including major versions (modifies pubspec.yaml)
-# WARNING: May introduce breaking changes - review carefully
+# Upgrade dependencies including major versions (modifies pubspec.yaml). WARNING: May introduce breaking changes - review carefully
 deps-upgrade-major:
     dart pub upgrade --major-versions
 
-# Run all tests using group-based test runner (sequential init/close cycles)
-# Pass additional args like: just test --reporter compact
+# Run all tests using group-based test runner (sequential init/close cycles). Pass additional args like: just test --reporter compact
 test *args:
-    dart test test/test_all.dart {{args}}
+    dart test test/test_all.dart {{ args }}
 
-# Run individual test file (for debugging)
-# Pass additional args like: just test-single nats_client_test.dart --reporter compact
+# Run individual test file (for debugging). Pass additional args like: just test-single nats_client_test.dart --reporter compact
 test-single FILE *args:
-    dart test test/{{FILE}} {{args}}
+    dart test test/{{ FILE }} {{ args }}
 
 # Generate test coverage report (excludes generated FFI bindings)
 coverage:
@@ -63,3 +60,11 @@ coverage:
         -o coverage/lcov.info
     genhtml coverage/lcov.info -o coverage/report
     @echo "Coverage report: coverage/report/index.html"
+
+# Install pre-commit hooks (run once after cloning)
+install-hooks:
+    pre-commit install
+
+# Run all pre-commit checks manually (without committing)
+pre-commit:
+    pre-commit run --all-files

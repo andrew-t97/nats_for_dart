@@ -1,0 +1,32 @@
+repos:
+  # ── Language-agnostic safety checks ──
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: trailing-whitespace
+        types: [dart]
+      - id: end-of-file-fixer
+        types: [dart]
+      - id: check-yaml
+      - id: check-json
+
+  - repo: local
+    hooks:
+      - id: dart-format
+        name: Dart format (just format)
+        entry: just format
+        language: system
+        types: [dart]
+        pass_filenames: false
+
+      - id: dart-lint-fix
+        name: Dart lint fix (just lint-fix)
+        entry: just lint-fix
+        language: system
+        types: [dart]
+        pass_filenames: false

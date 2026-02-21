@@ -10,3 +10,4 @@ scripts/
 .gitattributes
 justfile
 ffigen.yaml
+.pre-commit-config.yaml
