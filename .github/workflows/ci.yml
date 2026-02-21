@@ -82,7 +82,8 @@ jobs:
       # (500+ source files x ~70 chars each) exceeds the Windows CreateProcess
       # 32,767-character limit and the build hook crashes before compiling.
       - name: Map workspace to short drive (B:)
-        run: subst B: $env:GITHUB_WORKSPACE
+        run: |
+          subst B: $env:GITHUB_WORKSPACE
         shell: pwsh
 
       - run: dart pub get
