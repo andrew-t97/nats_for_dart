@@ -31,7 +31,7 @@ The native C source lives in `third_party/nats_c/` as a vendored copy (currently
 
 2. **Run the update script:**
    ```bash
-   ./scripts/update_vendor.sh /path/to/nats.c
+   ./scripts/update_nats.sh /path/to/nats.c
    ```
 
 3. **Check for added or removed `.c` files** and update the `_sources` list in `hook/build.dart` accordingly. The script will print file counts to help you spot differences.
