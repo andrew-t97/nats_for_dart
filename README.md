@@ -23,8 +23,6 @@ Idiomatic Dart bindings for [NATS](https://nats.io/) — pub/sub, JetStream, and
 | NATS server | `nats-server` on `localhost:4222`; use `-js` flag for JetStream and KeyValue |
 | Docker      | Optional — only needed to run the test suite                                 |
 
-> **No C toolchain setup required.** nats.c v3.12.0 and LibreSSL v4.1.0 are vendored and compiled automatically by the Dart build hook. No system OpenSSL or `pkg-config` needed.
-
 ## 📦 Installation
 
 Add the package to your `pubspec.yaml`:
@@ -156,11 +154,11 @@ These additions complete the JetStream management API and round out connection o
 
 ---
 
-## 🤝 Contributing
+## 🧑‍💻 Contributing
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, pre-commit hooks, and instructions for upgrading the vendored nats.c and LibreSSL libraries.
 
-## 📄 License
+## ⚖️ License
 
 This package is licensed under the [Apache License, Version 2.0](LICENSE).
 
