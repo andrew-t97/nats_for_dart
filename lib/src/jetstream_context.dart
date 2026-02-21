@@ -213,11 +213,24 @@ final class JsAsyncSubscription implements Finalizable {
   static final Map<int, StreamController<JsMessage>> _jsSubscriptionRoutes = {};
   static int _nextJsSubscriptionId = 1;
 
-  Pointer<natsSubscription>? _sub;
-  bool _closed = false;
-  final int _id;
-  final StreamController<JsMessage> _controller;
-  final NativeCallable<
+  /// Shared [NativeCallable] singleton for all JetStream async subscriptions.
+  ///
+  /// Because [_onJsMessage] demuxes by subscription ID via the closure
+  /// pointer, every subscription can share the same native callback. This
+  /// avoids a race where the C dispatcher invokes a per-subscription
+  /// callable that Dart has already closed.
+  static NativeCallable<
+    Void Function(
+      Pointer<natsConnection>,
+      Pointer<natsSubscription>,
+      Pointer<natsMsg>,
+      Pointer<Void>,
+    )
+  >?
+  _sharedJsCallable;
+
+  /// Lazily initialises and returns the shared JetStream callable.
+  static NativeCallable<
     Void Function(
       Pointer<natsConnection>,
       Pointer<natsSubscription>,
@@ -225,22 +238,8 @@ final class JsAsyncSubscription implements Finalizable {
       Pointer<Void>,
     )
   >
-  _nativeCallable;
-
-  JsAsyncSubscription._(
-    this._sub,
-    this._id,
-    this._controller,
-    this._nativeCallable,
-  );
-
-  /// Creates a new JsAsyncSubscription with a pre-allocated routing slot.
-  factory JsAsyncSubscription._create() {
-    final id = _nextJsSubscriptionId++;
-    final controller = StreamController<JsMessage>();
-    _jsSubscriptionRoutes[id] = controller;
-
-    final callable =
+  _getSharedJsCallable() {
+    return _sharedJsCallable ??=
         NativeCallable<
           Void Function(
             Pointer<natsConnection>,
@@ -249,8 +248,51 @@ final class JsAsyncSubscription implements Finalizable {
             Pointer<Void>,
           )
         >.listener(_onJsMessage);
+  }
 
-    return JsAsyncSubscription._(null, id, controller, callable);
+  /// Closes the shared JetStream callable.
+  ///
+  /// Must only be called after `nats_CloseAndWait()` guarantees all C threads
+  /// have exited. Sets to `null` so a subsequent `_getSharedJsCallable()`
+  /// re-creates it (e.g. in tests that open multiple libraries).
+  @internal
+  static void closeSharedCallable() {
+    _sharedJsCallable?.close();
+    _sharedJsCallable = null;
+  }
+
+  /// Returns the shared native callback pointer, suitable for passing to
+  /// the C JetStream subscribe functions (e.g. `js_Subscribe`).
+  ///
+  /// Must be called after [_create] (which ensures the shared callable
+  /// exists) and before the C subscribe call.
+  static natsMsgHandler nativeCallbackFor() {
+    return _getSharedJsCallable().nativeFunction;
+  }
+
+  /// Returns the closure pointer (carrying the subscription ID) for [sub],
+  /// suitable for passing to the C JetStream subscribe functions.
+  static Pointer<Void> closureFor(JsAsyncSubscription sub) {
+    return Pointer.fromAddress(sub._id);
+  }
+
+  Pointer<natsSubscription>? _sub;
+  bool _closed = false;
+  final int _id;
+  final StreamController<JsMessage> _controller;
+
+  JsAsyncSubscription._(this._sub, this._id, this._controller);
+
+  /// Creates a new JsAsyncSubscription with a pre-allocated routing slot.
+  factory JsAsyncSubscription._create() {
+    final id = _nextJsSubscriptionId++;
+    final controller = StreamController<JsMessage>();
+    _jsSubscriptionRoutes[id] = controller;
+
+    // Ensure the shared callable exists (lazy-init).
+    _getSharedJsCallable();
+
+    return JsAsyncSubscription._(null, id, controller);
   }
 
   /// Native callback for JetStream message delivery.
@@ -303,8 +345,6 @@ final class JsAsyncSubscription implements Finalizable {
       natsSubscription_Unsubscribe(subPtr);
       natsSubscription_Destroy(subPtr);
     }
-
-    _nativeCallable.close();
 
     if (_controller.hasListener) {
       return _controller.close();
@@ -560,8 +600,8 @@ final class JetStreamContext {
         subPtrPtr,
         _js!,
         subjectNative.cast(),
-        asyncSub._nativeCallable.nativeFunction,
-        Pointer.fromAddress(asyncSub._id),
+        JsAsyncSubscription.nativeCallbackFor(),
+        JsAsyncSubscription.closureFor(asyncSub),
         nullptr, // default js options
         subOpts,
         errCode,

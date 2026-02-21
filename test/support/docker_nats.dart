@@ -53,6 +53,9 @@ class DockerNats {
 
   static int _refCount = 0;
 
+  /// True when we detected a native NATS server and skipped Docker entirely.
+  static bool _usingNative = false;
+
   /// The NATS URL to connect to.
   final String url = 'nats://$_host:$_port';
 
@@ -73,13 +76,18 @@ class DockerNats {
   }
 
   /// Decrements the reference count and stops the container when it hits zero.
+  ///
+  /// No-op when [_usingNative] is true — the native server is managed
+  /// externally (e.g. by the CI runner or the developer's local environment).
   Future<void> stop() async {
     _refCount--;
 
     if (_refCount <= 0) {
       _refCount = 0;
-      await Process.run(_docker, _stopArgs);
-      await Process.run(_docker, _removeArgs);
+      if (!_usingNative) {
+        await Process.run(_docker, _stopArgs);
+        await Process.run(_docker, _removeArgs);
+      }
     }
   }
 
@@ -88,13 +96,33 @@ class DockerNats {
   // ---------------------------------------------------------------------------
 
   /// Starts the Docker container, cleaning up any stale one first.
+  ///
+  /// If the Docker binary is not installed, falls back to checking whether a
+  /// native NATS server is already listening on port [_port]. This supports
+  /// CI environments (e.g. macOS GitHub Actions) that pre-install nats-server
+  /// via a package manager instead of running Docker.
   static Future<void> _startContainer() async {
-    final dockerCheck = await Process.run(_docker, _checkArgs);
-    if (dockerCheck.exitCode != 0) {
+    final bool dockerAvailable;
+    try {
+      final dockerCheck = await Process.run(_docker, _checkArgs);
+      dockerAvailable = dockerCheck.exitCode == 0;
+      if (!dockerAvailable) {
+        throw StateError(
+          '[DockerNats] Docker is not available. '
+          'Install Docker to run the test suite.\n'
+          'stderr: ${dockerCheck.stderr}',
+        );
+      }
+    } on ProcessException {
+      // Docker binary not found — check for a native server instead.
+      if (await _isNativeServerReachable()) {
+        _usingNative = true;
+        return;
+      }
       throw StateError(
-        '[DockerNats] Docker is not available. '
-        'Install Docker to run the test suite.\n'
-        'stderr: ${dockerCheck.stderr}',
+        '[DockerNats] Docker is not installed and no native NATS server '
+        'was detected on $_host:$_port. '
+        'Either install Docker or start a NATS server with JetStream enabled.',
       );
     }
 
@@ -112,6 +140,22 @@ class DockerNats {
     }
 
     await _waitForReady();
+  }
+
+  /// Returns `true` if a TCP connection to the NATS port succeeds,
+  /// indicating that a native server is already running.
+  static Future<bool> _isNativeServerReachable() async {
+    try {
+      final socket = await Socket.connect(
+        _host,
+        _port,
+        timeout: const Duration(seconds: 2),
+      );
+      socket.destroy();
+      return true;
+    } on Exception {
+      return false;
+    }
   }
 
   /// Waits for NATS to be fully ready by polling its HTTP health endpoint.
