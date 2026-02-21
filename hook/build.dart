@@ -118,8 +118,7 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
       // No assembly — pure C compilation.
       'OPENSSL_NO_ASM': null,
       // Default certificate directory path.
-      'OPENSSLDIR':
-          targetOS == OS.windows ? r'"C:\\OpenSSL"' : r'"/etc/ssl"',
+      'OPENSSLDIR': targetOS == OS.windows ? r'"C:\\OpenSSL"' : r'"/etc/ssl"',
 
       // --- Architecture CPU caps ---
       // Each crypto/arch/<arch>/crypto_cpu_caps.c provides crypto_cpu_caps_init()

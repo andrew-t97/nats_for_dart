@@ -77,7 +77,17 @@ jobs:
         with:
           sdk: "3.10.8"
 
+      # Map the workspace to B:\ so that all source/include paths passed to
+      # cl.exe stay short. Without this the fully-expanded cl.exe command line
+      # (500+ source files x ~70 chars each) exceeds the Windows CreateProcess
+      # 32,767-character limit and the build hook crashes before compiling.
+      - name: Map workspace to short drive (B:)
+        run: subst B: $env:GITHUB_WORKSPACE
+        shell: pwsh
+
       - run: dart pub get
+        working-directory: 'B:\'
+        shell: pwsh
 
       - name: Install and start nats-server
         run: |
@@ -95,6 +105,8 @@ jobs:
 
       - name: Run tests
         run: dart test test/test_all.dart
+        working-directory: 'B:\'
+        shell: pwsh
 
   publish-dry-run:
     name: Publish (dry run)
