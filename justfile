@@ -68,3 +68,7 @@ install-hooks:
 # Run all pre-commit checks manually (without committing)
 pre-commit:
     pre-commit run --all-files
+
+# Integration test: run update scripts through a downgrade/upgrade cycle
+test-update-scripts:
+    dart test test/update_scripts_test.dart
