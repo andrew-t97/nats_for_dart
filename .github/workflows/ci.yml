@@ -81,7 +81,14 @@ jobs:
 
       - name: Install and start nats-server
         run: |
-          choco install nats-server -y
+          $latestTag = (Invoke-RestMethod "https://api.github.com/repos/nats-io/nats-server/releases/latest").tag_name
+          $version = $latestTag.TrimStart("v")
+          $url = "https://github.com/nats-io/nats-server/releases/download/${latestTag}/nats-server-${latestTag}-windows-amd64.zip"
+          Invoke-WebRequest -Uri $url -OutFile nats-server.zip
+          Expand-Archive nats-server.zip -DestinationPath nats-server-bin
+          $natsDir = Get-ChildItem -Path nats-server-bin -Directory | Select-Object -First 1
+          $env:PATH = "$($natsDir.FullName);$env:PATH"
+          echo "$($natsDir.FullName)" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           Start-Process nats-server -ArgumentList "-js" -NoNewWindow
           Start-Sleep -Seconds 2
         shell: pwsh
