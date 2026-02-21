@@ -71,8 +71,8 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
   final cbuilder = CBuilder.library(
     name: 'nats',
     assetName: 'src/nats_bindings.g.dart',
-    std: 'gnu99',
-    sources: [...libresslSources, ..._natsSources],
+    std: targetOS == OS.windows ? 'c11' : 'gnu99',
+    sources: [...libresslSources, ..._natsSourcesForOS(targetOS)],
     includes: [
       // Hidden namespace wrappers MUST come before include/ so that
       // #include <openssl/ssl.h> finds the wrapper (which uses #include_next
@@ -118,7 +118,8 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
       // No assembly — pure C compilation.
       'OPENSSL_NO_ASM': null,
       // Default certificate directory path.
-      'OPENSSLDIR': r'"/etc/ssl"',
+      'OPENSSLDIR':
+          targetOS == OS.windows ? r'"C:\\OpenSSL"' : r'"/etc/ssl"',
 
       // --- Architecture CPU caps ---
       // Each crypto/arch/<arch>/crypto_cpu_caps.c provides crypto_cpu_caps_init()
@@ -146,8 +147,25 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
         'LINUX': null,
         '_GNU_SOURCE': null,
       },
+      if (targetOS == OS.windows) ...{
+        // Vista+ required for CONDITION_VARIABLE used by NATS C win/cond.c.
+        '_WIN32_WINNT': '0x0600',
+        // Trim rarely-used Windows headers to reduce build time and conflicts.
+        'WIN32_LEAN_AND_MEAN': null,
+        // Suppress MSVC unsafe-function warnings (sprintf, strcpy, etc.).
+        '_CRT_SECURE_NO_WARNINGS': null,
+        // MSVC provides strnlen natively.
+        'HAVE_STRNLEN': null,
+      },
     },
-    libraries: [if (targetOS == OS.linux) 'pthread'],
+    libraries: [
+      if (targetOS == OS.linux) 'pthread',
+      if (targetOS == OS.windows) ...const [
+        'ws2_32', // Winsock2 — required by NATS C win/sock.c
+        'crypt32', // Windows CryptoAPI — required by LibreSSL
+        'bcrypt', // Windows BCNG — used by LibreSSL getentropy_win.c
+      ],
+    ],
   );
 
   await cbuilder.run(
@@ -196,7 +214,11 @@ List<String> _cryptoSubdirIncludes(BuildInput input) {
 // is maintained manually because nats.c has few files and changes rarely.
 // ---------------------------------------------------------------------------
 
-const _natsSources = [
+/// Returns the NATS C source file list for the given target OS.
+/// The 32 core files and 7 glib files are shared across all platforms.
+/// The 4 platform-specific threading/socket files differ between Windows
+/// (win/) and all other platforms (unix/).
+List<String> _natsSourcesForOS(OS targetOS) => [
   // Core (32 files)
   'third_party/nats_c/src/asynccb.c',
   'third_party/nats_c/src/buf.c',
@@ -238,11 +260,18 @@ const _natsSources = [
   'third_party/nats_c/src/glib/glib_last_error.c',
   'third_party/nats_c/src/glib/glib_ssl.c',
   'third_party/nats_c/src/glib/glib_timer.c',
-  // unix (4 files)
-  'third_party/nats_c/src/unix/cond.c',
-  'third_party/nats_c/src/unix/mutex.c',
-  'third_party/nats_c/src/unix/sock.c',
-  'third_party/nats_c/src/unix/thread.c',
+  // Platform-specific threading/sockets (4 files)
+  if (targetOS == OS.windows) ...const [
+    'third_party/nats_c/src/win/cond.c',
+    'third_party/nats_c/src/win/mutex.c',
+    'third_party/nats_c/src/win/sock.c',
+    'third_party/nats_c/src/win/thread.c',
+  ] else ...const [
+    'third_party/nats_c/src/unix/cond.c',
+    'third_party/nats_c/src/unix/mutex.c',
+    'third_party/nats_c/src/unix/sock.c',
+    'third_party/nats_c/src/unix/thread.c',
+  ],
 ];
 
 // ---------------------------------------------------------------------------
@@ -265,8 +294,12 @@ bool _isExcludedSource(
 ) {
   final basename = sourcePath.split('/').last;
 
-  // Always exclude Windows-only files (require windows.h / ws2tcpip.h).
-  if (_windowsOnlyFiles.contains(basename)) return true;
+  // Exclude Windows-only files on non-Windows targets (they require
+  // windows.h / ws2tcpip.h and won't compile on Unix). On Windows these
+  // files are needed and must pass through.
+  if (targetOS != OS.windows && _nonWindowsExcludedFiles.contains(basename)) {
+    return true;
+  }
 
   // Always exclude getopt_long.c — it redefines struct option from <getopt.h>
   // and conflicts on both macOS and Linux.
@@ -286,10 +319,13 @@ bool _isExcludedSource(
     return !sourcePath.contains('/arch/$archDir/');
   }
 
-  // Platform-specific getentropy: exclude ALL platform variants since both
-  // macOS and Linux define HAVE_GETENTROPY (system libc provides it).
-  // On a platform without HAVE_GETENTROPY, you'd need to keep the right one.
-  if (basename.startsWith('getentropy_')) return true;
+  // Platform-specific getentropy: exclude all variants except getentropy_win.c.
+  // macOS/Linux: system libc provides getentropy (HAVE_GETENTROPY defined).
+  // Windows: getentropy_win.c is needed; it passes the _nonWindowsExcludedFiles
+  // check on non-Windows and is kept here on Windows.
+  if (basename.startsWith('getentropy_') && basename != 'getentropy_win.c') {
+    return true;
+  }
 
   // Platform-specific getprogname: only keep the one for the target OS.
   if (basename.startsWith('getprogname_')) {
@@ -302,6 +338,7 @@ bool _isExcludedSource(
   final platformExcludes = switch (targetOS) {
     OS.macOS => _macosExcludedCompat,
     OS.linux => _linuxExcludedCompat,
+    OS.windows => _windowsExcludedCompat,
     _ => <String>{},
   };
   if (platformExcludes.contains(basename)) return true;
@@ -329,8 +366,9 @@ const _archDirs = {
   Architecture.ia32: 'i386',
 };
 
-/// Windows-only source files that won't compile on any Unix platform.
-const _windowsOnlyFiles = {
+/// Source files that are Windows-only (require windows.h / ws2tcpip.h)
+/// and must be excluded when building for non-Windows targets.
+const _nonWindowsExcludedFiles = {
   'b_win.c',
   'ui_openssl_win.c',
   'crypto_lock_win.c',
@@ -341,7 +379,10 @@ const _windowsOnlyFiles = {
 };
 
 /// Platform-specific getprogname implementations.
-const _getprognameSources = {OS.linux: 'getprogname_linux.c'};
+const _getprognameSources = {
+  OS.linux: 'getprogname_linux.c',
+  OS.windows: 'getprogname_windows.c',
+};
 
 /// Compat files excluded on macOS because macOS provides these functions
 /// natively (HAVE_X is defined) and the files have no guard.
@@ -367,4 +408,15 @@ const _linuxExcludedCompat = {
   'strndup.c', // HAVE_STRNDUP
   'strnlen.c', // HAVE_STRNLEN
   'strsep.c', // HAVE_STRSEP
+};
+
+/// Compat files excluded on Windows because MSVC/Win32 provides them natively.
+/// Do NOT add explicit_bzero_win.c, getentropy_win.c, getprogname_windows.c,
+/// or posix_win.c — Windows needs those compat implementations.
+const _windowsExcludedCompat = {
+  'strcasecmp.c', // n-win.h defines strcasecmp as _stricmp
+  'getpagesize.c', // Windows: GetSystemInfo() provides page size
+  'strndup.c', // available in MSVC 14+
+  'strnlen.c', // available in MSVC (HAVE_STRNLEN defined)
+  'timingsafe_bcmp.c', // not needed on Windows
 };
