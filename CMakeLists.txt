@@ -103,7 +103,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   endforeach()
 elseif(WIN32)
   foreach(compat_file
-      strcasecmp.c getpagesize.c strndup.c strnlen.c timingsafe_bcmp.c)
+      explicit_bzero.c strcasecmp.c getpagesize.c strndup.c strnlen.c timingsafe_bcmp.c)
     list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/${compat_file}$")
   endforeach()
   # bn_arch.c unconditionally includes s2n_bignum.h, which uses C99 [static N]
@@ -277,6 +277,11 @@ elseif(WIN32)
     # because MSVC does not set __BYTE_ORDER__ (a GCC/Clang predefined macro).
     HAVE_LITTLE_ENDIAN
     "OPENSSLDIR=\"C:\\\\OpenSSL\""
+    # MSVC's CRT declares _close(int) as a dllimport in <io.h>.
+    # nats conn.c defines its own static _close(natsConnection*, ...) which
+    # MSVC rejects as a redefinition even though it's static (C2371/C2491).
+    # Rename it at the preprocessor level to avoid the collision.
+    _close=nats_conn_close
   )
 endif()
 
