@@ -6,30 +6,40 @@ list:
 check:
     @echo "Running format check..."
     just format-check
+    just cmake-format-check
     @echo "Running lint check..."
     just lint
+    just cmake-lint
     @echo "Running tests..."
     just test
 
 # Format all Dart code in the project
 format:
     dart format .
-    cmake-format -i CMakeLists.txt
 
-# Check if code is formatted correctly without making changes (CI-friendly)
+# Check if Dart code is formatted correctly without making changes (CI-friendly)
 format-check:
     dart format --output=none --set-exit-if-changed .
+
+# Format CMakeLists.txt in place
+cmake-format:
+    cmake-format -i CMakeLists.txt
+
+# Check if CMakeLists.txt is formatted correctly without making changes (CI-friendly)
+cmake-format-check:
     cmake-format --check CMakeLists.txt
 
-# Analyze code using configured lint rules (treats all issues as fatal)
+# Analyze Dart code using configured lint rules (treats all issues as fatal)
 lint:
     dart analyze --fatal-infos
-    cmake-lint --suppress-decorations CMakeLists.txt
 
-# Apply automated lint fixes and verify no issues remain
+# Apply automated Dart lint fixes and verify no issues remain
 lint-fix:
     dart fix --apply
     dart analyze --fatal-infos
+
+# Lint CMakeLists.txt
+cmake-lint:
     cmake-lint --suppress-decorations CMakeLists.txt
 
 # Check for outdated dependencies
