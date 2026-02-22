@@ -19,6 +19,7 @@ format:
 # Check if code is formatted correctly without making changes (CI-friendly)
 format-check:
     dart format --output=none --set-exit-if-changed .
+    cmake-format --check CMakeLists.txt
 
 # Analyze code using configured lint rules (treats all issues as fatal)
 lint:
