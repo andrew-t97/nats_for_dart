@@ -162,7 +162,6 @@ This package vendors the following C libraries, compiled into the native `libnat
 shared library:
 
 - [**nats.c v3.12.0**](https://github.com/nats-io/nats.c) — [Apache License 2.0](third_party/nats_c/LICENSE)
-  Copyright 2015–2025 The NATS Authors
 - [**LibreSSL v4.1.0**](https://www.libressl.org/) — [ISC / OpenSSL / SSLeay](third_party/libressl/LICENSE)
 
 LibreSSL includes code derived from OpenSSL and SSLeay. In compliance with those
