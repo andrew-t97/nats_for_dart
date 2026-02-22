@@ -129,7 +129,8 @@ Future<void> _runProcess(String executable, List<String> args) async {
   if (result.exitCode != 0) {
     throw StateError(
       '`$executable ${args.join(' ')}` failed (exit ${result.exitCode}).\n'
-      '${result.stderr}',
+      'stdout:\n${result.stdout}\n'
+      'stderr:\n${result.stderr}',
     );
   }
 }
