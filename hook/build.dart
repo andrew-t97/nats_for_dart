@@ -33,6 +33,18 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
 
   final targetOS = input.config.code.targetOS;
 
+  // Map Dart architecture to the arch subdirectory name used by CMakeLists.txt.
+  // Passed explicitly because cmake's CMAKE_SYSTEM_PROCESSOR detection is
+  // unreliable when invoked as a subprocess without a full MSVC environment.
+  final archDir = switch (input.config.code.targetArchitecture) {
+    Architecture.x64 => 'amd64',
+    Architecture.arm64 => 'aarch64',
+    Architecture.ia32 => 'i386',
+    final unsupported => throw StateError(
+      'Unsupported architecture for cmake build: $unsupported',
+    ),
+  };
+
   final cmake = await _findCmake();
   if (cmake == null) {
     throw StateError(
@@ -48,14 +60,16 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
   );
   await cmakeBuildDir.create(recursive: true);
 
-  // Configure — architecture is auto-detected by CMakeLists.txt via
-  // CMAKE_SYSTEM_PROCESSOR; no -DNATS_TARGET_ARCH flag is needed.
+  // Configure — pass NATS_ARCH_DIR explicitly so CMakeLists.txt does not need
+  // to rely on CMAKE_SYSTEM_PROCESSOR, which can be empty when cmake is
+  // spawned without a fully-initialised MSVC environment.
   await _runProcess(cmake, [
     '-S',
     input.packageRoot.toFilePath(),
     '-B',
     cmakeBuildDir.path,
     '-DCMAKE_BUILD_TYPE=Release',
+    '-DNATS_ARCH_DIR=$archDir',
   ]);
 
   // Build — --parallel lets cmake use all available cores.
