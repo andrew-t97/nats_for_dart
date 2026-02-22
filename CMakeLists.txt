@@ -277,11 +277,6 @@ elseif(WIN32)
     # because MSVC does not set __BYTE_ORDER__ (a GCC/Clang predefined macro).
     HAVE_LITTLE_ENDIAN
     "OPENSSLDIR=\"C:\\\\OpenSSL\""
-    # MSVC's CRT declares _close(int) as a dllimport in <io.h>.
-    # nats conn.c defines its own static _close(natsConnection*, ...) which
-    # MSVC rejects as a redefinition even though it's static (C2371/C2491).
-    # Rename it at the preprocessor level to avoid the collision.
-    _close=nats_conn_close
   )
 endif()
 
@@ -302,6 +297,28 @@ if(UNIX AND NOT APPLE)
 endif()
 if(WIN32)
   target_link_libraries(nats PRIVATE ws2_32 crypt32 bcrypt)
+endif()
+
+# ---------------------------------------------------------------------------
+# MSVC: fix _close() collision in conn.c
+# ---------------------------------------------------------------------------
+# MSVC's CRT declares _close(int) as __declspec(dllimport) in <corecrt_io.h>.
+# nats conn.c defines its own *static* _close(natsConnection*, ...) which MSVC
+# rejects as a redefinition (C2371/C2491) even though it is static.
+#
+# A compiler-wide -D_close=<name> macro would rename _close everywhere,
+# including inside the system header, causing the same conflict under a new name.
+#
+# Fix: use /FI (force-include) to pre-include <io.h> for conn.c only.
+# <io.h> declares the CRT _close before the rename macro is active.
+# Include guards then prevent re-processing when conn.c pulls in the same
+# header transitively, so the rename only affects NATS's own static _close.
+if(MSVC)
+  set_source_files_properties(
+    third_party/nats_c/src/conn.c
+    PROPERTIES
+    COMPILE_OPTIONS "/FI${CMAKE_CURRENT_SOURCE_DIR}/cmake/msvc_conn_compat.h"
+  )
 endif()
 
 # ---------------------------------------------------------------------------
