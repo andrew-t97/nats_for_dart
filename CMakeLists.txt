@@ -11,22 +11,25 @@ list(TRANSFORM LIBRESSL_ALL_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 # ---------------------------------------------------------------------------
 # Architecture detection
 # ---------------------------------------------------------------------------
-# CMAKE_SYSTEM_PROCESSOR can be empty on Windows with certain cmake generators.
-# Fall back to CMAKE_HOST_SYSTEM_PROCESSOR, then the PROCESSOR_ARCHITECTURE
-# environment variable (always set on Windows, e.g. "AMD64").
+# CMAKE_SYSTEM_PROCESSOR and CMAKE_HOST_SYSTEM_PROCESSOR can both be empty on
+# Windows when cmake is invoked without a fully-initialized MSVC environment
+# (e.g. from Dart's Process.run which may not inherit all shell env vars).
+# cmake_host_system_information(QUERY PROCESSOR_ARCHITECTURE) queries the OS
+# directly and is reliable even in that context.
+# Note: it returns "x64" (not "AMD64") on Windows x86-64.
 set(_arch "${CMAKE_SYSTEM_PROCESSOR}")
 if(NOT _arch)
   set(_arch "${CMAKE_HOST_SYSTEM_PROCESSOR}")
 endif()
-if(NOT _arch AND WIN32)
-  set(_arch "$ENV{PROCESSOR_ARCHITECTURE}")
+if(NOT _arch)
+  cmake_host_system_information(RESULT _arch QUERY PROCESSOR_ARCHITECTURE)
 endif()
 
 if(_arch MATCHES "aarch64|arm64|ARM64")
   set(NATS_ARCH_DIR aarch64)
-elseif(_arch MATCHES "x86_64|AMD64")
+elseif(_arch MATCHES "x86_64|AMD64|x64")
   set(NATS_ARCH_DIR amd64)
-elseif(_arch MATCHES "i[3-6]86|x86$")
+elseif(_arch MATCHES "i[3-6]86|x86$|IA32")
   set(NATS_ARCH_DIR i386)
 else()
   message(FATAL_ERROR
