@@ -11,14 +11,28 @@ list(TRANSFORM LIBRESSL_ALL_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 # ---------------------------------------------------------------------------
 # Architecture detection
 # ---------------------------------------------------------------------------
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+# CMAKE_SYSTEM_PROCESSOR can be empty on Windows with certain cmake generators.
+# Fall back to CMAKE_HOST_SYSTEM_PROCESSOR, then the PROCESSOR_ARCHITECTURE
+# environment variable (always set on Windows, e.g. "AMD64").
+set(_arch "${CMAKE_SYSTEM_PROCESSOR}")
+if(NOT _arch)
+  set(_arch "${CMAKE_HOST_SYSTEM_PROCESSOR}")
+endif()
+if(NOT _arch AND WIN32)
+  set(_arch "$ENV{PROCESSOR_ARCHITECTURE}")
+endif()
+
+if(_arch MATCHES "aarch64|arm64|ARM64")
   set(NATS_ARCH_DIR aarch64)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+elseif(_arch MATCHES "x86_64|AMD64")
   set(NATS_ARCH_DIR amd64)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i[3-6]86|x86$")
+elseif(_arch MATCHES "i[3-6]86|x86$")
   set(NATS_ARCH_DIR i386)
 else()
-  message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+  message(FATAL_ERROR
+    "Unsupported architecture: '${_arch}' "
+    "(CMAKE_SYSTEM_PROCESSOR='${CMAKE_SYSTEM_PROCESSOR}' "
+    "CMAKE_HOST_SYSTEM_PROCESSOR='${CMAKE_HOST_SYSTEM_PROCESSOR}')")
 endif()
 
 # ---------------------------------------------------------------------------
