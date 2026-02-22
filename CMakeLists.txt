@@ -46,30 +46,22 @@ list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/armcap\\.c$")
 # 1. Architecture-specific crypto/arch/: keep only the target arch subdir.
 #   Exclude all /crypto/arch/<other>/ paths while keeping /<NATS_ARCH_DIR>/.
 list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/crypto/arch/[^/]+/[^/]+$")
-file(GLOB ARCH_CPU_CAPS
-     "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/arch/"
-     "${NATS_ARCH_DIR}/*.c")
+file(GLOB ARCH_CPU_CAPS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/arch/${NATS_ARCH_DIR}/*.c")
 list(APPEND LIBRESSL_SOURCES ${ARCH_CPU_CAPS})
 
 # 1. getentropy_ prefix: exclude all non-win variants. getentropy_win.c is
 #   handled separately below in the Windows-only block.
 list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/getentropy_[^/]+\\.c$")
 if(WIN32)
-  list(APPEND LIBRESSL_SOURCES
-       "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/"
-       "getentropy_win.c")
+  list(APPEND LIBRESSL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/getentropy_win.c")
 endif()
 
 # 1. getprogname_ prefix: keep only the one matching the target OS.
 list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/getprogname_[^/]+\\.c$")
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  list(APPEND LIBRESSL_SOURCES
-       "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/"
-       "getprogname_linux.c")
+  list(APPEND LIBRESSL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/getprogname_linux.c")
 elseif(WIN32)
-  list(APPEND LIBRESSL_SOURCES
-       "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/"
-       "getprogname_windows.c")
+  list(APPEND LIBRESSL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/getprogname_windows.c")
 endif()
 # macOS provides getprogname() natively — no compat source needed.
 
@@ -113,8 +105,13 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/${compat_file}$")
   endforeach()
 elseif(WIN32)
-  foreach(compat_file explicit_bzero.c strcasecmp.c getpagesize.c strndup.c
-                      strnlen.c timingsafe_bcmp.c)
+  # Only exclude compat files whose HAVE_* is defined above (MSVC provides them natively).
+  # HAVE_STRNLEN is set → exclude strnlen.c.
+  # explicit_bzero_win.c covers bzero on Windows, so exclude the Unix explicit_bzero.c.
+  # strcasecmp.c, getpagesize.c, strndup.c, timingsafe_bcmp.c are NOT in MSVC;
+  # compat/string.h redirects calls to libressl_<name> when HAVE_* is absent,
+  # so those compat sources must be compiled or the linker finds nothing.
+  foreach(compat_file explicit_bzero.c strnlen.c)
     list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/${compat_file}$")
   endforeach()
   # bn_arch.c unconditionally includes s2n_bignum.h, which uses C99 [static N]
@@ -173,7 +170,10 @@ set(NATS_CORE_SOURCES
 if(WIN32)
   set(NATS_PLATFORM_SOURCES
       third_party/nats_c/src/win/cond.c third_party/nats_c/src/win/mutex.c
-      third_party/nats_c/src/win/sock.c third_party/nats_c/src/win/thread.c)
+      third_party/nats_c/src/win/sock.c third_party/nats_c/src/win/thread.c
+      # win.c provides nats_asprintf and nats_strcasestr declared in n-win.h.
+      # On Unix, these are macro aliases (n-unix.h) so no extra source is needed.
+      third_party/nats_c/src/win/win.c)
 else()
   set(NATS_PLATFORM_SOURCES
       third_party/nats_c/src/unix/cond.c third_party/nats_c/src/unix/mutex.c
@@ -211,10 +211,8 @@ endforeach()
 list(SORT CRYPTO_SUBDIR_INCLUDES) # deterministic ordering
 
 set(ARCH_INCLUDES
-    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/arch/"
-    "${NATS_ARCH_DIR}/"
-    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/bn/arch/"
-    "${NATS_ARCH_DIR}/")
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/arch/${NATS_ARCH_DIR}/"
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/bn/arch/${NATS_ARCH_DIR}/")
 
 target_include_directories(
   nats
