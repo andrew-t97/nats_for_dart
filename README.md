@@ -15,13 +15,12 @@ Idiomatic Dart bindings for [NATS](https://nats.io/) — pub/sub, JetStream, and
 - **KeyValue store** — get, put, delete, watch, history, and optimistic concurrency with revision checks
 - **Connection lifecycle** — disconnect, reconnect, close, and async error event streams
 
-## 📋 Requirements
-
-| Requirement | Detail                                                                       |
-| ----------- | ---------------------------------------------------------------------------- |
-| Dart SDK    | `^3.10.8` — native assets support required                                   |
-| NATS server | `nats-server` on `localhost:4222`; use `-js` flag for JetStream and KeyValue |
-| Docker      | Optional — only needed to run the test suite                                 |
+## 📱 Supported platforms
+| Platform | Supported |
+| -------- | --------- |
+| Desktop  | ✅         |
+| Mobile   | ❌         |
+| Web      | ❌         |
 
 ## 📦 Installation
 
@@ -38,7 +37,7 @@ Then run:
 dart pub get
 ```
 
-> The native `libnats` shared library is compiled on first build. This can take 30–60 seconds while LibreSSL and nats.c are compiled from source.
+> The native `libnats` shared library is compiled on first build. This may take some time depending on your machine while LibreSSL and nats.c are compiled from source.
 
 ## 🚀 Quick Start
 
@@ -75,25 +74,20 @@ For async (Stream-based) subscriptions, see [`example/async_subscriber.dart`](ex
 
 | Example                                                    | Description                                                                    | Run                                       |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------- |
-| [`main.dart`](example/main.dart)                           | Synchronous pub/sub — publish and receive in one process                       | `dart run example/main.dart`              |
+| [`pubsub_sync.dart`](example/pubsub_sync.dart)             | Synchronous pub/sub — publish and receive in one process                       | `dart run example/pubsub_sync.dart`       |
 | [`async_subscriber.dart`](example/async_subscriber.dart)   | Async subscription via Dart `Stream` with wildcard subject                     | `dart run example/async_subscriber.dart`  |
 | [`lifecycle_demo.dart`](example/lifecycle_demo.dart)       | Connection lifecycle events — stop/restart the server while running to observe | `dart run example/lifecycle_demo.dart`    |
 | [`jetstream_pub_sub.dart`](example/jetstream_pub_sub.dart) | JetStream stream creation, publish with ack, and pull subscribe                | `dart run example/jetstream_pub_sub.dart` |
 | [`kv_demo.dart`](example/kv_demo.dart)                     | KeyValue CRUD, optimistic update, watch, history, delete, and purge            | `dart run example/kv_demo.dart`           |
 
-> `main.dart` and `async_subscriber.dart` require only a plain `nats-server`. All other examples require `nats-server -js` (JetStream enabled).
+> `pubsub_sync.dart` and `async_subscriber.dart` require only a plain `nats-server`. All other examples require `nats-server -js` (JetStream enabled).
 
-## 🧪 Testing
+ ## 🤖 A note on AI assistance
 
-Tests automatically start a Docker NATS container with JetStream enabled. Docker must be installed and running.
-
-```bash
-# Run all tests — Docker container starts/stops automatically
-just test
-
-# Run a single test file
-just test-single nats_client_test.dart
-```
+ This package was developed with heavy use of AI tooling (Claude Code). The implementation has been
+ reviewed carefully, but given the early stage (`v0.1.0`) and the nature of AI-assisted development, you
+  should feel comfortable scrutinising any part of the code. If something looks wrong, surprising, or
+ suboptimal — it very well might be. Issues and PRs are welcome. 🙏
 
 ## 🗺️ Roadmap
 
@@ -126,7 +120,7 @@ These additions complete the JetStream management API and round out connection o
 
 <details><summary>Priority 3 and 4 — Future Additions</summary>
 
-### Priority 3 — Valuable Additions
+### Valuable Additions
 
 | Feature                     | Why it matters                                           |
 | --------------------------- | -------------------------------------------------------- |
@@ -138,7 +132,7 @@ These additions complete the JetStream management API and round out connection o
 | Fail Requests on Disconnect | Fail-fast behavior instead of buffering requests         |
 | Ordered Consumers           | Simplified exactly-once-delivery consumer configuration  |
 
-### Priority 4 — Nice to Have
+### Nice to Have
 
 | Feature                     | Why it matters                                                  |
 | --------------------------- | --------------------------------------------------------------- |

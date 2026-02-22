@@ -4,7 +4,7 @@
 ///   - `nats-server` running on localhost:4222
 ///
 /// Run:
-///   dart run example/main.dart
+///   dart run example/pubsub_sync.dart
 library;
 
 import 'package:nats_for_dart/nats_for_dart.dart';
