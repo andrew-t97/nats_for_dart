@@ -10,7 +10,57 @@ void main(List<String> args) async {
 Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
   if (!input.config.buildCodeAssets) return;
 
-  // Guard: ensure vendored source is present.
+  _validateVendoredSources(input);
+
+  final targetOS = input.config.code.targetOS;
+
+  // Map Dart architecture to the arch subdirectory name used by CMakeLists.txt.
+  // Passed explicitly because cmake's CMAKE_SYSTEM_PROCESSOR detection is
+  // unreliable when invoked as a subprocess without a full MSVC environment.
+  final archDir = switch (input.config.code.targetArchitecture) {
+    Architecture.x64 => 'amd64',
+    Architecture.arm64 => 'aarch64',
+    Architecture.ia32 => 'i386',
+    final unsupported => throw StateError(
+      'Unsupported architecture for cmake build: ${unsupported.name}',
+    ),
+  };
+
+  final cmake = await _findCmake();
+  if (cmake == null) {
+    throw StateError(
+      'cmake not found. Install cmake 3.28 or later:\n'
+      '  macOS:   brew install cmake\n'
+      '  Linux:   apt install cmake\n'
+      '  Windows: https://cmake.org/download/ or update Visual Studio 2022',
+    );
+  }
+
+  final cmakeBuildDir = Directory.fromUri(
+    input.outputDirectory.resolve('cmake_build/'),
+  );
+  await cmakeBuildDir.create(recursive: true);
+
+  await _configureCmake(
+    cmake,
+    input.packageRoot.toFilePath(),
+    cmakeBuildDir.path,
+    archDir,
+  );
+  await _buildCmake(cmake, cmakeBuildDir.path);
+
+  final libName = switch (targetOS) {
+    OS.windows => 'nats.dll',
+    OS.macOS => 'libnats.dylib',
+    // Linux, Android, and any other ELF-based target.
+    _ => 'libnats.so',
+  };
+  final libFile = cmakeBuildDir.uri.resolve('lib/$libName');
+
+  _registerOutput(input: input, output: output, libFile: libFile);
+}
+
+void _validateVendoredSources(BuildInput input) {
   final natsHeader = File.fromUri(
     input.packageRoot.resolve('third_party/nats_c/src/nats.h'),
   );
@@ -30,64 +80,39 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
       'Run scripts/update_libressl.sh to populate third_party/libressl/.',
     );
   }
+}
 
-  final targetOS = input.config.code.targetOS;
-
-  // Map Dart architecture to the arch subdirectory name used by CMakeLists.txt.
-  // Passed explicitly because cmake's CMAKE_SYSTEM_PROCESSOR detection is
-  // unreliable when invoked as a subprocess without a full MSVC environment.
-  final archDir = switch (input.config.code.targetArchitecture) {
-    Architecture.x64 => 'amd64',
-    Architecture.arm64 => 'aarch64',
-    Architecture.ia32 => 'i386',
-    final unsupported => throw StateError(
-      'Unsupported architecture for cmake build: $unsupported',
-    ),
-  };
-
-  final cmake = await _findCmake();
-  if (cmake == null) {
-    throw StateError(
-      'cmake not found. Install cmake 3.28 or later:\n'
-      '  macOS:   brew install cmake\n'
-      '  Linux:   apt install cmake\n'
-      '  Windows: https://cmake.org/download/ or update Visual Studio 2022',
-    );
-  }
-
-  final cmakeBuildDir = Directory.fromUri(
-    input.outputDirectory.resolve('cmake_build/'),
-  );
-  await cmakeBuildDir.create(recursive: true);
-
-  // Configure — pass NATS_ARCH_DIR explicitly so CMakeLists.txt does not need
-  // to rely on CMAKE_SYSTEM_PROCESSOR, which can be empty when cmake is
-  // spawned without a fully-initialised MSVC environment.
+Future<void> _configureCmake(
+  String cmake,
+  String sourceRoot,
+  String buildDir,
+  String archDir,
+) async {
   await _runProcess(cmake, [
     '-S',
-    input.packageRoot.toFilePath(),
+    sourceRoot,
     '-B',
-    cmakeBuildDir.path,
+    buildDir,
     '-DCMAKE_BUILD_TYPE=Release',
     '-DNATS_ARCH_DIR=$archDir',
   ]);
+}
 
-  // Build — --parallel lets cmake use all available cores.
+Future<void> _buildCmake(String cmake, String buildDir) async {
   await _runProcess(cmake, [
     '--build',
-    cmakeBuildDir.path,
+    buildDir,
     '--config',
     'Release',
     '--parallel',
   ]);
+}
 
-  final libName = switch (targetOS) {
-    OS.windows => 'nats.dll',
-    OS.macOS => 'libnats.dylib',
-    _ => 'libnats.so',
-  };
-  final libFile = Uri.file('${cmakeBuildDir.path}/lib/$libName');
-
+void _registerOutput({
+  required BuildInput input,
+  required BuildOutputBuilder output,
+  required Uri libFile,
+}) {
   output.assets.code.add(
     CodeAsset(
       package: input.packageName,
@@ -97,18 +122,21 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
     ),
   );
 
-  output.dependencies.add(input.packageRoot.resolve('CMakeLists.txt'));
-  output.dependencies.add(
-    input.packageRoot.resolve('third_party/libressl/sources.txt'),
-  );
-  // Track the NATS C source directory so that adding/removing files triggers a rebuild.
-  output.dependencies.add(input.packageRoot.resolve('third_party/nats_c/src/'));
+  output.dependencies
+    ..add(input.packageRoot.resolve('CMakeLists.txt'))
+    ..add(input.packageRoot.resolve('third_party/libressl/sources.txt'))
+    // Track the NATS C source directory so that adding/removing files triggers a rebuild.
+    ..add(input.packageRoot.resolve('third_party/nats_c/src/'));
 }
 
 Future<String?> _findCmake() async {
   // Try the name directly first — works if cmake is on PATH on any platform.
-  final probe = await Process.run('cmake', ['--version']);
-  if (probe.exitCode == 0) return 'cmake';
+  try {
+    final probe = await Process.run('cmake', ['--version']);
+    if (probe.exitCode == 0) return 'cmake';
+  } on ProcessException {
+    // cmake not on PATH — fall through to platform-specific locations below.
+  }
   // macOS fallbacks: Homebrew (Apple Silicon and Intel).
   for (final path in ['/opt/homebrew/bin/cmake', '/usr/local/bin/cmake']) {
     if (File(path).existsSync()) return path;
@@ -116,9 +144,12 @@ Future<String?> _findCmake() async {
   // Windows fallback: cmake bundled with Visual Studio 2022.
   final vsDir = Platform.environment['VSINSTALLDIR'];
   if (vsDir != null) {
-    final vsCmake =
-        '$vsDir\\Common7\\IDE\\CommonExtensions\\'
-        'Microsoft\\CMake\\CMake\\bin\\cmake.exe';
+    // Uri.directory normalises the path; forward slashes work in Windows File constructors.
+    final vsCmake = Uri.directory(vsDir)
+        .resolve(
+          'Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe',
+        )
+        .toFilePath();
     if (File(vsCmake).existsSync()) return vsCmake;
   }
   return null;
