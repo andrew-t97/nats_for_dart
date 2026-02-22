@@ -30,3 +30,17 @@ repos:
         language: system
         types: [dart]
         pass_filenames: false
+
+      - id: cmake-format
+        name: CMake format (cmake-format)
+        entry: cmake-format -i CMakeLists.txt
+        language: system
+        files: CMakeLists\.txt$
+        pass_filenames: false
+
+      - id: cmake-lint
+        name: CMake lint (cmake-lint)
+        entry: cmake-lint --suppress-decorations CMakeLists.txt
+        language: system
+        files: CMakeLists\.txt$
+        pass_filenames: false
