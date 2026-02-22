@@ -106,6 +106,11 @@ elseif(WIN32)
       strcasecmp.c getpagesize.c strndup.c strnlen.c timingsafe_bcmp.c)
     list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/${compat_file}$")
   endforeach()
+  # bn_arch.c unconditionally includes s2n_bignum.h, which uses C99 [static N]
+  # array parameter syntax that MSVC does not support.  The file compiles to
+  # nothing on Windows anyway (bn_arch.h forces OPENSSL_NO_ASM and defines no
+  # HAVE_BN_* macros there), so it is safe to drop it entirely.
+  list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/bn/arch/[^/]+/bn_arch\\.c$")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -268,6 +273,9 @@ elseif(WIN32)
     WIN32_LEAN_AND_MEAN
     _CRT_SECURE_NO_WARNINGS
     HAVE_STRNLEN
+    # Windows is always little-endian; endian.h checks for this define
+    # because MSVC does not set __BYTE_ORDER__ (a GCC/Clang predefined macro).
+    HAVE_LITTLE_ENDIAN
     "OPENSSLDIR=\"C:\\\\OpenSSL\""
   )
 endif()
