@@ -14,6 +14,7 @@ check:
 # Format all Dart code in the project
 format:
     dart format .
+    cmake-format -i CMakeLists.txt
 
 # Check if code is formatted correctly without making changes (CI-friendly)
 format-check:
@@ -22,11 +23,13 @@ format-check:
 # Analyze code using configured lint rules (treats all issues as fatal)
 lint:
     dart analyze --fatal-infos
+    cmake-lint --suppress-decorations CMakeLists.txt
 
 # Apply automated lint fixes and verify no issues remain
 lint-fix:
     dart fix --apply
     dart analyze --fatal-infos
+    cmake-lint --suppress-decorations CMakeLists.txt
 
 # Check for outdated dependencies
 deps-outdated:

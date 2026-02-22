@@ -27,9 +27,9 @@ if(NOT DEFINED NATS_ARCH_DIR)
   elseif(_arch MATCHES "i[3-6]86|x86$")
     set(NATS_ARCH_DIR i386)
   else()
-    message(FATAL_ERROR
-      "Unsupported architecture: '${_arch}'. "
-      "Pass -DNATS_ARCH_DIR=<amd64|aarch64|i386> to override.")
+    message(
+      FATAL_ERROR "Unsupported architecture: '${_arch}'. "
+                  "Pass -DNATS_ARCH_DIR=<amd64|aarch64|i386> to override.")
   endif()
 endif()
 
@@ -43,34 +43,37 @@ set(LIBRESSL_SOURCES ${LIBRESSL_ALL_SOURCES})
 list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/getopt_long\\.c$")
 list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/armcap\\.c$")
 
-# 2. Architecture-specific crypto/arch/: keep only the target arch subdir.
-#    Exclude all /crypto/arch/<other>/ paths while keeping /<NATS_ARCH_DIR>/.
-list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX
-     "/crypto/arch/[^/]+/[^/]+$")
+# 1. Architecture-specific crypto/arch/: keep only the target arch subdir.
+#   Exclude all /crypto/arch/<other>/ paths while keeping /<NATS_ARCH_DIR>/.
+list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/crypto/arch/[^/]+/[^/]+$")
 file(GLOB ARCH_CPU_CAPS
-     "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/arch/${NATS_ARCH_DIR}/*.c")
+     "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/arch/"
+     "${NATS_ARCH_DIR}/*.c")
 list(APPEND LIBRESSL_SOURCES ${ARCH_CPU_CAPS})
 
-# 3. getentropy_ prefix: exclude all non-win variants.
-#    getentropy_win.c is handled separately below in the Windows-only block.
+# 1. getentropy_ prefix: exclude all non-win variants. getentropy_win.c is
+#   handled separately below in the Windows-only block.
 list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/getentropy_[^/]+\\.c$")
 if(WIN32)
   list(APPEND LIBRESSL_SOURCES
-       "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/getentropy_win.c")
+       "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/"
+       "getentropy_win.c")
 endif()
 
-# 4. getprogname_ prefix: keep only the one matching the target OS.
+# 1. getprogname_ prefix: keep only the one matching the target OS.
 list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/getprogname_[^/]+\\.c$")
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   list(APPEND LIBRESSL_SOURCES
-       "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/getprogname_linux.c")
+       "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/"
+       "getprogname_linux.c")
 elseif(WIN32)
   list(APPEND LIBRESSL_SOURCES
-       "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/getprogname_windows.c")
+       "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/compat/"
+       "getprogname_windows.c")
 endif()
 # macOS provides getprogname() natively — no compat source needed.
 
-# 5. Windows-only files: exclude on non-Windows.
+# 1. Windows-only files: exclude on non-Windows.
 if(NOT WIN32)
   list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/b_win\\.c$")
   list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/ui_openssl_win\\.c$")
@@ -79,7 +82,7 @@ if(NOT WIN32)
   list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/posix_win\\.c$")
 endif()
 
-# 6. Unix-only files: exclude on Windows (require fcntl.h / sys/socket.h).
+# 1. Unix-only files: exclude on Windows (require fcntl.h / sys/socket.h).
 if(WIN32)
   list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/crypto_lock\\.c$")
   list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/b_posix\\.c$")
@@ -87,23 +90,31 @@ if(WIN32)
   list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/ui_openssl\\.c$")
 endif()
 
-# 7. Platform compat exclusions — files with no HAVE_X guard that the OS
-#    already provides natively.
+# 1. Platform compat exclusions — files with no HAVE_X guard that the OS already
+#   provides natively.
 if(APPLE)
-  foreach(compat_file
-      arc4random.c arc4random_uniform.c getpagesize.c strcasecmp.c
-      strlcat.c strlcpy.c strndup.c strnlen.c strsep.c timingsafe_bcmp.c)
+  foreach(
+    compat_file
+    arc4random.c
+    arc4random_uniform.c
+    getpagesize.c
+    strcasecmp.c
+    strlcat.c
+    strlcpy.c
+    strndup.c
+    strnlen.c
+    strsep.c
+    timingsafe_bcmp.c)
     list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/${compat_file}$")
   endforeach()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  foreach(compat_file
-      explicit_bzero.c getpagesize.c strcasecmp.c
-      strndup.c strnlen.c strsep.c)
+  foreach(compat_file explicit_bzero.c getpagesize.c strcasecmp.c strndup.c
+                      strnlen.c strsep.c)
     list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/${compat_file}$")
   endforeach()
 elseif(WIN32)
-  foreach(compat_file
-      explicit_bzero.c strcasecmp.c getpagesize.c strndup.c strnlen.c timingsafe_bcmp.c)
+  foreach(compat_file explicit_bzero.c strcasecmp.c getpagesize.c strndup.c
+                      strnlen.c timingsafe_bcmp.c)
     list(FILTER LIBRESSL_SOURCES EXCLUDE REGEX "/${compat_file}$")
   endforeach()
   # bn_arch.c unconditionally includes s2n_bignum.h, which uses C99 [static N]
@@ -117,134 +128,129 @@ endif()
 # NATS C sources — 32 core + 7 glib + 4 platform-specific
 # ---------------------------------------------------------------------------
 set(NATS_CORE_SOURCES
-  # Core (32 files)
-  third_party/nats_c/src/asynccb.c
-  third_party/nats_c/src/buf.c
-  third_party/nats_c/src/comsock.c
-  third_party/nats_c/src/conn.c
-  third_party/nats_c/src/crypto.c
-  third_party/nats_c/src/dispatch.c
-  third_party/nats_c/src/hash.c
-  third_party/nats_c/src/js.c
-  third_party/nats_c/src/jsm.c
-  third_party/nats_c/src/kv.c
-  third_party/nats_c/src/micro.c
-  third_party/nats_c/src/micro_client.c
-  third_party/nats_c/src/micro_endpoint.c
-  third_party/nats_c/src/micro_error.c
-  third_party/nats_c/src/micro_monitoring.c
-  third_party/nats_c/src/micro_request.c
-  third_party/nats_c/src/msg.c
-  third_party/nats_c/src/nats.c
-  third_party/nats_c/src/natstime.c
-  third_party/nats_c/src/nkeys.c
-  third_party/nats_c/src/nuid.c
-  third_party/nats_c/src/object.c
-  third_party/nats_c/src/opts.c
-  third_party/nats_c/src/parser.c
-  third_party/nats_c/src/pub.c
-  third_party/nats_c/src/srvpool.c
-  third_party/nats_c/src/stats.c
-  third_party/nats_c/src/status.c
-  third_party/nats_c/src/sub.c
-  third_party/nats_c/src/timer.c
-  third_party/nats_c/src/url.c
-  third_party/nats_c/src/util.c
-  # glib (7 files)
-  third_party/nats_c/src/glib/glib.c
-  third_party/nats_c/src/glib/glib_async_cb.c
-  third_party/nats_c/src/glib/glib_dispatch_pool.c
-  third_party/nats_c/src/glib/glib_gc.c
-  third_party/nats_c/src/glib/glib_last_error.c
-  third_party/nats_c/src/glib/glib_ssl.c
-  third_party/nats_c/src/glib/glib_timer.c
-)
+    # Core (32 files)
+    third_party/nats_c/src/asynccb.c
+    third_party/nats_c/src/buf.c
+    third_party/nats_c/src/comsock.c
+    third_party/nats_c/src/conn.c
+    third_party/nats_c/src/crypto.c
+    third_party/nats_c/src/dispatch.c
+    third_party/nats_c/src/hash.c
+    third_party/nats_c/src/js.c
+    third_party/nats_c/src/jsm.c
+    third_party/nats_c/src/kv.c
+    third_party/nats_c/src/micro.c
+    third_party/nats_c/src/micro_client.c
+    third_party/nats_c/src/micro_endpoint.c
+    third_party/nats_c/src/micro_error.c
+    third_party/nats_c/src/micro_monitoring.c
+    third_party/nats_c/src/micro_request.c
+    third_party/nats_c/src/msg.c
+    third_party/nats_c/src/nats.c
+    third_party/nats_c/src/natstime.c
+    third_party/nats_c/src/nkeys.c
+    third_party/nats_c/src/nuid.c
+    third_party/nats_c/src/object.c
+    third_party/nats_c/src/opts.c
+    third_party/nats_c/src/parser.c
+    third_party/nats_c/src/pub.c
+    third_party/nats_c/src/srvpool.c
+    third_party/nats_c/src/stats.c
+    third_party/nats_c/src/status.c
+    third_party/nats_c/src/sub.c
+    third_party/nats_c/src/timer.c
+    third_party/nats_c/src/url.c
+    third_party/nats_c/src/util.c
+    # glib (7 files)
+    third_party/nats_c/src/glib/glib.c
+    third_party/nats_c/src/glib/glib_async_cb.c
+    third_party/nats_c/src/glib/glib_dispatch_pool.c
+    third_party/nats_c/src/glib/glib_gc.c
+    third_party/nats_c/src/glib/glib_last_error.c
+    third_party/nats_c/src/glib/glib_ssl.c
+    third_party/nats_c/src/glib/glib_timer.c)
 
 if(WIN32)
   set(NATS_PLATFORM_SOURCES
-    third_party/nats_c/src/win/cond.c
-    third_party/nats_c/src/win/mutex.c
-    third_party/nats_c/src/win/sock.c
-    third_party/nats_c/src/win/thread.c
-  )
+      third_party/nats_c/src/win/cond.c third_party/nats_c/src/win/mutex.c
+      third_party/nats_c/src/win/sock.c third_party/nats_c/src/win/thread.c)
 else()
   set(NATS_PLATFORM_SOURCES
-    third_party/nats_c/src/unix/cond.c
-    third_party/nats_c/src/unix/mutex.c
-    third_party/nats_c/src/unix/sock.c
-    third_party/nats_c/src/unix/thread.c
-  )
+      third_party/nats_c/src/unix/cond.c third_party/nats_c/src/unix/mutex.c
+      third_party/nats_c/src/unix/sock.c third_party/nats_c/src/unix/thread.c)
 endif()
 
 # ---------------------------------------------------------------------------
 # Target definition
 # ---------------------------------------------------------------------------
-add_library(nats SHARED
-  ${LIBRESSL_SOURCES}
-  ${NATS_CORE_SOURCES}
-  ${NATS_PLATFORM_SOURCES}
-)
+add_library(nats SHARED ${LIBRESSL_SOURCES} ${NATS_CORE_SOURCES}
+                        ${NATS_PLATFORM_SOURCES})
 
 # ---------------------------------------------------------------------------
 # Include paths — ORDER IS CRITICAL (#include_next chains)
 # ---------------------------------------------------------------------------
 
-# Auto-discover crypto subdirectories containing headers.
-# Excludes hidden/, compat/, arch/ — handled separately with specific ordering.
-# CONFIGURE_DEPENDS: causes cmake to re-configure if directories are added/removed
-# under crypto/ (e.g. after update_libressl.sh).
-file(GLOB _CRYPTO_SUBDIRS CONFIGURE_DEPENDS LIST_DIRECTORIES true
-     "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/*")
+# Auto-discover crypto subdirectories containing headers. Excludes hidden/,
+# compat/, arch/ — handled separately with specific ordering. CONFIGURE_DEPENDS:
+# causes cmake to re-configure if directories are added/removed under crypto/
+# (e.g. after update_libressl.sh).
+file(
+  GLOB _CRYPTO_SUBDIRS CONFIGURE_DEPENDS
+  LIST_DIRECTORIES true
+  "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/*")
 set(CRYPTO_SUBDIR_INCLUDES)
 foreach(dir ${_CRYPTO_SUBDIRS})
   get_filename_component(dirname "${dir}" NAME)
-  if(IS_DIRECTORY "${dir}" AND
-     NOT dirname MATCHES "^(hidden|compat|arch)$")
+  if(IS_DIRECTORY "${dir}" AND NOT dirname MATCHES "^(hidden|compat|arch)$")
     file(GLOB _HEADERS "${dir}/*.h")
     if(_HEADERS)
       list(APPEND CRYPTO_SUBDIR_INCLUDES "${dir}")
     endif()
   endif()
 endforeach()
-list(SORT CRYPTO_SUBDIR_INCLUDES)  # deterministic ordering
+list(SORT CRYPTO_SUBDIR_INCLUDES) # deterministic ordering
 
 set(ARCH_INCLUDES
-  "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/arch/${NATS_ARCH_DIR}/"
-  "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/bn/arch/${NATS_ARCH_DIR}/"
-)
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/arch/"
+    "${NATS_ARCH_DIR}/"
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libressl/crypto/bn/arch/"
+    "${NATS_ARCH_DIR}/")
 
-target_include_directories(nats PRIVATE
-  third_party/libressl/ssl/hidden/      # 1. MUST be first (#include_next chain)
-  third_party/libressl/crypto/hidden/   # 2.
-  third_party/libressl/include/compat/  # 3.
-  third_party/libressl/include/         # 4.
-  third_party/libressl/crypto/          # 5.
-  third_party/libressl/ssl/             # 6.
-  ${CRYPTO_SUBDIR_INCLUDES}             # 7. auto-discovered, sorted
-  ${ARCH_INCLUDES}                      # 8. crypto/arch/<arch>/, crypto/bn/arch/<arch>/
-  third_party/nats_c/src/               # 9.
-  third_party/nats_c/src/include/       # 10.
+target_include_directories(
+  nats
+  PRIVATE third_party/libressl/ssl/hidden/ # 1. MUST be first (#include_next
+                                           #   chain)
+          third_party/libressl/crypto/hidden/ # 2.
+          third_party/libressl/include/compat/ # 3.
+          third_party/libressl/include/ # 4.
+          third_party/libressl/crypto/ # 5.
+          third_party/libressl/ssl/ # 6.
+          ${CRYPTO_SUBDIR_INCLUDES} # 1. auto-discovered, sorted
+          ${ARCH_INCLUDES} # 1. crypto/arch/<arch>/, crypto/bn/arch/<arch>/
+          third_party/nats_c/src/ # 9.
+          third_party/nats_c/src/include/ # 10.
 )
 
 # ---------------------------------------------------------------------------
 # Compile definitions — replicate all entries from hook/build.dart
 # ---------------------------------------------------------------------------
-target_compile_definitions(nats PRIVATE
-  _REENTRANT
-  NATS_HAS_TLS
-  NATS_FORCE_HOST_VERIFICATION
-  __BEGIN_HIDDEN_DECLS=
-  __END_HIDDEN_DECLS=
-  LIBRESSL_INTERNAL
-  LIBRESSL_CRYPTO_INTERNAL
-  OPENSSL_NO_HW_PADLOCK
-  # OPENSSL_NO_ASM disables the assembly-backed path in crypto_legacy.c.
-  # HAVE_CRYPTO_CPU_CAPS_INIT must be set alongside it so that the arch-specific
-  # crypto/arch/<arch>/crypto_cpu_caps.c provides crypto_cpu_caps_init() instead
-  # of the fallback stub in crypto_legacy.c — compiling both would be duplicate symbols.
-  OPENSSL_NO_ASM
-  HAVE_CRYPTO_CPU_CAPS_INIT
-)
+target_compile_definitions(
+  nats
+  PRIVATE _REENTRANT
+          NATS_HAS_TLS
+          NATS_FORCE_HOST_VERIFICATION
+          __BEGIN_HIDDEN_DECLS=
+          __END_HIDDEN_DECLS=
+          LIBRESSL_INTERNAL
+          LIBRESSL_CRYPTO_INTERNAL
+          OPENSSL_NO_HW_PADLOCK
+          # OPENSSL_NO_ASM disables the assembly-backed path in crypto_legacy.c.
+          # HAVE_CRYPTO_CPU_CAPS_INIT must be set alongside it so that the
+          # arch-specific crypto/arch/<arch>/crypto_cpu_caps.c provides
+          # crypto_cpu_caps_init() instead of the fallback stub in
+          # crypto_legacy.c — compiling both would be duplicate symbols.
+          OPENSSL_NO_ASM
+          HAVE_CRYPTO_CPU_CAPS_INIT)
 
 # x64 and i386 provide the ia32 CPU caps variant.
 if(NATS_ARCH_DIR MATCHES "amd64|i386")
@@ -253,31 +259,54 @@ endif()
 
 # Platform-specific HAVE_* macros and OPENSSLDIR.
 if(APPLE)
-  target_compile_definitions(nats PRIVATE
-    HAVE_CLOCK_GETTIME HAVE_GETENTROPY HAVE_ASPRINTF HAVE_MEMMEM
-    HAVE_GETPAGESIZE HAVE_STRCASECMP HAVE_STRNDUP HAVE_STRNLEN HAVE_STRSEP
-    HAVE_STRLCPY HAVE_STRLCAT HAVE_ARC4RANDOM_BUF HAVE_TIMINGSAFE_BCMP
-    HAVE_GETPROGNAME DARWIN
-    "OPENSSLDIR=\"/etc/ssl\""
-  )
-elseif(UNIX)  # Linux (and other Unix, but we only target Linux)
-  target_compile_definitions(nats PRIVATE
-    HAVE_CLOCK_GETTIME HAVE_GETENTROPY HAVE_ASPRINTF HAVE_MEMMEM
-    HAVE_GETPAGESIZE HAVE_STRCASECMP HAVE_STRNDUP HAVE_STRNLEN HAVE_STRSEP
-    HAVE_EXPLICIT_BZERO HAVE_ENDIAN_H LINUX _GNU_SOURCE _REENTRANT
-    "OPENSSLDIR=\"/etc/ssl\""
-  )
+  target_compile_definitions(
+    nats
+    PRIVATE HAVE_CLOCK_GETTIME
+            HAVE_GETENTROPY
+            HAVE_ASPRINTF
+            HAVE_MEMMEM
+            HAVE_GETPAGESIZE
+            HAVE_STRCASECMP
+            HAVE_STRNDUP
+            HAVE_STRNLEN
+            HAVE_STRSEP
+            HAVE_STRLCPY
+            HAVE_STRLCAT
+            HAVE_ARC4RANDOM_BUF
+            HAVE_TIMINGSAFE_BCMP
+            HAVE_GETPROGNAME
+            DARWIN
+            "OPENSSLDIR=\"/etc/ssl\"")
+elseif(UNIX) # Linux (and other Unix, but we only target Linux)
+  target_compile_definitions(
+    nats
+    PRIVATE HAVE_CLOCK_GETTIME
+            HAVE_GETENTROPY
+            HAVE_ASPRINTF
+            HAVE_MEMMEM
+            HAVE_GETPAGESIZE
+            HAVE_STRCASECMP
+            HAVE_STRNDUP
+            HAVE_STRNLEN
+            HAVE_STRSEP
+            HAVE_EXPLICIT_BZERO
+            HAVE_ENDIAN_H
+            LINUX
+            _GNU_SOURCE
+            _REENTRANT
+            "OPENSSLDIR=\"/etc/ssl\"")
 elseif(WIN32)
-  target_compile_definitions(nats PRIVATE
-    _WIN32_WINNT=0x0600
-    WIN32_LEAN_AND_MEAN
-    _CRT_SECURE_NO_WARNINGS
-    HAVE_STRNLEN
-    # Windows is always little-endian; endian.h checks for this define
-    # because MSVC does not set __BYTE_ORDER__ (a GCC/Clang predefined macro).
-    HAVE_LITTLE_ENDIAN
-    "OPENSSLDIR=\"C:\\\\OpenSSL\""
-  )
+  target_compile_definitions(
+    nats
+    PRIVATE _WIN32_WINNT=0x0600
+            WIN32_LEAN_AND_MEAN
+            _CRT_SECURE_NO_WARNINGS
+            HAVE_STRNLEN
+            # Windows is always little-endian; endian.h checks for this define
+            # because MSVC does not set __BYTE_ORDER__ (a GCC/Clang predefined
+            # macro).
+            HAVE_LITTLE_ENDIAN
+            "OPENSSLDIR=\"C:\\\\OpenSSL\"")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -307,29 +336,35 @@ endif()
 # rejects as a redefinition (C2371/C2491) even though it is static.
 #
 # A compiler-wide -D_close=<name> macro would rename _close everywhere,
-# including inside the system header, causing the same conflict under a new name.
+# including inside the system header, causing the same conflict under a new
+# name.
 #
-# Fix: use /FI (force-include) to pre-include <io.h> for conn.c only.
-# <io.h> declares the CRT _close before the rename macro is active.
-# Include guards then prevent re-processing when conn.c pulls in the same
-# header transitively, so the rename only affects NATS's own static _close.
+# Fix: use /FI (force-include) to pre-include <io.h> for conn.c only. <io.h>
+# declares the CRT _close before the rename macro is active. Include guards then
+# prevent re-processing when conn.c pulls in the same header transitively, so
+# the rename only affects NATS's own static _close.
+
 if(MSVC)
-  set_source_files_properties(
-    third_party/nats_c/src/conn.c
-    PROPERTIES
-    COMPILE_OPTIONS "/FI${CMAKE_CURRENT_SOURCE_DIR}/cmake/msvc_conn_compat.h"
-  )
+  set(COMPAT_HEADER "/FI${CMAKE_CURRENT_SOURCE_DIR}/cmake/msvc_conn_compat.h")
+  set_source_files_properties(third_party/nats_c/src/conn.c
+                              PROPERTIES COMPILE_OPTIONS "${COMPAT_HEADER}")
 endif()
 
 # ---------------------------------------------------------------------------
-# Predictable output location — always <build_dir>/lib/
-# _RELEASE variants: prevent MSVC multi-config from adding a Release/ subdir.
-# Non-suffixed variants: used by Makefile/Ninja single-config generators on
-# macOS and Linux, which ignore the _RELEASE suffixed properties entirely.
+# Predictable output location — always <build_dir>/lib/ _RELEASE variants:
+# prevent MSVC multi-config from adding a Release/ subdir. Non-suffixed
+# variants: used by Makefile/Ninja single-config generators on macOS and Linux,
+# which ignore the _RELEASE suffixed properties entirely.
 # ---------------------------------------------------------------------------
-set_target_properties(nats PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY         "${CMAKE_BINARY_DIR}/lib"  # .dll (Windows, single-config)
-  RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib"  # .dll (Windows, MSVC multi-config)
-  LIBRARY_OUTPUT_DIRECTORY         "${CMAKE_BINARY_DIR}/lib"  # .so / .dylib (Unix, single-config)
-  LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib"  # .so / .dylib (Unix, MSVC multi-config)
+set_target_properties(
+  nats
+  PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib" # .dll (Windows,
+                                                                # single-config)
+             RUNTIME_OUTPUT_DIRECTORY_RELEASE
+             "${CMAKE_BINARY_DIR}/lib" # .dll (Windows, MSVC multi-config)
+             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib" # .so / .dylib
+                                                                # (Unix,
+                                                                # single-config)
+             LIBRARY_OUTPUT_DIRECTORY_RELEASE
+             "${CMAKE_BINARY_DIR}/lib" # .so / .dylib (Unix, MSVC multi-config)
 )
