@@ -14,8 +14,10 @@ final class NatsError {
   /// The [NatsStatus] error code.
   final NatsStatus status;
 
+  /// Creates a [NatsError] with the given [status] code.
   NatsError(this.status);
 
+  /// Returns a string representation including the status name.
   @override
   String toString() => 'NatsError(${status.name})';
 }

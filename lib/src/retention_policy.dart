@@ -13,9 +13,13 @@ enum RetentionPolicy {
   /// Remove a message as soon as the first consumer acknowledges it.
   workQueue(2);
 
+  /// The underlying integer value used by the NATS C library.
   final int value;
+
+  /// Creates a [RetentionPolicy] from its C-level integer [value].
   const RetentionPolicy(this.value);
 
+  /// Returns the [RetentionPolicy] corresponding to the given integer [value].
   static RetentionPolicy fromValue(int value) => switch (value) {
     0 => limits,
     1 => interest,

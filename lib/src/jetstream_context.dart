@@ -20,21 +20,49 @@ import 'storage_type.dart';
 /// Configuration for creating or updating a JetStream stream.
 @immutable
 final class JsStreamConfig {
+  /// The stream name. Must be unique within the JetStream account.
   final String name;
+
+  /// The subjects this stream listens on.
   final List<String> subjects;
+
+  /// An optional human-readable description for this stream.
   final String? description;
+
+  /// The message retention strategy.
   final RetentionPolicy retention;
+
+  /// Maximum number of consumers allowed on this stream (`-1` for unlimited).
   final int maxConsumers;
+
+  /// Maximum number of messages stored in the stream (`-1` for unlimited).
   final int maxMsgs;
+
+  /// Maximum total size of all messages in bytes (`-1` for unlimited).
   final int maxBytes;
+
+  /// Maximum age of a message before it is removed, or `null` for no limit.
   final Duration? maxAge;
+
+  /// Maximum number of messages per subject (`-1` for unlimited).
   final int maxMsgsPerSubject;
+
+  /// Maximum size of a single message in bytes (`-1` for unlimited).
   final int maxMsgSize;
+
+  /// The policy for discarding messages when a limit is reached.
   final DiscardPolicy discard;
+
+  /// The storage backend (file or memory).
   final StorageType storage;
+
+  /// The number of stream replicas in a clustered deployment.
   final int replicas;
+
+  /// Whether to disable acknowledgements for this stream.
   final bool noAck;
 
+  /// Creates a [JsStreamConfig] with the given parameters.
   const JsStreamConfig({
     required this.name,
     this.subjects = const [],
@@ -56,19 +84,43 @@ final class JsStreamConfig {
 /// Configuration for creating a JetStream consumer.
 @immutable
 final class JsConsumerConfig {
+  /// The consumer name (server-assigned if `null`).
   final String? name;
+
+  /// The durable consumer name, or `null` for an ephemeral consumer.
   final String? durable;
+
+  /// An optional human-readable description for this consumer.
   final String? description;
+
+  /// Where in the stream to start delivering messages.
   final DeliverPolicy deliverPolicy;
+
+  /// How message acknowledgements are handled.
   final AckPolicy ackPolicy;
+
+  /// The replay speed for queued messages.
   final ReplayPolicy replayPolicy;
+
+  /// An optional subject filter for this consumer.
   final String? filterSubject;
+
+  /// Maximum number of delivery attempts before giving up.
   final int? maxDeliver;
+
+  /// How long the server waits for an ack before redelivering.
   final Duration? ackWait;
+
+  /// The subject to deliver messages to (push-based consumers).
   final String? deliverSubject;
+
+  /// The queue group for push-based delivery load balancing.
   final String? deliverGroup;
+
+  /// Maximum number of outstanding unacknowledged messages.
   final int? maxAckPending;
 
+  /// Creates a [JsConsumerConfig] with the given parameters.
   const JsConsumerConfig({
     this.name,
     this.durable,
@@ -88,12 +140,25 @@ final class JsConsumerConfig {
 /// Eagerly-copied stream info returned by stream management operations.
 @immutable
 final class JsStreamInfoResult {
+  /// The stream name.
   final String name;
+
+  /// The creation timestamp (nanoseconds since epoch).
   final int created;
+
+  /// The total number of messages in the stream.
   final int messages;
+
+  /// The total size of all messages in bytes.
   final int bytes;
+
+  /// The sequence number of the first message.
   final int firstSeq;
+
+  /// The sequence number of the most recent message.
   final int lastSeq;
+
+  /// The number of consumers attached to this stream.
   final int consumers;
 
   JsStreamInfoResult._({
@@ -106,6 +171,7 @@ final class JsStreamInfoResult {
     required this.consumers,
   });
 
+  /// Returns a human-readable summary of this stream info.
   @override
   String toString() =>
       'JsStreamInfoResult(name: $name, messages: $messages, '
@@ -115,12 +181,25 @@ final class JsStreamInfoResult {
 /// Eagerly-copied consumer info returned by consumer management operations.
 @immutable
 final class JsConsumerInfoResult {
+  /// The name of the stream this consumer is attached to.
   final String stream;
+
+  /// The consumer name.
   final String name;
+
+  /// The creation timestamp (nanoseconds since epoch).
   final int created;
+
+  /// The number of messages awaiting acknowledgement.
   final int numAckPending;
+
+  /// The number of messages that have been redelivered.
   final int numRedelivered;
+
+  /// The number of pull requests waiting for messages.
   final int numWaiting;
+
+  /// The number of messages remaining to be delivered.
   final int numPending;
 
   JsConsumerInfoResult._({
@@ -133,6 +212,7 @@ final class JsConsumerInfoResult {
     required this.numPending,
   });
 
+  /// Returns a human-readable summary of this consumer info.
   @override
   String toString() =>
       'JsConsumerInfoResult(stream: $stream, name: $name, '

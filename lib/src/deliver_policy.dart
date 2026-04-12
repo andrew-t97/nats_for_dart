@@ -21,9 +21,13 @@ enum DeliverPolicy {
   /// Start with the last message for each subject in the stream.
   deliverLastPerSubject(5);
 
+  /// The underlying integer value used by the NATS C library.
   final int value;
+
+  /// Creates a [DeliverPolicy] from its C-level integer [value].
   const DeliverPolicy(this.value);
 
+  /// Returns the [DeliverPolicy] corresponding to the given integer [value].
   static DeliverPolicy fromValue(int value) => switch (value) {
     0 => deliverAll,
     1 => deliverLast,

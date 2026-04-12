@@ -55,6 +55,8 @@ final class JsMessage implements Finalizable {
   /// Convenience getter that decodes [data] as a UTF-8 string.
   String get dataAsString => utf8.decode(data);
 
+  /// Returns a human-readable representation including the subject, optional
+  /// reply-to, and UTF-8 decoded payload.
   @override
   String toString() {
     final reply = replyTo != null ? ', replyTo: $replyTo' : '';
@@ -251,6 +253,7 @@ final class JsMessageMetadata {
     this.domain,
   });
 
+  /// Returns a human-readable summary of this metadata.
   @override
   String toString() =>
       'JsMessageMetadata(stream: $stream, seq: $streamSequence, '
@@ -281,6 +284,7 @@ final class JsPubAckResult {
     required this.duplicate,
   });
 
+  /// Returns a human-readable summary of this publish acknowledgement.
   @override
   String toString() =>
       'JsPubAckResult(stream: $stream, sequence: $sequence, '

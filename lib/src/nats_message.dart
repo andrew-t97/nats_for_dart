@@ -27,6 +27,8 @@ final class NatsMessage {
   /// Convenience getter that decodes [data] as a UTF-8 string.
   String get dataAsString => utf8.decode(data);
 
+  /// Returns a human-readable representation including the subject, optional
+  /// reply-to, and UTF-8 decoded payload.
   @override
   String toString() {
     final reply = replyTo != null ? ', replyTo: $replyTo' : '';

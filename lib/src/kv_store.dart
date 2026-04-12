@@ -17,15 +17,31 @@ import 'storage_type.dart';
 /// Configuration for creating a KeyValue bucket.
 @immutable
 final class KvConfig {
+  /// The bucket name. Must be unique within the JetStream account.
   final String bucket;
+
+  /// An optional human-readable description for this bucket.
   final String? description;
+
+  /// Maximum size of a single value in bytes, or `null` for no limit.
   final int? maxValueSize;
+
+  /// The number of historical revisions to keep per key.
   final int history;
+
+  /// Time-to-live for entries, or `null` for no expiration.
   final Duration? ttl;
+
+  /// Maximum total size of the bucket in bytes, or `null` for no limit.
   final int? maxBytes;
+
+  /// The storage backend (file or memory).
   final StorageType storageType;
+
+  /// The number of replicas in a clustered deployment.
   final int replicas;
 
+  /// Creates a [KvConfig] with the given parameters.
   const KvConfig({
     required this.bucket,
     this.description,
@@ -75,6 +91,7 @@ final class KvEntry {
   /// Convenience getter that decodes [value] as a UTF-8 string.
   String get valueAsString => String.fromCharCodes(value);
 
+  /// Returns a human-readable representation of this entry.
   @override
   String toString() =>
       'KvEntry(key: $key, revision: $revision, '

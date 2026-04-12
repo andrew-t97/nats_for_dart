@@ -13,9 +13,11 @@ final class NatsException implements Exception {
   /// Human-readable description of the error.
   final String message;
 
+  /// Creates a [NatsException] with the given [status] and optional [message].
   NatsException(this.status, [String? message])
     : message = message ?? 'NATS error: ${status.name} (${status.value})';
 
+  /// Returns a string representation of this exception.
   @override
   String toString() => 'NatsException($message)';
 }
@@ -24,6 +26,7 @@ final class NatsException implements Exception {
 /// Responders" status from the NATS server (v2.2+), indicating that no
 /// subscriber is available on the target subject.
 final class NatsNoRespondersException extends NatsException {
+  /// Creates a [NatsNoRespondersException] for the given [subject].
   NatsNoRespondersException(String subject)
     : super(NatsStatus.noResponders, 'No responders on subject: $subject');
 }

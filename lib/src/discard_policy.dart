@@ -8,9 +8,13 @@ enum DiscardPolicy {
   /// Reject new messages when the limit is reached.
   discardNew(1);
 
+  /// The underlying integer value used by the NATS C library.
   final int value;
+
+  /// Creates a [DiscardPolicy] from its C-level integer [value].
   const DiscardPolicy(this.value);
 
+  /// Returns the [DiscardPolicy] corresponding to the given integer [value].
   static DiscardPolicy fromValue(int value) => switch (value) {
     0 => discardOld,
     1 => discardNew,

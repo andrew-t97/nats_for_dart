@@ -8,9 +8,13 @@ enum ReplayPolicy {
   /// Replay messages at the same rate they were originally received.
   original(1);
 
+  /// The underlying integer value used by the NATS C library.
   final int value;
+
+  /// Creates a [ReplayPolicy] from its C-level integer [value].
   const ReplayPolicy(this.value);
 
+  /// Returns the [ReplayPolicy] corresponding to the given integer [value].
   static ReplayPolicy fromValue(int value) => switch (value) {
     0 => instant,
     1 => original,

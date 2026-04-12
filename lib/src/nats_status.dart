@@ -129,9 +129,15 @@ enum NatsStatus {
   /// subscriber ID on the server.
   pinIdMismatch(38);
 
+  /// The underlying integer code from the C library.
   final int value;
+
+  /// Creates a [NatsStatus] with the given integer [value].
   const NatsStatus(this.value);
 
+  /// Returns the [NatsStatus] corresponding to the given integer [value].
+  ///
+  /// Throws [ArgumentError] if [value] does not match any known status.
   static NatsStatus fromValue(int value) => switch (value) {
     0 => ok,
     1 => error,
