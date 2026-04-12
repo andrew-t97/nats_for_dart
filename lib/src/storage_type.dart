@@ -8,10 +8,10 @@ enum StorageType {
   /// Store messages in memory only.
   memory(1);
 
-  /// The underlying integer value used by the NATS C library.
+  /// The underlying integer value for this storage type.
   final int value;
 
-  /// Creates a [StorageType] from its C-level integer [value].
+  /// Creates a [StorageType] with the given integer [value].
   const StorageType(this.value);
 
   /// Returns the [StorageType] corresponding to the given integer [value].

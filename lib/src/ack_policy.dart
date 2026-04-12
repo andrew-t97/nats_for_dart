@@ -13,10 +13,10 @@ enum AckPolicy {
   /// Acknowledging a sequence implicitly acks all earlier sequences.
   all(2);
 
-  /// The underlying integer value used by the NATS C library.
+  /// The underlying integer value for this policy.
   final int value;
 
-  /// Creates an [AckPolicy] from its C-level integer [value].
+  /// Creates an [AckPolicy] with the given integer [value].
   const AckPolicy(this.value);
 
   /// Returns the [AckPolicy] corresponding to the given integer [value].

@@ -129,7 +129,7 @@ enum NatsStatus {
   /// subscriber ID on the server.
   pinIdMismatch(38);
 
-  /// The underlying integer code from the C library.
+  /// The underlying integer value for this status.
   final int value;
 
   /// Creates a [NatsStatus] with the given integer [value].

@@ -14,10 +14,10 @@ enum KvOperation {
   /// The key and all its revisions were permanently removed.
   purge(3);
 
-  /// The underlying integer value used by the NATS C library.
+  /// The underlying integer value for this operation.
   final int value;
 
-  /// Creates a [KvOperation] from its C-level integer [value].
+  /// Creates a [KvOperation] with the given integer [value].
   const KvOperation(this.value);
 
   /// Returns the [KvOperation] corresponding to the given integer [value].
