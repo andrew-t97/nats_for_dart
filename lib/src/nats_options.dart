@@ -8,14 +8,15 @@ import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
 import 'nats_status.dart';
 
-/// Represents an error reported by the NATS C library's asynchronous error
-/// handler.
+/// Represents an error reported by the asynchronous error handler.
 final class NatsError {
   /// The [NatsStatus] error code.
   final NatsStatus status;
 
+  /// Creates a [NatsError] with the given [status] code.
   NatsError(this.status);
 
+  /// Returns a string representation including the status name.
   @override
   String toString() => 'NatsError(${status.name})';
 }

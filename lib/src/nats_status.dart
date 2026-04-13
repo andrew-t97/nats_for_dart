@@ -1,10 +1,9 @@
 import 'nats_bindings.g.dart' as ffi;
 
-/// Status code returned by the NATS C client library.
+/// Status code returned by the NATS client library.
 ///
-/// Wraps the C-style `natsStatus` FFI enum with Dart-idiomatic names.
-/// Most operations surface these through exceptions, but you may encounter
-/// them directly when working with lower-level FFI calls.
+/// Most operations surface these through [NatsException], but you may
+/// encounter them directly when inspecting exception details.
 enum NatsStatus {
   /// Operation completed successfully.
   ok(0),
@@ -129,9 +128,15 @@ enum NatsStatus {
   /// subscriber ID on the server.
   pinIdMismatch(38);
 
+  /// The underlying integer value for this status.
   final int value;
+
+  /// Creates a [NatsStatus] with the given integer [value].
   const NatsStatus(this.value);
 
+  /// Returns the [NatsStatus] corresponding to the given integer [value].
+  ///
+  /// Throws [ArgumentError] if [value] does not match any known status.
   static NatsStatus fromValue(int value) => switch (value) {
     0 => ok,
     1 => error,
