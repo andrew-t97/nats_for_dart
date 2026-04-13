@@ -1,6 +1,4 @@
 /// Type of mutation recorded on a NATS Key-Value entry.
-///
-/// Wraps the C-style `kvOperation` FFI enum with Dart-idiomatic names.
 enum KvOperation {
   /// The operation type could not be determined.
   unknown(0),

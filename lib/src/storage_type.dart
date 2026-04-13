@@ -1,6 +1,4 @@
 /// Storage backend for a JetStream stream.
-///
-/// Wraps the C-style `jsStorageType` FFI enum with Dart-idiomatic names.
 enum StorageType {
   /// Persist messages to disk. This is the default.
   file(0),

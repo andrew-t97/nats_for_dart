@@ -1,10 +1,9 @@
 import 'nats_bindings.g.dart' as ffi;
 
-/// Status code returned by the NATS C client library.
+/// Status code returned by the NATS client library.
 ///
-/// Wraps the C-style `natsStatus` FFI enum with Dart-idiomatic names.
-/// Most operations surface these through exceptions, but you may encounter
-/// them directly when working with lower-level FFI calls.
+/// Most operations surface these through [NatsException], but you may
+/// encounter them directly when inspecting exception details.
 enum NatsStatus {
   /// Operation completed successfully.
   ok(0),

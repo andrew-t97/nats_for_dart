@@ -1,7 +1,6 @@
 /// Acknowledgement strategy for a JetStream consumer.
 ///
 /// Controls how the server tracks which messages have been processed.
-/// Wraps the C-style `jsAckPolicy` FFI enum with Dart-idiomatic names.
 enum AckPolicy {
   /// Require an explicit ack or nack for every message.
   explicit(0),

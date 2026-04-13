@@ -1,6 +1,4 @@
 /// Behaviour when a JetStream stream reaches its message or byte limit.
-///
-/// Wraps the C-style `jsDiscardPolicy` FFI enum with Dart-idiomatic names.
 enum DiscardPolicy {
   /// Remove older messages to make room. This is the default.
   discardOld(0),

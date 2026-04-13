@@ -1,7 +1,6 @@
 /// Message retention strategy for a JetStream stream.
 ///
-/// Controls when messages are removed from a stream. Wraps the C-style
-/// `jsRetentionPolicy` FFI enum with Dart-idiomatic names.
+/// Controls when messages are removed from a stream.
 enum RetentionPolicy {
   /// Retain messages until any configured limit (MaxMsgs, MaxBytes, or
   /// MaxAge) is reached. This is the default.

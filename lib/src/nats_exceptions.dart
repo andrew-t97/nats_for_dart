@@ -5,7 +5,7 @@ import 'package:ffi/ffi.dart';
 import 'nats_bindings.g.dart';
 import 'nats_status.dart';
 
-/// Exception thrown when a NATS C library call returns a non-OK status.
+/// Exception thrown when a NATS operation returns a non-OK status.
 final class NatsException implements Exception {
   /// The [NatsStatus] error code.
   final NatsStatus status;

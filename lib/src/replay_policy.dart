@@ -1,6 +1,4 @@
 /// Replay speed for queued messages delivered to a JetStream consumer.
-///
-/// Wraps the C-style `jsReplayPolicy` FFI enum with Dart-idiomatic names.
 enum ReplayPolicy {
   /// Replay messages as fast as possible.
   instant(0),

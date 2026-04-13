@@ -1,7 +1,6 @@
 /// Starting point for message delivery to a JetStream consumer.
 ///
 /// Controls which message in the stream a new consumer begins reading from.
-/// Wraps the C-style `jsDeliverPolicy` FFI enum with Dart-idiomatic names.
 enum DeliverPolicy {
   /// Start from the very beginning of the stream. This is the default.
   deliverAll(0),
