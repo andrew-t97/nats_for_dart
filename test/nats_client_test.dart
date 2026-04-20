@@ -31,7 +31,7 @@ void main() {
     late NatsClient client;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
     });
 
     tearDown(() => client.close());
@@ -91,7 +91,7 @@ void main() {
     });
 
     test('publish on closed client throws StateError', () async {
-      final closedClient = NatsClient.connect('nats://localhost:4222');
+      final closedClient = NatsClient.connect(nats.url);
       await closedClient.close();
 
       expect(
@@ -101,7 +101,7 @@ void main() {
     });
 
     test('double close is safe', () async {
-      final c = NatsClient.connect('nats://localhost:4222');
+      final c = NatsClient.connect(nats.url);
       await c.close();
       await c.close(); // should be a no-op
       expect(c.isClosed, isTrue);
@@ -138,21 +138,21 @@ void main() {
     });
 
     test('subscribeSync on closed client throws StateError', () async {
-      final closedClient = NatsClient.connect('nats://localhost:4222');
+      final closedClient = NatsClient.connect(nats.url);
       await closedClient.close();
 
       expect(() => closedClient.subscribeSync('test.closed'), throwsStateError);
     });
 
     test('flush on closed client throws StateError', () async {
-      final closedClient = NatsClient.connect('nats://localhost:4222');
+      final closedClient = NatsClient.connect(nats.url);
       await closedClient.close();
 
       expect(() => closedClient.flush(), throwsStateError);
     });
 
     test('closing client closes all sync subscriptions', () async {
-      final c = NatsClient.connect('nats://localhost:4222');
+      final c = NatsClient.connect(nats.url);
       final sub1 = c.subscribeSync('test.drain.1');
       final sub2 = c.subscribeSync('test.drain.2');
 
@@ -171,7 +171,7 @@ void main() {
 
   group('NatsClient async connect (no options)', () {
     test('connectAsync connects and supports pub/sub', () async {
-      final client = await NatsClient.connectAsync('nats://localhost:4222');
+      final client = await NatsClient.connectAsync(nats.url);
       addTearDown(() => client.close());
 
       final sub = client.subscribeSync('test.async.connect');
@@ -190,7 +190,7 @@ void main() {
     });
 
     test('connectAsync double close is safe', () async {
-      final client = await NatsClient.connectAsync('nats://localhost:4222');
+      final client = await NatsClient.connectAsync(nats.url);
       await client.close();
       await client.close(); // should be a no-op
       expect(client.isClosed, isTrue);
@@ -201,7 +201,7 @@ void main() {
     late NatsClient client;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
     });
 
     tearDown(() => client.close());
@@ -222,7 +222,7 @@ void main() {
     late NatsClient client;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
     });
 
     tearDown(() => client.close());
@@ -298,7 +298,9 @@ void main() {
   });
 
   group('NatsClient.connect with options', () {
-    const url = 'nats://localhost:4222';
+    late String url;
+
+    setUpAll(() => url = nats.url);
 
     test('connect(url) without options connects successfully', () {
       final client = NatsClient.connect(url);
@@ -390,9 +392,7 @@ void main() {
       () async {
         final client = await NatsClient.connectAsync(
           'nats://127.0.0.1:1',
-          options: const NatsOptions(
-            servers: ['nats://localhost:4222', 'nats://localhost:4223'],
-          ),
+          options: NatsOptions(servers: [nats.url, 'nats://localhost:4223']),
         );
         addTearDown(() => client.close());
 
@@ -435,7 +435,7 @@ void main() {
   group('NatsClient lifecycle streams', () {
     test('onDisconnected, onReconnected, onClosed are Stream<void> getters '
         'available on a client connected without options', () {
-      final client = NatsClient.connect('nats://localhost:4222');
+      final client = NatsClient.connect(nats.url);
       addTearDown(() => client.close());
 
       expect(client.onDisconnected, isA<Stream<void>>());
@@ -445,7 +445,7 @@ void main() {
 
     test('onError is a Stream<NatsError> getter available on a client '
         'connected without options', () {
-      final client = NatsClient.connect('nats://localhost:4222');
+      final client = NatsClient.connect(nats.url);
       addTearDown(() => client.close());
 
       expect(client.onError, isA<Stream<NatsError>>());
@@ -453,7 +453,7 @@ void main() {
 
     test('listening to lifecycle streams after connect succeeds — no '
         '"register before connect" requirement', () {
-      final client = NatsClient.connect('nats://localhost:4222');
+      final client = NatsClient.connect(nats.url);
       addTearDown(() => client.close());
 
       final disconnectedSub = client.onDisconnected.listen((_) {});
@@ -472,7 +472,7 @@ void main() {
     test(
       'lifecycle streams are broadcast — multiple listeners are allowed',
       () {
-        final client = NatsClient.connect('nats://localhost:4222');
+        final client = NatsClient.connect(nats.url);
         addTearDown(() => client.close());
 
         final firstDisconnected = client.onDisconnected.listen((_) {});
@@ -511,7 +511,7 @@ void main() {
     );
 
     test('client.close() drains all four lifecycle streams', () async {
-      final client = NatsClient.connect('nats://localhost:4222');
+      final client = NatsClient.connect(nats.url);
 
       final disconnectedDone = Completer<void>();
       final reconnectedDone = Completer<void>();
@@ -536,7 +536,7 @@ void main() {
     test('lifecycle streams are also available on a client connected with '
         'options', () async {
       final client = NatsClient.connect(
-        'nats://localhost:4222',
+        nats.url,
         options: const NatsOptions(
           name: 'lifecycle-stream-test',
           maxReconnect: 3,

@@ -32,8 +32,8 @@ void main() {
     setUp(() {
       // Use separate connections for pub and sub to prove messages
       // travel through the server.
-      publisher = NatsClient.connect('nats://localhost:4222');
-      subscriber = NatsClient.connect('nats://localhost:4222');
+      publisher = NatsClient.connect(nats.url);
+      subscriber = NatsClient.connect(nats.url);
     });
 
     tearDown(() async {
@@ -192,10 +192,7 @@ void main() {
 
   group('NatsClient connect with NatsOptions', () {
     test('connect with an empty options value still pubs/subs', () async {
-      final client = NatsClient.connect(
-        'nats://localhost:4222',
-        options: const NatsOptions(),
-      );
+      final client = NatsClient.connect(nats.url, options: const NatsOptions());
       addTearDown(() => client.close());
 
       final sub = client.subscribeSync('test.options.basic');
@@ -209,7 +206,7 @@ void main() {
     test('lifecycle streams are accessible on a client connected with '
         'options', () async {
       final client = NatsClient.connect(
-        'nats://localhost:4222',
+        nats.url,
         options: const NatsOptions(
           maxReconnect: 5,
           reconnectWait: Duration(seconds: 1),
@@ -235,13 +232,13 @@ void main() {
 
   group('Async subscription on closed client', () {
     test('subscribe on closed client throws StateError', () async {
-      final client = NatsClient.connect('nats://localhost:4222');
+      final client = NatsClient.connect(nats.url);
       await client.close();
       expect(() => client.subscribe('test.closed'), throwsStateError);
     });
 
     test('closing client closes all async subscriptions', () async {
-      final client = NatsClient.connect('nats://localhost:4222');
+      final client = NatsClient.connect(nats.url);
       final sub = client.subscribe('test.auto.close');
       await client.close();
       expect(sub.isClosed, isTrue);
@@ -253,8 +250,8 @@ void main() {
     late NatsClient subscriber;
 
     setUp(() {
-      publisher = NatsClient.connect('nats://localhost:4222');
-      subscriber = NatsClient.connect('nats://localhost:4222');
+      publisher = NatsClient.connect(nats.url);
+      subscriber = NatsClient.connect(nats.url);
     });
 
     tearDown(() async {
@@ -298,7 +295,7 @@ void main() {
   group('Async message eager copy', () {
     test('message fields are accessible after client is closed '
         '(async subscription)', () async {
-      final client = NatsClient.connect('nats://localhost:4222');
+      final client = NatsClient.connect(nats.url);
 
       final sub = client.subscribe('test.eager.async');
       await Future.delayed(const Duration(milliseconds: 200));

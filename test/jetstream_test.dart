@@ -30,7 +30,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
     });
 
@@ -189,7 +189,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
     });
 
@@ -257,7 +257,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
       js.addStream(
         JsStreamConfig(
@@ -356,7 +356,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
       js.addStream(
         JsStreamConfig(
@@ -400,7 +400,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
     });
 
@@ -473,7 +473,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
       js.addStream(
         JsStreamConfig(
@@ -530,7 +530,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
       js.addStream(
         JsStreamConfig(
@@ -603,7 +603,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
       js.addStream(
         JsStreamConfig(
@@ -650,7 +650,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
     });
 

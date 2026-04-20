@@ -29,8 +29,8 @@ void main() {
     late NatsClient responder;
 
     setUp(() {
-      requester = NatsClient.connect('nats://localhost:4222');
-      responder = NatsClient.connect('nats://localhost:4222');
+      requester = NatsClient.connect(nats.url);
+      responder = NatsClient.connect(nats.url);
     });
 
     tearDown(() async {
