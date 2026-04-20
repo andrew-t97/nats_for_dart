@@ -113,15 +113,29 @@ void closeSharedMessageCallable() {
   _sharedMessageCallable = null;
 }
 
+/// Scrubs a subscription's routing entry from the static map. Invoked by
+/// [NatsAsyncSubscription._routesFinalizer] on GC when an instance is
+/// abandoned without [NatsAsyncSubscription.unsubscribe] being called.
+void _scrubSubscriptionRoute(int id) => _subscriptionRoutes.remove(id);
+
 /// An asynchronous subscription that delivers messages via a Dart [Stream].
 ///
 /// Messages are received on internal NATS threads and safely bridged to the
 /// Dart event loop using [NativeCallable.listener].
+///
+/// Call [unsubscribe] to release the native subscription straightaway;
+/// otherwise resources are freed when the instance is garbage collected.
 final class NatsAsyncSubscription implements Finalizable {
   static final _finalizer = NativeFinalizer(
     Native.addressOf<NativeFunction<Void Function(Pointer<natsSubscription>)>>(
       natsSubscription_Destroy,
     ).cast(),
+  );
+
+  /// Complements [_finalizer] by scrubbing the Dart-side routing entry on GC;
+  /// [_finalizer] only reclaims the C pointer.
+  static final Finalizer<int> _routesFinalizer = Finalizer(
+    _scrubSubscriptionRoute,
   );
 
   Pointer<natsSubscription>? _sub;
@@ -156,6 +170,10 @@ final class NatsAsyncSubscription implements Finalizable {
     _getSharedMessageCallable();
 
     final sub = NatsAsyncSubscription._(null, id, controller, onClose);
+    // Attached here (before the caller's updateSubPtr) so the finalizer
+    // covers the window where the map has an entry but the native pointer
+    // hasn't been wired up yet.
+    _routesFinalizer.attach(sub, id, detach: sub);
     return sub;
   }
 
@@ -222,6 +240,10 @@ final class NatsAsyncSubscription implements Finalizable {
   Future<void> unsubscribe() {
     if (_closed) return Future.value();
     _closed = true;
+
+    // Detach before scrubbing the map below so the finalizer can never
+    // fire mid-teardown.
+    _routesFinalizer.detach(this);
 
     // 1. Remove from routing table so any in-flight callbacks (already
     //    posted to the Dart event loop) see no controller and destroy
