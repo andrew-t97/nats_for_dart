@@ -1,7 +1,7 @@
 /// Shared primitives for NATS test-server helpers.
 ///
 /// Both the shared, ref-counted `DockerNats` fixture and the per-test
-/// `DedicatedNatsServer` helper delegate Docker availability checks,
+/// `EphemeralNatsServer` helper delegate Docker availability checks,
 /// TCP reachability probes, and container cleanup to the functions here.
 library;
 

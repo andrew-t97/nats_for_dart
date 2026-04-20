@@ -1,5 +1,5 @@
 /// Integration tests for the NATS FFI wrapper — async subscriptions,
-/// NatsOptions lifecycle, and memory safety.
+/// lifecycle integration, and memory safety.
 ///
 /// These tests require a NATS server on localhost:4222.
 /// The test helper will automatically start a Docker container if needed.
@@ -190,13 +190,14 @@ void main() {
     });
   });
 
-  group('NatsClient with NatsOptions', () {
-    test('connect via NatsOptions with URL', () async {
-      final opts = NatsOptions()..setUrl('nats://localhost:4222');
-      final client = NatsClient.connectWithOptions(opts);
+  group('NatsClient connect with NatsOptions', () {
+    test('connect with an empty options value still pubs/subs', () async {
+      final client = NatsClient.connect(
+        'nats://localhost:4222',
+        options: const NatsOptions(),
+      );
       addTearDown(() => client.close());
 
-      // Verify connection works by doing a simple pub/sub.
       final sub = client.subscribeSync('test.options.basic');
       addTearDown(sub.close);
 
@@ -205,21 +206,23 @@ void main() {
       expect(msg.dataAsString, equals('hello options'));
     });
 
-    test('lifecycle callbacks fire on disconnect/reconnect', () async {
-      final opts = NatsOptions()
-        ..setUrl('nats://localhost:4222')
-        ..setMaxReconnect(5)
-        ..setReconnectWait(const Duration(seconds: 1));
+    test('lifecycle streams are accessible on a client connected with '
+        'options', () async {
+      final client = NatsClient.connect(
+        'nats://localhost:4222',
+        options: const NatsOptions(
+          maxReconnect: 5,
+          reconnectWait: Duration(seconds: 1),
+        ),
+      );
+      addTearDown(() => client.close());
 
       // Just verify the streams are accessible (actual disconnect/reconnect
       // testing requires stopping the server, which is hard to automate).
-      expect(opts.onDisconnected(), isA<Stream<void>>());
-      expect(opts.onReconnected(), isA<Stream<void>>());
-      expect(opts.onClosed(), isA<Stream<void>>());
-      expect(opts.onError(), isA<Stream<NatsError>>());
-
-      final client = NatsClient.connectWithOptions(opts);
-      addTearDown(() => client.close());
+      expect(client.onDisconnected, isA<Stream<void>>());
+      expect(client.onReconnected, isA<Stream<void>>());
+      expect(client.onClosed, isA<Stream<void>>());
+      expect(client.onError, isA<Stream<NatsError>>());
 
       // Connection should be functional.
       final sub = client.subscribeSync('test.lifecycle.basic');

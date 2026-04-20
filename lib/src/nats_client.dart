@@ -9,10 +9,143 @@ import 'package:meta/meta.dart';
 import 'jetstream_context.dart';
 import 'nats_async_subscription.dart';
 import 'nats_bindings.g.dart';
+import 'nats_error.dart';
 import 'nats_exceptions.dart';
 import 'nats_message.dart';
 import 'nats_options.dart';
+import 'nats_options_config.dart';
+import 'nats_status.dart';
 import 'nats_sync_subscription.dart';
+
+/// The native callback for disconnected events.
+///
+/// For `StreamController<void>`, Dart requires passing an explicit value —
+/// `null` is the idiomatic sentinel for void streams.
+void _onDisconnected(Pointer<natsConnection> _, Pointer<Void> closure) {
+  final id = closure.address;
+  final controller = NatsClient._lifecycleRoutes[id];
+  if (controller != null && !controller.isClosed) {
+    controller.add(null);
+  }
+}
+
+/// The native callback for reconnected events.
+void _onReconnected(Pointer<natsConnection> _, Pointer<Void> closure) {
+  final id = closure.address;
+  final controller = NatsClient._lifecycleRoutes[id];
+  if (controller != null && !controller.isClosed) {
+    controller.add(null);
+  }
+}
+
+/// The native callback for closed events.
+void _onClosed(Pointer<natsConnection> _, Pointer<Void> closure) {
+  final id = closure.address;
+  final controller = NatsClient._lifecycleRoutes[id];
+  if (controller != null && !controller.isClosed) {
+    controller.add(null);
+  }
+}
+
+/// The native callback for error events.
+void _onError(
+  Pointer<natsConnection> _,
+  Pointer<natsSubscription> _,
+  int err,
+  Pointer<Void> closure,
+) {
+  final id = closure.address;
+  final controller = NatsClient._errorRoutes[id];
+  if (controller != null && !controller.isClosed) {
+    controller.add(NatsError(NatsStatus.fromValue(err)));
+  }
+}
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
+_sharedDisconnectedCallable;
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
+_getSharedDisconnectedCallable() {
+  return _sharedDisconnectedCallable ??=
+      NativeCallable<
+        Void Function(Pointer<natsConnection>, Pointer<Void>)
+      >.listener(_onDisconnected);
+}
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
+_sharedReconnectedCallable;
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
+_getSharedReconnectedCallable() {
+  return _sharedReconnectedCallable ??=
+      NativeCallable<
+        Void Function(Pointer<natsConnection>, Pointer<Void>)
+      >.listener(_onReconnected);
+}
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
+_sharedClosedCallable;
+
+NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
+_getSharedClosedCallable() {
+  return _sharedClosedCallable ??=
+      NativeCallable<
+        Void Function(Pointer<natsConnection>, Pointer<Void>)
+      >.listener(_onClosed);
+}
+
+NativeCallable<
+  Void Function(
+    Pointer<natsConnection>,
+    Pointer<natsSubscription>,
+    UnsignedInt,
+    Pointer<Void>,
+  )
+>?
+_sharedErrorCallable;
+
+NativeCallable<
+  Void Function(
+    Pointer<natsConnection>,
+    Pointer<natsSubscription>,
+    UnsignedInt,
+    Pointer<Void>,
+  )
+>
+_getSharedErrorCallable() {
+  return _sharedErrorCallable ??=
+      NativeCallable<
+        Void Function(
+          Pointer<natsConnection>,
+          Pointer<natsSubscription>,
+          UnsignedInt,
+          Pointer<Void>,
+        )
+      >.listener(_onError);
+}
+
+/// Closes all shared lifecycle callables.
+///
+/// Only [NatsLibrary.close] should call this. Kept as a top-level function
+/// because the shared [NativeCallable]s above are themselves top-level
+/// state — promoting this to a static on [NatsClient] would split the
+/// variables and their disposer across two scopes.
+///
+/// Must only be called after `nats_CloseAndWait()` guarantees all C threads
+/// have exited; firing a C-thread callback into a closed callable would
+/// segfault. Sets each to `null` so subsequent lazy getters re-create them
+/// (e.g. in tests that open multiple libraries).
+@internal
+void closeSharedLifecycleCallables() {
+  _sharedDisconnectedCallable?.close();
+  _sharedDisconnectedCallable = null;
+  _sharedReconnectedCallable?.close();
+  _sharedReconnectedCallable = null;
+  _sharedClosedCallable?.close();
+  _sharedClosedCallable = null;
+  _sharedErrorCallable?.close();
+  _sharedErrorCallable = null;
+}
 
 /// A Dart-friendly wrapper around the NATS C client library.
 ///
@@ -37,61 +170,141 @@ final class NatsClient implements Finalizable {
   /// Active async subscriptions created through this client.
   final Set<NatsAsyncSubscription> _activeAsyncSubscriptions = {};
 
-  /// Optional [NatsOptions] used to create this connection.
-  NatsOptions? _options;
+  /// Routes for void-typed lifecycle callbacks (disconnected, reconnected,
+  /// closed). Keyed by a unique ID per callback.
+  static final Map<int, StreamController<void>> _lifecycleRoutes = {};
 
-  NatsClient._();
+  /// Routes for error callbacks. Keyed by a unique ID.
+  static final Map<int, StreamController<NatsError>> _errorRoutes = {};
+
+  static int _nextId = 1;
+
+  late final int _disconnectedId;
+  late final int _reconnectedId;
+  late final int _closedId;
+  late final int _errorId;
+
+  late final StreamController<void> _disconnectedController;
+  late final StreamController<void> _reconnectedController;
+  late final StreamController<void> _closedController;
+  late final StreamController<NatsError> _errorController;
+
+  /// Broadcast stream that fires when the connection is lost.
+  Stream<void> get onDisconnected => _disconnectedController.stream;
+
+  /// Broadcast stream that fires when the connection has been re-established
+  /// after a disconnect.
+  Stream<void> get onReconnected => _reconnectedController.stream;
+
+  /// Broadcast stream that fires once when the connection is permanently
+  /// closed.
+  Stream<void> get onClosed => _closedController.stream;
+
+  /// Broadcast stream of asynchronous errors e.g. slow consumer, failed pings, etc.
+  Stream<NatsError> get onError => _errorController.stream;
+
+  NatsClient._() {
+    _disconnectedId = _nextId++;
+    _reconnectedId = _nextId++;
+    _closedId = _nextId++;
+    _errorId = _nextId++;
+
+    _disconnectedController = StreamController<void>.broadcast();
+    _reconnectedController = StreamController<void>.broadcast();
+    _closedController = StreamController<void>.broadcast();
+    _errorController = StreamController<NatsError>.broadcast();
+
+    _lifecycleRoutes[_disconnectedId] = _disconnectedController;
+    _lifecycleRoutes[_reconnectedId] = _reconnectedController;
+    _lifecycleRoutes[_closedId] = _closedController;
+    _errorRoutes[_errorId] = _errorController;
+  }
+
+  /// Registers this client's lifecycle callbacks with the supplied native
+  /// options pointer.
+  void _registerLifecycleCallbacks(Pointer<natsOptions> opts) {
+    checkStatus(
+      natsOptions_SetDisconnectedCB(
+        opts,
+        _getSharedDisconnectedCallable().nativeFunction,
+        Pointer.fromAddress(_disconnectedId),
+      ),
+      'natsOptions_SetDisconnectedCB',
+    );
+    checkStatus(
+      natsOptions_SetReconnectedCB(
+        opts,
+        _getSharedReconnectedCallable().nativeFunction,
+        Pointer.fromAddress(_reconnectedId),
+      ),
+      'natsOptions_SetReconnectedCB',
+    );
+    checkStatus(
+      natsOptions_SetClosedCB(
+        opts,
+        _getSharedClosedCallable().nativeFunction,
+        Pointer.fromAddress(_closedId),
+      ),
+      'natsOptions_SetClosedCB',
+    );
+    checkStatus(
+      natsOptions_SetErrorHandler(
+        opts,
+        _getSharedErrorCallable().nativeFunction,
+        Pointer.fromAddress(_errorId),
+      ),
+      'natsOptions_SetErrorHandler',
+    );
+  }
 
   /// Creates a new [NatsClient] connected to the given [url].
+  ///
+  /// Pass [options] to configure the connection (authentication, reconnect
+  /// tuning, clustering, etc).
+  ///
+  /// When [options] is non-null, `NatsOptions.servers`, when non-empty,
+  /// takes precedence over the positional [url]; otherwise [url] is used.
+  ///
+  /// Throws [ArgumentError] synchronously if [options] fail validation
+  /// (invalid auth pairings or credentials combinations).
+  ///
+  /// Throws [NatsException] if the client fails to connect for any reason
+  /// (e.g. server rejects the connection, network error, etc).
   ///
   /// Example:
   /// ```dart
   /// final client = NatsClient.connect('nats://localhost:4222');
+  ///
+  /// final configured = NatsClient.connect(
+  ///   'nats://localhost:4222',
+  ///   options: const NatsOptions(name: 'my-client', maxReconnect: 5),
+  /// );
   /// ```
-  factory NatsClient.connect(String url) {
-    final client = NatsClient._();
-    final ncPtrPtr = calloc<Pointer<natsConnection>>();
-    final urlNative = url.toNativeUtf8();
-    try {
-      final status = natsConnection_ConnectTo(ncPtrPtr, urlNative.cast());
-      checkStatus(status, 'natsConnection_ConnectTo');
-      client._nc = ncPtrPtr.value;
-      _finalizer.attach(client, client._nc!.cast(), detach: client);
-    } finally {
-      calloc.free(ncPtrPtr);
-      calloc.free(urlNative);
-    }
-    return client;
-  }
+  factory NatsClient.connect(String url, {NatsOptions? options}) {
+    final handle = NatsOptionsHandle.fromConfig(
+      options ?? const NatsOptions(),
+      url,
+    );
 
-  /// Creates a new [NatsClient] connected using the given [NatsOptions].
-  ///
-  /// The [options] object is cloned by the C library during connect, so it
-  /// is safe to destroy or reuse after this call. However, if the options
-  /// carry lifecycle stream controllers (onDisconnected, etc.) they remain
-  /// active and are stored on this client for cleanup.
-  ///
-  /// Example:
-  /// ```dart
-  /// final opts = NatsOptions()
-  ///   ..setUrl('nats://localhost:4222')
-  ///   ..setMaxReconnect(5)
-  ///   ..setReconnectWait(Duration(seconds: 2));
-  /// final client = NatsClient.connectWithOptions(opts);
-  /// ```
-  factory NatsClient.connectWithOptions(NatsOptions options) {
     final client = NatsClient._();
-    client._options = options;
-    final ncPtrPtr = calloc<Pointer<natsConnection>>();
     try {
-      final status = natsConnection_Connect(ncPtrPtr, options.nativePtr);
-      checkStatus(status, 'natsConnection_Connect');
-      client._nc = ncPtrPtr.value;
-      _finalizer.attach(client, client._nc!.cast(), detach: client);
+      client._registerLifecycleCallbacks(handle.nativePtr);
+      final ncPtrPtr = calloc<Pointer<natsConnection>>();
+      try {
+        final status = natsConnection_Connect(ncPtrPtr, handle.nativePtr);
+        checkStatus(status, 'natsConnection_Connect');
+        client._nc = ncPtrPtr.value;
+        _finalizer.attach(client, client._nc!.cast(), detach: client);
+      } finally {
+        calloc.free(ncPtrPtr);
+      }
+      return client;
+    } catch (_) {
+      unawaited(client.close());
+      rethrow;
     } finally {
-      calloc.free(ncPtrPtr);
+      unawaited(handle.close());
     }
-    return client;
   }
 
   /// Creates a new [NatsClient] connected to the given [url] without blocking
@@ -100,68 +313,63 @@ final class NatsClient implements Finalizable {
   /// The blocking TCP handshake runs in a short-lived worker isolate via
   /// [Isolate.run]. Prefer this over [NatsClient.connect] in Flutter apps.
   ///
-  /// Example:
-  /// ```dart
-  /// final client = await NatsClient.connectAsync('nats://localhost:4222');
-  /// ```
-  static Future<NatsClient> connectAsync(String url) async {
-    final connectionAddress = await Isolate.run(() {
-      final ncPtrPtr = calloc<Pointer<natsConnection>>();
-      final urlNative = url.toNativeUtf8();
-      try {
-        final status = natsConnection_ConnectTo(ncPtrPtr, urlNative.cast());
-        checkStatus(status, 'natsConnection_ConnectTo');
-        return ncPtrPtr.value.address;
-      } finally {
-        calloc.free(ncPtrPtr);
-        calloc.free(urlNative);
-      }
-    });
-
-    final client = NatsClient._();
-    client._nc = Pointer.fromAddress(connectionAddress);
-    _finalizer.attach(client, client._nc!.cast(), detach: client);
-    return client;
-  }
-
-  /// Creates a new [NatsClient] connected using the given [NatsOptions] without
-  /// blocking the current isolate's event loop.
+  /// Pass [options] to configure the connection (authentication, reconnect
+  /// tuning, clustering, etc).
   ///
-  /// The blocking TCP handshake runs in a short-lived worker isolate via
-  /// [Isolate.run]. Prefer this over [NatsClient.connectWithOptions] in
-  /// Flutter apps.
+  /// When [options] is non-null, `NatsOptions.servers`, when non-empty,
+  /// takes precedence over the positional [url]; otherwise [url] is used.
   ///
-  /// The [options] object is cloned by the C library during connect, so its
-  /// native pointer only needs to remain valid for the duration of this call.
-  /// Lifecycle stream controllers (onDisconnected, etc.) remain active and are
-  /// stored on the returned client for cleanup.
+  /// Throws [ArgumentError] if [options] fail validation (invalid auth
+  /// pairings or credentials combinations).
+  ///
+  /// Throws [NatsException] if the client fails to connect for any reason
+  /// (e.g. server rejects the connection, network error, etc).
+  ///
+  /// Because this method is `async`, both surface as rejected Futures —
+  /// `await` the call (or attach `.catchError`) to observe them.
   ///
   /// Example:
   /// ```dart
-  /// final opts = NatsOptions()
-  ///   ..setUrl('nats://localhost:4222')
-  ///   ..setMaxReconnect(5);
-  /// final client = await NatsClient.connectWithOptionsAsync(opts);
+  /// final client = await NatsClient.connectAsync(
+  ///   'nats://localhost:4222',
+  ///   options: const NatsOptions(name: 'flutter-app'),
+  /// );
   /// ```
-  static Future<NatsClient> connectWithOptionsAsync(NatsOptions options) async {
-    final optionsAddress = options.nativePtr.address;
-    final connectionAddress = await Isolate.run(() {
-      final ncPtrPtr = calloc<Pointer<natsConnection>>();
-      try {
-        final optsPtr = Pointer<natsOptions>.fromAddress(optionsAddress);
-        final status = natsConnection_Connect(ncPtrPtr, optsPtr);
-        checkStatus(status, 'natsConnection_Connect');
-        return ncPtrPtr.value.address;
-      } finally {
-        calloc.free(ncPtrPtr);
-      }
-    });
+  static Future<NatsClient> connectAsync(
+    String url, {
+    NatsOptions? options,
+  }) async {
+    final handle = NatsOptionsHandle.fromConfig(
+      options ?? const NatsOptions(),
+      url,
+    );
 
     final client = NatsClient._();
-    client._options = options;
-    client._nc = Pointer.fromAddress(connectionAddress);
-    _finalizer.attach(client, client._nc!.cast(), detach: client);
-    return client;
+    try {
+      client._registerLifecycleCallbacks(handle.nativePtr);
+
+      final optionsAddress = handle.nativePtr.address;
+      final connectionAddress = await Isolate.run(() {
+        final ncPtrPtr = calloc<Pointer<natsConnection>>();
+        try {
+          final optsPtr = Pointer<natsOptions>.fromAddress(optionsAddress);
+          final status = natsConnection_Connect(ncPtrPtr, optsPtr);
+          checkStatus(status, 'natsConnection_Connect');
+          return ncPtrPtr.value.address;
+        } finally {
+          calloc.free(ncPtrPtr);
+        }
+      });
+
+      client._nc = Pointer.fromAddress(connectionAddress);
+      _finalizer.attach(client, client._nc!.cast(), detach: client);
+      return client;
+    } catch (_) {
+      await client.close();
+      rethrow;
+    } finally {
+      await handle.close();
+    }
   }
 
   /// Publishes a string [message] on the given [subject].
@@ -346,7 +554,7 @@ final class NatsClient implements Finalizable {
   /// the native resources.
   ///
   /// Native resources are freed synchronously. The returned [Future]
-  /// completes when all stream controllers (async subscriptions, options
+  /// completes when all stream controllers (async subscriptions and the four
   /// lifecycle streams) have finished notifying their listeners. Callers
   /// that don't need to wait for stream draining can safely ignore the
   /// returned future.
@@ -379,11 +587,18 @@ final class NatsClient implements Finalizable {
       natsConnection_Destroy(ncPtr);
     }
 
-    // Close options if owned by this client.
-    if (_options != null) {
-      streamFutures.add(_options!.close());
-      _options = null;
-    }
+    // Remove lifecycle routing entries first so any late-arriving native
+    // callback short-circuits before touching a closed controller, then
+    // close the controllers themselves.
+    _lifecycleRoutes.remove(_disconnectedId);
+    _lifecycleRoutes.remove(_reconnectedId);
+    _lifecycleRoutes.remove(_closedId);
+    _errorRoutes.remove(_errorId);
+
+    streamFutures.add(_disconnectedController.close());
+    streamFutures.add(_reconnectedController.close());
+    streamFutures.add(_closedController.close());
+    streamFutures.add(_errorController.close());
 
     return streamFutures.isEmpty ? Future.value() : Future.wait(streamFutures);
   }

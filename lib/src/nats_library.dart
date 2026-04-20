@@ -1,8 +1,8 @@
 import 'jetstream_context.dart';
 import 'nats_async_subscription.dart';
 import 'nats_bindings.g.dart';
+import 'nats_client.dart';
 import 'nats_exceptions.dart';
-import 'nats_options.dart';
 
 /// Global library initialisation and teardown for the NATS C client.
 ///

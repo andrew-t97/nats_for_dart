@@ -1,14 +1,12 @@
-/// Unit tests for the immutable [NatsOptions] value class.
-///
-/// These tests are pure Dart and do not require a running NATS server.
+/// Unit tests for the immutable [NatsOptions] value class and the internal
+/// [NatsOptionsHandle] FFI bridge.
 library;
 
-// The new immutable NatsOptions value class is not yet exported from the
-// public barrel — Phase 5 swaps the export. Import from `src/` directly so
-// Phase 1 tests can exercise the class in isolation without colliding with
-// the legacy FFI `NatsOptions` that still ships via `package:nats_for_dart`.
-import 'package:nats_for_dart/src/nats_options_config.dart';
+import 'package:nats_for_dart/nats_for_dart.dart';
+import 'package:nats_for_dart/src/nats_options.dart' show NatsOptionsHandle;
 import 'package:test/test.dart';
+
+import 'support/docker_nats.dart';
 
 void main() {
   group('NatsOptions default construction', () {
@@ -110,6 +108,184 @@ void main() {
       expect(options.maxReconnect, equals(1));
       expect(options.reconnectWait, isNull);
       expect(options.servers, isEmpty);
+    });
+  });
+
+  group('NatsOptionsHandle.fromConfig validation', () {
+    const url = 'nats://localhost:4222';
+
+    test('user without password throws ArgumentError', () {
+      expect(
+        () =>
+            NatsOptionsHandle.fromConfig(const NatsOptions(user: 'alice'), url),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('user'),
+          ),
+        ),
+      );
+    });
+
+    test('password without user throws ArgumentError', () {
+      expect(
+        () => NatsOptionsHandle.fromConfig(
+          const NatsOptions(password: 'secret'),
+          url,
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('password'),
+          ),
+        ),
+      );
+    });
+
+    test('token with user throws ArgumentError', () {
+      expect(
+        () => NatsOptionsHandle.fromConfig(
+          const NatsOptions(token: 'tok', user: 'alice', password: 'secret'),
+          url,
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('token'),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'credentialsSeedFile without credentialsFile throws ArgumentError',
+      () {
+        expect(
+          () => NatsOptionsHandle.fromConfig(
+            const NatsOptions(credentialsSeedFile: '/path/to/seed.nk'),
+            url,
+          ),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('credentialsFile'),
+            ),
+          ),
+        );
+      },
+    );
+  });
+
+  group('NatsOptionsHandle.fromConfig native bridge', () {
+    const url = 'nats://localhost:4222';
+
+    late DockerNats nats;
+
+    setUpAll(() async {
+      nats = await DockerNats.start();
+      NatsLibrary.init();
+    });
+
+    tearDownAll(() async {
+      NatsLibrary.close(timeoutMs: 5000);
+      await nats.stop();
+    });
+
+    test('empty config + url connects via the url path', () async {
+      final client = NatsClient.connect(url, options: const NatsOptions());
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.fromConfig.url');
+      addTearDown(sub.close);
+
+      client.publish('test.fromConfig.url', 'url path');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('url path'));
+    });
+
+    test('non-empty servers overrides the positional url argument', () async {
+      // Positional `url` points at an unreachable port. If `fromConfig`
+      // routes through `natsOptions_SetServers` (and skips `SetURL`), the
+      // client connects to the reachable server in the `servers` list.
+      // If it mistakenly used `url`, this test would fail with a connect
+      // error — making the branch observable end-to-end.
+      final client = NatsClient.connect(
+        'nats://127.0.0.1:1', // intentionally unreachable
+        options: const NatsOptions(servers: ['nats://localhost:4222']),
+      );
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.fromConfig.servers');
+      addTearDown(sub.close);
+
+      client.publish('test.fromConfig.servers', 'servers path');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('servers path'));
+    });
+
+    test('user + password pair connects successfully', () async {
+      final client = NatsClient.connect(
+        url,
+        options: const NatsOptions(
+          user: 'test-user',
+          password: 'test-password',
+        ),
+      );
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.fromConfig.userinfo');
+      addTearDown(sub.close);
+
+      client.publish('test.fromConfig.userinfo', 'userinfo works');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('userinfo works'));
+    });
+
+    test('every scalar field applied in a single config connects', () async {
+      final client = NatsClient.connect(
+        url,
+        options: const NatsOptions(
+          name: 'fromConfig-kitchen-sink',
+          maxReconnect: 3,
+          reconnectWait: Duration(seconds: 1),
+          reconnectBufSize: 1024 * 1024,
+          verbose: false,
+          pedantic: false,
+          noRandomize: true,
+          pingInterval: Duration(seconds: 30),
+          maxPingsOut: 5,
+          ioBufSize: 32768,
+          timeout: Duration(seconds: 5),
+        ),
+      );
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.fromConfig.kitchen');
+      addTearDown(sub.close);
+
+      client.publish('test.fromConfig.kitchen', 'kitchen works');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('kitchen works'));
+    });
+
+    test('close on a directly-constructed handle is idempotent', () async {
+      final handle = NatsOptionsHandle.fromConfig(const NatsOptions(), url);
+      await handle.close();
+      await handle.close(); // second close is a no-op
+      expect(handle.isClosed, isTrue);
+    });
+
+    test('credentialsFile alone does not trip the Dart validator', () async {
+      final handle = NatsOptionsHandle.fromConfig(
+        const NatsOptions(credentialsFile: '/nonexistent.jwt'),
+        url,
+      );
+      addTearDown(() => handle.close());
+      expect(handle.isClosed, isFalse);
     });
   });
 }
