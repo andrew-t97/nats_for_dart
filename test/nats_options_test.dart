@@ -181,12 +181,12 @@ void main() {
   });
 
   group('NatsOptionsHandle.fromConfig native bridge', () {
-    const url = 'nats://localhost:4222';
-
     late DockerNats nats;
+    late String url;
 
     setUpAll(() async {
       nats = await DockerNats.start();
+      url = nats.url;
       NatsLibrary.init();
     });
 
@@ -215,7 +215,7 @@ void main() {
       // error — making the branch observable end-to-end.
       final client = NatsClient.connect(
         'nats://127.0.0.1:1', // intentionally unreachable
-        options: const NatsOptions(servers: ['nats://localhost:4222']),
+        options: NatsOptions(servers: [nats.url]),
       );
       addTearDown(() => client.close());
 

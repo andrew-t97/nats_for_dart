@@ -35,7 +35,7 @@ void main() {
     late KeyValueStore kv;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
       kv = js.createKeyValue(
         KvConfig(
@@ -131,7 +131,7 @@ void main() {
     late KeyValueStore kv;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
       kv = js.createKeyValue(
         KvConfig(
@@ -205,7 +205,7 @@ void main() {
     late KeyValueStore kv;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
       kv = js.createKeyValue(
         KvConfig(
@@ -256,7 +256,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
     });
 
@@ -297,7 +297,7 @@ void main() {
     late KeyValueStore kv;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
       kv = js.createKeyValue(
         KvConfig(
@@ -380,7 +380,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
     });
 
@@ -419,7 +419,7 @@ void main() {
     late KeyValueStore kv;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
       kv = js.createKeyValue(
         KvConfig(bucket: 'test-kv-tostring', storageType: StorageType.memory),
@@ -454,7 +454,7 @@ void main() {
     late JetStreamContext js;
 
     setUp(() {
-      client = NatsClient.connect('nats://localhost:4222');
+      client = NatsClient.connect(nats.url);
       js = client.jetStream();
     });
 
