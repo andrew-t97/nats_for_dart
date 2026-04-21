@@ -7,6 +7,8 @@ library;
 
 import 'dart:io';
 
+import 'nats_server_support.dart';
+
 /// Manages a Docker NATS container for integration tests.
 ///
 /// Usage:
@@ -45,8 +47,6 @@ class DockerNats {
     _monitoringPortStr,
   ];
   static const _stopArgs = ['stop', _containerName];
-  static const _removeArgs = ['rm', '-f', _containerName];
-  static const _checkArgs = ['info'];
   // Health check configuration
   static const _maxRetries = 30;
   static const _retryDelay = Duration(milliseconds: 500);
@@ -86,7 +86,7 @@ class DockerNats {
       _refCount = 0;
       if (!_usingNative) {
         await Process.run(_docker, _stopArgs);
-        await Process.run(_docker, _removeArgs);
+        await removeDockerContainer(_containerName);
       }
     }
   }
@@ -102,20 +102,9 @@ class DockerNats {
   /// CI environments (e.g. macOS GitHub Actions) that pre-install nats-server
   /// via a package manager instead of running Docker.
   static Future<void> _startContainer() async {
-    final bool dockerAvailable;
-    try {
-      final dockerCheck = await Process.run(_docker, _checkArgs);
-      dockerAvailable = dockerCheck.exitCode == 0;
-      if (!dockerAvailable) {
-        throw StateError(
-          '[DockerNats] Docker is not available. '
-          'Install Docker to run the test suite.\n'
-          'stderr: ${dockerCheck.stderr}',
-        );
-      }
-    } on ProcessException {
-      // Docker binary not found — check for a native server instead.
-      if (await _isNativeServerReachable()) {
+    if (!await isDockerAvailable()) {
+      // No Docker — check for a native server instead.
+      if (await isTcpReachable(_host, _port)) {
         _usingNative = true;
         return;
       }
@@ -127,7 +116,7 @@ class DockerNats {
     }
 
     // Remove any stale container with the same name.
-    await Process.run(_docker, _removeArgs);
+    await removeDockerContainer(_containerName);
 
     final result = await Process.run(_docker, _startArgs);
 
@@ -142,22 +131,6 @@ class DockerNats {
     await _waitForReady();
   }
 
-  /// Returns `true` if a TCP connection to the NATS port succeeds,
-  /// indicating that a native server is already running.
-  static Future<bool> _isNativeServerReachable() async {
-    try {
-      final socket = await Socket.connect(
-        _host,
-        _port,
-        timeout: const Duration(seconds: 2),
-      );
-      socket.destroy();
-      return true;
-    } on Exception {
-      return false;
-    }
-  }
-
   /// Waits for NATS to be fully ready by polling its HTTP health endpoint.
   static Future<void> _waitForReady() async {
     for (var attempt = 1; attempt <= _maxRetries; attempt++) {
@@ -167,7 +140,7 @@ class DockerNats {
       }
     }
 
-    throw DockerNatsTimeoutException(
+    throw NatsServerTimeoutException(
       '[DockerNats] NATS server did not become ready after '
       '${_maxRetries * _retryDelay.inMilliseconds}ms.',
     );
@@ -189,13 +162,4 @@ class DockerNats {
       return false;
     }
   }
-}
-
-/// Thrown when the NATS server does not start within the expected timeout.
-class DockerNatsTimeoutException implements Exception {
-  final String message;
-  DockerNatsTimeoutException(this.message);
-
-  @override
-  String toString() => message;
 }
