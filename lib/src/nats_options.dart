@@ -41,12 +41,16 @@ final class NatsOptionsHandle implements Finalizable {
   /// Builds a [NatsOptionsHandle] from an immutable [NatsOptions] config and
   /// a positional [url].
   ///
+  /// Validation runs first via [NatsOptions.validate] (pure Dart, no FFI) so
+  /// contract violations surface as [ArgumentError] rather than opaque native
+  /// status codes.
+  ///
   /// Precedence for the server target:
   ///   * If `config.servers` is non-empty, `natsOptions_SetServers` is
   ///     called with that list and the positional [url] is ignored.
   ///   * Otherwise `natsOptions_SetURL` is called with [url].
   factory NatsOptionsHandle.fromConfig(NatsOptions config, String url) {
-    _validateConfig(config);
+    config.validate();
 
     final handle = NatsOptionsHandle();
     try {
@@ -62,7 +66,7 @@ final class NatsOptionsHandle implements Finalizable {
 
       setIf(config.name, handle.setName);
       setIf(config.user, (user) {
-        // _validateConfig guarantees password is non-null when user is set.
+        // config.validate() guarantees password is non-null when user is set.
         handle.setUserInfo(user, config.password!);
       });
       setIf(config.token, handle.setToken);
@@ -83,31 +87,6 @@ final class NatsOptionsHandle implements Finalizable {
     } catch (_) {
       unawaited(handle.close());
       rethrow;
-    }
-  }
-
-  /// Validates the public config against the invariants the C library
-  /// cannot (or does not) enforce itself.
-  static void _validateConfig(NatsOptions config) {
-    final hasUser = config.user != null;
-    final hasPassword = config.password != null;
-    if (hasUser != hasPassword) {
-      throw ArgumentError(
-        'NatsOptions.user and NatsOptions.password must be set together; '
-        'supplying one without the other is a configuration error.',
-      );
-    }
-    if (config.token != null && (hasUser || hasPassword)) {
-      throw ArgumentError(
-        'NatsOptions.token is mutually exclusive with '
-        'NatsOptions.user/NatsOptions.password; pick one authentication mode.',
-      );
-    }
-    if (config.credentialsSeedFile != null && config.credentialsFile == null) {
-      throw ArgumentError(
-        'NatsOptions.credentialsSeedFile requires NatsOptions.credentialsFile '
-        'to also be set — the seed file alone cannot identify the user.',
-      );
     }
   }
 

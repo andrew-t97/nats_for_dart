@@ -136,4 +136,30 @@ final class NatsOptions {
     this.credentialsFile,
     this.credentialsSeedFile,
   });
+
+  /// Validates this configuration's invariants.
+  ///
+  /// Throws [ArgumentError] if any invariant is violated.
+  void validate() {
+    final hasUser = user != null;
+    final hasPassword = password != null;
+    if (hasUser != hasPassword) {
+      throw ArgumentError(
+        'NatsOptions.user and NatsOptions.password must be set together; '
+        'supplying one without the other is a configuration error.',
+      );
+    }
+    if (token != null && (hasUser || hasPassword)) {
+      throw ArgumentError(
+        'NatsOptions.token is mutually exclusive with '
+        'NatsOptions.user/NatsOptions.password; pick one authentication mode.',
+      );
+    }
+    if (credentialsSeedFile != null && credentialsFile == null) {
+      throw ArgumentError(
+        'NatsOptions.credentialsSeedFile requires NatsOptions.credentialsFile '
+        'to also be set — the seed file alone cannot identify the user.',
+      );
+    }
+  }
 }
