@@ -1,7 +1,8 @@
 /// Lifecycle callback demo using the NATS C FFI wrapper.
 ///
 /// Demonstrates connection lifecycle events (disconnected, reconnected,
-/// closed) using [NatsOptions] with `NativeCallable.listener()`.
+/// closed, error) by supplying a [NatsOptions] value to
+/// [NatsClient.connect] and listening on the client's broadcast streams.
 ///
 /// Prerequisites:
 ///   - `nats-server` running on localhost:4222
@@ -25,35 +26,38 @@ Future<void> main() async {
   NatsClient? client;
 
   try {
-    // 2. Create NatsOptions with lifecycle callbacks.
-    final opts = NatsOptions()
-      ..setUrl('nats://localhost:4222')
-      ..setMaxReconnect(10)
-      ..setReconnectWait(const Duration(seconds: 2));
+    // 2. Connect with options.
+    print('Connecting...');
+    client = NatsClient.connect(
+      'nats://localhost:4222',
+      options: const NatsOptions(
+        name: 'lifecycle-demo',
+        maxReconnect: 10,
+        reconnectWait: Duration(seconds: 2),
+      ),
+    );
+    print('Connected!');
 
-    // 3. Listen for lifecycle events.
-    opts.onDisconnected().listen((_) {
+    // 3. Listen for lifecycle events on the client. Listeners can be
+    //    attached at any time before or after connect; the streams are
+    //    broadcast and never replay missed events.
+    client.onDisconnected.listen((_) {
       print('[EVENT] Disconnected from server');
     });
 
-    opts.onReconnected().listen((_) {
+    client.onReconnected.listen((_) {
       print('[EVENT] Reconnected to server');
     });
 
-    opts.onClosed().listen((_) {
+    client.onClosed.listen((_) {
       print('[EVENT] Connection permanently closed');
     });
 
-    opts.onError().listen((error) {
+    client.onError.listen((error) {
       print('[ERROR] Async error: $error');
     });
 
-    // 4. Connect using the options.
-    print('Connecting with lifecycle callbacks...');
-    client = NatsClient.connectWithOptions(opts);
-    print('Connected!');
-
-    // 5. Subscribe and publish a test message to prove the connection works.
+    // 4. Subscribe and publish a test message to prove the connection works.
     final subscription = client.subscribe('lifecycle.test');
 
     // Listen for the first message before publishing to avoid a race.
@@ -67,7 +71,7 @@ Future<void> main() async {
 
     await subscription.close();
 
-    // 6. Keep the program running so you can stop/restart nats-server
+    // 5. Keep the program running so you can stop/restart nats-server
     //    and observe lifecycle events.
     print('\n--- Waiting for lifecycle events ---');
     print('Try stopping and restarting nats-server.');
@@ -75,8 +79,10 @@ Future<void> main() async {
 
     // Keep alive for 60 seconds.
     await Future.delayed(const Duration(seconds: 60));
-  } catch (e) {
-    print('Error: $e');
+  } on ArgumentError catch (e) {
+    print('Invalid NatsOptions: $e');
+  } on NatsException catch (e, stackTrace) {
+    print('NATS runtime error: $e\n$stackTrace');
   } finally {
     await client?.close();
 

@@ -1,15 +1,17 @@
 /// Integration tests for the NATS FFI wrapper — sync pub/sub, memory safety,
-/// and NatsOptions builder.
+/// and the unified connect/connectAsync API.
 ///
 /// These tests require a NATS server on localhost:4222.
 /// The test helper will automatically start a Docker container if needed.
 library;
 
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:nats_for_dart/nats_for_dart.dart';
 import 'package:test/test.dart';
 
+import 'support/ephemeral_nats_server.dart';
 import 'support/docker_nats.dart';
 
 void main() {
@@ -167,7 +169,7 @@ void main() {
     });
   });
 
-  group('NatsClient async connect', () {
+  group('NatsClient async connect (no options)', () {
     test('connectAsync connects and supports pub/sub', () async {
       final client = await NatsClient.connectAsync('nats://localhost:4222');
       addTearDown(() => client.close());
@@ -178,22 +180,6 @@ void main() {
       client.publish('test.async.connect', 'async works');
       final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
       expect(msg.dataAsString, equals('async works'));
-    });
-
-    test('connectWithOptionsAsync connects and supports pub/sub', () async {
-      final opts = NatsOptions()
-        ..setUrl('nats://localhost:4222')
-        ..setName('dart-async-test');
-
-      final client = await NatsClient.connectWithOptionsAsync(opts);
-      addTearDown(() => client.close());
-
-      final sub = client.subscribeSync('test.async.opts');
-      addTearDown(sub.close);
-
-      client.publish('test.async.opts', 'async opts works');
-      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
-      expect(msg.dataAsString, equals('async opts works'));
     });
 
     test('connectAsync to invalid URL throws NatsException', () async {
@@ -311,136 +297,123 @@ void main() {
     });
   });
 
-  group('NatsOptions expanded builder', () {
-    test('fromUrl convenience factory connects successfully', () async {
-      final opts = NatsOptions.fromUrl('nats://localhost:4222');
-      final client = NatsClient.connectWithOptions(opts);
+  group('NatsClient.connect with options', () {
+    const url = 'nats://localhost:4222';
+
+    test('connect(url) without options connects successfully', () {
+      final client = NatsClient.connect(url);
       addTearDown(() => client.close());
 
-      final sub = client.subscribeSync('test.opts.fromurl');
+      final sub = client.subscribeSync('test.connect.noopts');
       addTearDown(sub.close);
 
-      client.publish('test.opts.fromurl', 'fromUrl works');
+      client.publish('test.connect.noopts', 'no opts');
       final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
-      expect(msg.dataAsString, equals('fromUrl works'));
+      expect(msg.dataAsString, equals('no opts'));
     });
 
-    test('chaining API with setName and setPingInterval', () async {
-      final opts = NatsOptions()
-        ..setUrl('nats://localhost:4222')
-        ..setName('dart-test-client')
-        ..setPingInterval(const Duration(seconds: 30))
-        ..setMaxPingsOut(5)
-        ..setVerbose(false)
-        ..setPedantic(false)
-        ..setNoRandomize(true)
-        ..setMaxReconnect(3)
-        ..setReconnectWait(const Duration(seconds: 1))
-        ..setReconnectBufSize(1024 * 1024)
-        ..setIOBufSize(32768)
-        ..setTimeout(const Duration(seconds: 5));
-
-      final client = NatsClient.connectWithOptions(opts);
+    test('connect(url, options: NatsOptions(name: ...)) connects and '
+        'publishes', () {
+      final client = NatsClient.connect(
+        url,
+        options: const NatsOptions(name: 'sync-connect-test'),
+      );
       addTearDown(() => client.close());
 
-      final sub = client.subscribeSync('test.opts.chain');
+      final sub = client.subscribeSync('test.connect.opts');
       addTearDown(sub.close);
 
-      client.publish('test.opts.chain', 'chained options');
+      client.publish('test.connect.opts', 'with opts');
       final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
-      expect(msg.dataAsString, equals('chained options'));
+      expect(msg.dataAsString, equals('with opts'));
     });
 
-    test('setters on closed NatsOptions throw StateError', () async {
-      final opts = NatsOptions();
-      await opts.close();
+    test('connect with options exposes lifecycle streams', () {
+      final client = NatsClient.connect(
+        url,
+        options: const NatsOptions(
+          name: 'lifecycle-with-options',
+          maxReconnect: 3,
+          reconnectWait: Duration(seconds: 1),
+        ),
+      );
+      addTearDown(() => client.close());
 
-      expect(() => opts.setUrl('nats://localhost:4222'), throwsStateError);
-      expect(() => opts.setName('test'), throwsStateError);
-      expect(() => opts.setVerbose(true), throwsStateError);
-      expect(() => opts.setPedantic(true), throwsStateError);
-      expect(() => opts.setNoRandomize(true), throwsStateError);
-      expect(() => opts.setMaxReconnect(3), throwsStateError);
+      expect(client.onDisconnected, isA<Stream<void>>());
+      expect(client.onReconnected, isA<Stream<void>>());
+      expect(client.onClosed, isA<Stream<void>>());
+      expect(client.onError, isA<Stream<NatsError>>());
+    });
+
+    test('connect with invalid options (user without password) throws '
+        'ArgumentError before any native allocation', () {
       expect(
-        () => opts.setReconnectWait(const Duration(seconds: 1)),
-        throwsStateError,
-      );
-      expect(() => opts.setReconnectBufSize(1024), throwsStateError);
-      expect(
-        () => opts.setPingInterval(const Duration(seconds: 30)),
-        throwsStateError,
-      );
-      expect(() => opts.setMaxPingsOut(5), throwsStateError);
-      expect(() => opts.setIOBufSize(32768), throwsStateError);
-      expect(
-        () => opts.setTimeout(const Duration(seconds: 5)),
-        throwsStateError,
+        () =>
+            NatsClient.connect(url, options: const NatsOptions(user: 'alice')),
+        throwsArgumentError,
       );
     });
 
-    test('double close on NatsOptions is safe no-op', () async {
-      final opts = NatsOptions();
-      await opts.close();
-      await opts.close(); // should be a no-op
-      expect(opts.isClosed, isTrue);
-    });
-
-    test('NatsOptions setUserInfo connects and works', () async {
-      final opts = NatsOptions()
-        ..setUrl('nats://localhost:4222')
-        ..setUserInfo('user', 'password');
-      final client = NatsClient.connectWithOptions(opts);
+    test('connectAsync(url) without options still works', () async {
+      final client = await NatsClient.connectAsync(url);
       addTearDown(() => client.close());
 
-      final sub = client.subscribeSync('test.opts.userinfo');
+      final sub = client.subscribeSync('test.async.connect.noopts');
       addTearDown(sub.close);
 
-      client.publish('test.opts.userinfo', 'userinfo works');
+      client.publish('test.async.connect.noopts', 'no opts async');
       final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
-      expect(msg.dataAsString, equals('userinfo works'));
+      expect(msg.dataAsString, equals('no opts async'));
     });
 
-    test('NatsOptions setToken connects and works', () async {
-      final opts = NatsOptions()
-        ..setUrl('nats://localhost:4222')
-        ..setToken('some-token');
-      final client = NatsClient.connectWithOptions(opts);
+    test('connectAsync(url, options: ...) connects, publishes, and exposes '
+        'lifecycle streams', () async {
+      final client = await NatsClient.connectAsync(
+        url,
+        options: const NatsOptions(name: 'async-connect-test'),
+      );
       addTearDown(() => client.close());
 
-      final sub = client.subscribeSync('test.opts.token');
+      expect(client.onDisconnected, isA<Stream<void>>());
+      expect(client.onError, isA<Stream<NatsError>>());
+
+      final sub = client.subscribeSync('test.async.connect.opts');
       addTearDown(sub.close);
 
-      client.publish('test.opts.token', 'token works');
+      client.publish('test.async.connect.opts', 'with opts async');
       final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
-      expect(msg.dataAsString, equals('token works'));
+      expect(msg.dataAsString, equals('with opts async'));
     });
 
-    test('NatsOptions setServers connects and works', () async {
-      final opts = NatsOptions()
-        ..setServers(['nats://localhost:4222', 'nats://localhost:4223']);
-      final client = NatsClient.connectWithOptions(opts);
-      addTearDown(() => client.close());
+    test(
+      'connectAsync routes through NatsOptions.servers when non-empty',
+      () async {
+        final client = await NatsClient.connectAsync(
+          'nats://127.0.0.1:1',
+          options: const NatsOptions(
+            servers: ['nats://localhost:4222', 'nats://localhost:4223'],
+          ),
+        );
+        addTearDown(() => client.close());
 
-      final sub = client.subscribeSync('test.opts.servers');
-      addTearDown(sub.close);
+        final sub = client.subscribeSync('test.async.connect.servers');
+        addTearDown(sub.close);
 
-      client.publish('test.opts.servers', 'servers works');
-      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
-      expect(msg.dataAsString, equals('servers works'));
-    });
+        client.publish('test.async.connect.servers', 'servers wins async');
+        final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+        expect(msg.dataAsString, equals('servers wins async'));
+      },
+    );
 
-    test('NatsOptions setCredentialsFile does not throw', () {
-      final opts = NatsOptions()
-        ..setUrl('nats://localhost:4222')
-        ..setCredentialsFile('/tmp/fake-creds.jwt');
-      addTearDown(() => opts.close());
-    });
-
-    test('NatsOptions setCredentialsFile with separate seed file', () {
-      final opts = NatsOptions()
-        ..setUrl('nats://localhost:4222')
-        ..setCredentialsFile('/tmp/fake-creds.jwt', '/tmp/fake-seed.nk');
-      addTearDown(() => opts.close());
+    test('connectAsync with invalid options rejects the returned future '
+        'without spawning a worker isolate', () async {
+      await expectLater(
+        NatsClient.connectAsync(
+          url,
+          options: const NatsOptions(password: 'secret'),
+        ),
+        throwsArgumentError,
+      );
     });
   });
 
@@ -456,6 +429,126 @@ void main() {
         exception.toString(),
         equals('NatsException(NATS error: timeout (26))'),
       );
+    });
+  });
+
+  group('NatsClient lifecycle streams', () {
+    test('onDisconnected, onReconnected, onClosed are Stream<void> getters '
+        'available on a client connected without options', () {
+      final client = NatsClient.connect('nats://localhost:4222');
+      addTearDown(() => client.close());
+
+      expect(client.onDisconnected, isA<Stream<void>>());
+      expect(client.onReconnected, isA<Stream<void>>());
+      expect(client.onClosed, isA<Stream<void>>());
+    });
+
+    test('onError is a Stream<NatsError> getter available on a client '
+        'connected without options', () {
+      final client = NatsClient.connect('nats://localhost:4222');
+      addTearDown(() => client.close());
+
+      expect(client.onError, isA<Stream<NatsError>>());
+    });
+
+    test('listening to lifecycle streams after connect succeeds — no '
+        '"register before connect" requirement', () {
+      final client = NatsClient.connect('nats://localhost:4222');
+      addTearDown(() => client.close());
+
+      final disconnectedSub = client.onDisconnected.listen((_) {});
+      final reconnectedSub = client.onReconnected.listen((_) {});
+      final closedSub = client.onClosed.listen((_) {});
+      final errorSub = client.onError.listen((_) {});
+
+      addTearDown(() async {
+        await disconnectedSub.cancel();
+        await reconnectedSub.cancel();
+        await closedSub.cancel();
+        await errorSub.cancel();
+      });
+    });
+
+    test(
+      'lifecycle streams are broadcast — multiple listeners are allowed',
+      () {
+        final client = NatsClient.connect('nats://localhost:4222');
+        addTearDown(() => client.close());
+
+        final firstDisconnected = client.onDisconnected.listen((_) {});
+        final secondDisconnected = client.onDisconnected.listen((_) {});
+        final firstError = client.onError.listen((_) {});
+        final secondError = client.onError.listen((_) {});
+
+        addTearDown(() async {
+          await firstDisconnected.cancel();
+          await secondDisconnected.cancel();
+          await firstError.cancel();
+          await secondError.cancel();
+        });
+      },
+    );
+
+    test(
+      'onDisconnected fires without options when the server goes away',
+      () async {
+        final ephemeral = await EphemeralNatsServer.start();
+        var ephemeralStopped = false;
+        addTearDown(() async {
+          if (!ephemeralStopped) await ephemeral.stop();
+        });
+
+        final client = NatsClient.connect(ephemeral.url);
+        addTearDown(() => client.close());
+
+        final disconnected = client.onDisconnected.first;
+
+        await ephemeral.stop();
+        ephemeralStopped = true;
+
+        await disconnected.timeout(const Duration(seconds: 10));
+      },
+    );
+
+    test('client.close() drains all four lifecycle streams', () async {
+      final client = NatsClient.connect('nats://localhost:4222');
+
+      final disconnectedDone = Completer<void>();
+      final reconnectedDone = Completer<void>();
+      final closedDone = Completer<void>();
+      final errorDone = Completer<void>();
+
+      client.onDisconnected.listen((_) {}, onDone: disconnectedDone.complete);
+      client.onReconnected.listen((_) {}, onDone: reconnectedDone.complete);
+      client.onClosed.listen((_) {}, onDone: closedDone.complete);
+      client.onError.listen((_) {}, onDone: errorDone.complete);
+
+      await client.close();
+
+      await Future.wait([
+        disconnectedDone.future,
+        reconnectedDone.future,
+        closedDone.future,
+        errorDone.future,
+      ]).timeout(const Duration(seconds: 5));
+    });
+
+    test('lifecycle streams are also available on a client connected with '
+        'options', () async {
+      final client = NatsClient.connect(
+        'nats://localhost:4222',
+        options: const NatsOptions(
+          name: 'lifecycle-stream-test',
+          maxReconnect: 3,
+          reconnectWait: Duration(seconds: 1),
+        ),
+      );
+      addTearDown(() => client.close());
+
+      expect(client.onDisconnected, isA<Stream<void>>());
+      expect(client.onReconnected, isA<Stream<void>>());
+      expect(client.onClosed, isA<Stream<void>>());
+      expect(client.onError, isA<Stream<NatsError>>());
     });
   });
 }

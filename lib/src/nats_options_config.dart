@@ -94,14 +94,23 @@ final class NatsOptions {
   /// Connection establishment timeout. `null` = use the native default.
   final Duration? timeout;
 
-  /// Path to a user credentials file (JWT, or chained JWT + seed).
+  /// Path to a user credentials file.
   ///
-  /// When the JWT and seed live in separate files, set [credentialsSeedFile]
-  /// to the seed path as well.
+  /// Used alone when the file is a *chained* credentials file containing
+  /// both the user JWT and the NKey seed. When the JWT and seed live in
+  /// separate files, set [credentialsSeedFile] to the seed path as well.
+  ///
+  /// Mutually exclusive with NKey-based auth.
   final String? credentialsFile;
 
-  /// Path to a user credentials seed file. Only used when
-  /// [credentialsFile] points to a JWT-only file.
+  /// Optional path to a separate NKey seed file, used when [credentialsFile]
+  /// points to a JWT-only file.
+  ///
+  /// Setting this without [credentialsFile] is a configuration error: the
+  /// seed file alone cannot identify the user, and the bridge rejects it
+  /// with [ArgumentError] before any native call. If [credentialsFile] is
+  /// already a chained JWT+seed file, the seed from this file takes
+  /// precedence over the seed embedded in the chained file.
   final String? credentialsSeedFile;
 
   /// Creates an immutable [NatsOptions] configuration.

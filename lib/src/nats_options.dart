@@ -6,158 +6,14 @@ import 'package:meta/meta.dart';
 
 import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
-import 'nats_status.dart';
+import 'nats_options_config.dart';
 
-/// Represents an error reported by the asynchronous error handler.
-final class NatsError {
-  /// The [NatsStatus] error code.
-  final NatsStatus status;
-
-  /// Creates a [NatsError] with the given [status] code.
-  NatsError(this.status);
-
-  /// Returns a string representation including the status name.
-  @override
-  String toString() => 'NatsError(${status.name})';
-}
-
-/// The native callback for disconnected events.
+/// Library-internal FFI wrapper around `natsOptions`.
 ///
-/// For `StreamController<void>`, Dart requires passing an explicit value —
-/// `null` is the idiomatic sentinel for void streams.
-void _onDisconnected(Pointer<natsConnection> nc, Pointer<Void> closure) {
-  final id = closure.address;
-  final controller = NatsOptions._lifecycleRoutes[id];
-  if (controller != null && !controller.isClosed) {
-    controller.add(null);
-  }
-}
-
-/// The native callback for reconnected events.
-void _onReconnected(Pointer<natsConnection> nc, Pointer<Void> closure) {
-  final id = closure.address;
-  final controller = NatsOptions._lifecycleRoutes[id];
-  if (controller != null && !controller.isClosed) {
-    controller.add(null);
-  }
-}
-
-/// The native callback for closed events.
-void _onClosed(Pointer<natsConnection> nc, Pointer<Void> closure) {
-  final id = closure.address;
-  final controller = NatsOptions._lifecycleRoutes[id];
-  if (controller != null && !controller.isClosed) {
-    controller.add(null);
-  }
-}
-
-/// The native callback for error events.
-void _onError(
-  Pointer<natsConnection> nc,
-  Pointer<natsSubscription> subscription,
-  int err,
-  Pointer<Void> closure,
-) {
-  final id = closure.address;
-  final controller = NatsOptions._errorRoutes[id];
-  if (controller != null && !controller.isClosed) {
-    controller.add(NatsError(NatsStatus.fromValue(err)));
-  }
-}
-
-// ── Shared NativeCallable singletons for lifecycle callbacks ───────────
-//
-// Each lifecycle callback type needs its own shared callable because it
-// routes through a distinct top-level function. They are created lazily
-// and only closed at NatsLibrary.close() time, after nats_CloseAndWait()
-// guarantees all C threads have exited.
-
-NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-_sharedDisconnectedCallable;
-
-NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
-_getSharedDisconnectedCallable() {
-  return _sharedDisconnectedCallable ??=
-      NativeCallable<
-        Void Function(Pointer<natsConnection>, Pointer<Void>)
-      >.listener(_onDisconnected);
-}
-
-NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-_sharedReconnectedCallable;
-
-NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
-_getSharedReconnectedCallable() {
-  return _sharedReconnectedCallable ??=
-      NativeCallable<
-        Void Function(Pointer<natsConnection>, Pointer<Void>)
-      >.listener(_onReconnected);
-}
-
-NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>?
-_sharedClosedCallable;
-
-NativeCallable<Void Function(Pointer<natsConnection>, Pointer<Void>)>
-_getSharedClosedCallable() {
-  return _sharedClosedCallable ??=
-      NativeCallable<
-        Void Function(Pointer<natsConnection>, Pointer<Void>)
-      >.listener(_onClosed);
-}
-
-NativeCallable<
-  Void Function(
-    Pointer<natsConnection>,
-    Pointer<natsSubscription>,
-    UnsignedInt,
-    Pointer<Void>,
-  )
->?
-_sharedErrorCallable;
-
-NativeCallable<
-  Void Function(
-    Pointer<natsConnection>,
-    Pointer<natsSubscription>,
-    UnsignedInt,
-    Pointer<Void>,
-  )
->
-_getSharedErrorCallable() {
-  return _sharedErrorCallable ??=
-      NativeCallable<
-        Void Function(
-          Pointer<natsConnection>,
-          Pointer<natsSubscription>,
-          UnsignedInt,
-          Pointer<Void>,
-        )
-      >.listener(_onError);
-}
-
-/// Closes all shared lifecycle callables.
-///
-/// Must only be called after `nats_CloseAndWait()` guarantees all C threads
-/// have exited. Sets each to `null` so subsequent lazy getters re-create
-/// them (e.g. in tests that open multiple libraries).
+/// Bridges the immutable public [NatsOptions] config to the native option
+/// setters. External callers should not construct this handle directly.
 @internal
-void closeSharedLifecycleCallables() {
-  _sharedDisconnectedCallable?.close();
-  _sharedDisconnectedCallable = null;
-  _sharedReconnectedCallable?.close();
-  _sharedReconnectedCallable = null;
-  _sharedClosedCallable?.close();
-  _sharedClosedCallable = null;
-  _sharedErrorCallable?.close();
-  _sharedErrorCallable = null;
-}
-
-/// Builder-style wrapper around `natsOptions` for configuring connections.
-///
-/// Exposes lifecycle event streams (`onDisconnected`, `onReconnected`,
-/// `onClosed`) and an error stream (`onError`) via
-/// `NativeCallable.listener()`.
-final class NatsOptions implements Finalizable {
+final class NatsOptionsHandle implements Finalizable {
   static final _finalizer = NativeFinalizer(
     Native.addressOf<NativeFunction<Void Function(Pointer<natsOptions>)>>(
       natsOptions_Destroy,
@@ -170,33 +26,8 @@ final class NatsOptions implements Finalizable {
   /// Whether these options have been closed.
   bool get isClosed => _closed;
 
-  // ── Routing tables for lifecycle callbacks ──────────────────────────
-
-  /// Routes for lifecycle callbacks (disconnected, reconnected, closed).
-  /// Keyed by a unique ID per callback.
-  static final Map<int, StreamController<void>> _lifecycleRoutes = {};
-
-  /// Routes for error callbacks. Keyed by a unique ID.
-  static final Map<int, StreamController<NatsError>> _errorRoutes = {};
-
-  static int _nextId = 1;
-
-  // ── Per-instance callback state ────────────────────────────────────
-
-  int? _disconnectedId;
-  StreamController<void>? _disconnectedController;
-
-  int? _reconnectedId;
-  StreamController<void>? _reconnectedController;
-
-  int? _closedId;
-  StreamController<void>? _closedController;
-
-  int? _errorId;
-  StreamController<NatsError>? _errorController;
-
-  /// Creates a new [NatsOptions] with default settings.
-  NatsOptions() {
+  /// Creates a new empty [NatsOptionsHandle].
+  NatsOptionsHandle() {
     final optsPtrPtr = calloc<Pointer<natsOptions>>();
     try {
       checkStatus(natsOptions_Create(optsPtrPtr), 'natsOptions_Create');
@@ -207,11 +38,77 @@ final class NatsOptions implements Finalizable {
     }
   }
 
-  /// Creates a [NatsOptions] pre-configured with a single server [url].
+  /// Builds a [NatsOptionsHandle] from an immutable [NatsOptions] config and
+  /// a positional [url].
   ///
-  /// This is a convenience factory equivalent to `NatsOptions()..setUrl(url)`.
-  factory NatsOptions.fromUrl(String url) {
-    return NatsOptions()..setUrl(url);
+  /// Precedence for the server target:
+  ///   * If `config.servers` is non-empty, `natsOptions_SetServers` is
+  ///     called with that list and the positional [url] is ignored.
+  ///   * Otherwise `natsOptions_SetURL` is called with [url].
+  factory NatsOptionsHandle.fromConfig(NatsOptions config, String url) {
+    _validateConfig(config);
+
+    final handle = NatsOptionsHandle();
+    try {
+      if (config.servers.isNotEmpty) {
+        handle.setServers(config.servers);
+      } else {
+        handle.setUrl(url);
+      }
+
+      void setIf<T>(T? value, void Function(T) apply) {
+        if (value != null) apply(value);
+      }
+
+      setIf(config.name, handle.setName);
+      setIf(config.user, (user) {
+        // _validateConfig guarantees password is non-null when user is set.
+        handle.setUserInfo(user, config.password!);
+      });
+      setIf(config.token, handle.setToken);
+      setIf(config.maxReconnect, handle.setMaxReconnect);
+      setIf(config.reconnectWait, handle.setReconnectWait);
+      setIf(config.reconnectBufSize, handle.setReconnectBufSize);
+      setIf(config.verbose, handle.setVerbose);
+      setIf(config.pedantic, handle.setPedantic);
+      setIf(config.noRandomize, handle.setNoRandomize);
+      setIf(config.pingInterval, handle.setPingInterval);
+      setIf(config.maxPingsOut, handle.setMaxPingsOut);
+      setIf(config.ioBufSize, handle.setIOBufSize);
+      setIf(config.timeout, handle.setTimeout);
+      setIf(config.credentialsFile, (file) {
+        handle.setCredentialsFile(file, config.credentialsSeedFile);
+      });
+      return handle;
+    } catch (_) {
+      unawaited(handle.close());
+      rethrow;
+    }
+  }
+
+  /// Validates the public config against the invariants the C library
+  /// cannot (or does not) enforce itself.
+  static void _validateConfig(NatsOptions config) {
+    final hasUser = config.user != null;
+    final hasPassword = config.password != null;
+    if (hasUser != hasPassword) {
+      throw ArgumentError(
+        'NatsOptions.user and NatsOptions.password must be set together; '
+        'supplying one without the other is a configuration error.',
+      );
+    }
+    if (config.token != null && (hasUser || hasPassword)) {
+      throw ArgumentError(
+        'NatsOptions.token is mutually exclusive with '
+        'NatsOptions.user/NatsOptions.password; pick one authentication mode.',
+      );
+    }
+    if (config.credentialsSeedFile != null && config.credentialsFile == null) {
+      throw ArgumentError(
+        'NatsOptions.credentialsSeedFile requires NatsOptions.credentialsFile '
+        'to also be set — the seed file alone cannot identify the user.',
+      );
+    }
   }
 
   /// The underlying native options pointer. Used by [NatsClient] to connect.
@@ -410,175 +307,48 @@ final class NatsOptions implements Finalizable {
 
   /// Sets the path to a user credentials file (JWT + seed).
   ///
-  /// [userOrChainedFile] is the path to the credentials file (or chained
-  /// file containing both JWT and seed). [seedFile] is optional and used
-  /// only when the JWT and seed are in separate files.
-  void setCredentialsFile(String userOrChainedFile, [String? seedFile]) {
+  /// [credentialsFile] is the path to the credentials file — either a
+  /// JWT-only file or a chained file containing both the JWT and the NKey
+  /// seed. [seedFile] is optional and used only when the JWT and seed live
+  /// in separate files.
+  void setCredentialsFile(String credentialsFile, [String? seedFile]) {
     _ensureAlive();
-    final userNative = userOrChainedFile.toNativeUtf8();
+    final credsNative = credentialsFile.toNativeUtf8();
     final seedNative = seedFile?.toNativeUtf8();
     try {
       checkStatus(
         natsOptions_SetUserCredentialsFromFiles(
           _opts!,
-          userNative.cast(),
+          credsNative.cast(),
           seedNative?.cast() ?? nullptr,
         ),
         'natsOptions_SetUserCredentialsFromFiles',
       );
     } finally {
-      calloc.free(userNative);
+      calloc.free(credsNative);
       if (seedNative != null) calloc.free(seedNative);
     }
   }
 
-  // ── Lifecycle event streams ────────────────────────────────────────
-
-  /// Registers a callback with the native options for connection-lost events
-  /// and returns a stream that fires when the connection is lost.
-  ///
-  /// Must be called before [NatsClient.connectWithOptions]. Calling this
-  /// multiple times returns the same stream (the callback is only registered
-  /// once).
-  Stream<void> onDisconnected() {
-    _ensureAlive();
-    if (_disconnectedController == null) {
-      _disconnectedId = _nextId++;
-      _disconnectedController = StreamController<void>.broadcast();
-      _lifecycleRoutes[_disconnectedId!] = _disconnectedController!;
-
-      checkStatus(
-        natsOptions_SetDisconnectedCB(
-          _opts!,
-          _getSharedDisconnectedCallable().nativeFunction,
-          Pointer.fromAddress(_disconnectedId!),
-        ),
-        'natsOptions_SetDisconnectedCB',
-      );
-    }
-    return _disconnectedController!.stream;
-  }
-
-  /// Registers a callback with the native options for reconnection events
-  /// and returns a stream that fires when the connection has been
-  /// re-established.
-  ///
-  /// Must be called before [NatsClient.connectWithOptions]. Calling this
-  /// multiple times returns the same stream (the callback is only registered
-  /// once).
-  Stream<void> onReconnected() {
-    _ensureAlive();
-    if (_reconnectedController == null) {
-      _reconnectedId = _nextId++;
-      _reconnectedController = StreamController<void>.broadcast();
-      _lifecycleRoutes[_reconnectedId!] = _reconnectedController!;
-
-      checkStatus(
-        natsOptions_SetReconnectedCB(
-          _opts!,
-          _getSharedReconnectedCallable().nativeFunction,
-          Pointer.fromAddress(_reconnectedId!),
-        ),
-        'natsOptions_SetReconnectedCB',
-      );
-    }
-    return _reconnectedController!.stream;
-  }
-
-  /// Registers a callback with the native options for connection-closed
-  /// events and returns a stream that fires when the connection is
-  /// permanently closed.
-  ///
-  /// Must be called before [NatsClient.connectWithOptions]. Calling this
-  /// multiple times returns the same stream (the callback is only registered
-  /// once).
-  Stream<void> onClosed() {
-    _ensureAlive();
-    if (_closedController == null) {
-      _closedId = _nextId++;
-      _closedController = StreamController<void>.broadcast();
-      _lifecycleRoutes[_closedId!] = _closedController!;
-
-      checkStatus(
-        natsOptions_SetClosedCB(
-          _opts!,
-          _getSharedClosedCallable().nativeFunction,
-          Pointer.fromAddress(_closedId!),
-        ),
-        'natsOptions_SetClosedCB',
-      );
-    }
-    return _closedController!.stream;
-  }
-
-  /// Registers an error handler with the native options and returns a stream
-  /// of asynchronous errors (e.g. slow-consumer).
-  ///
-  /// Must be called before [NatsClient.connectWithOptions]. Calling this
-  /// multiple times returns the same stream (the callback is only registered
-  /// once).
-  Stream<NatsError> onError() {
-    _ensureAlive();
-    if (_errorController == null) {
-      _errorId = _nextId++;
-      _errorController = StreamController<NatsError>.broadcast();
-      _errorRoutes[_errorId!] = _errorController!;
-
-      checkStatus(
-        natsOptions_SetErrorHandler(
-          _opts!,
-          _getSharedErrorCallable().nativeFunction,
-          Pointer.fromAddress(_errorId!),
-        ),
-        'natsOptions_SetErrorHandler',
-      );
-    }
-    return _errorController!.stream;
-  }
-
   // ── Cleanup ────────────────────────────────────────────────────────
 
-  /// Closes the native options and releases all callback resources.
-  ///
-  /// The returned [Future] completes when all stream controllers have
-  /// finished notifying their listeners. Native resources are freed
-  /// synchronously before the first `await`, so callers that don't need
-  /// to wait for stream draining can safely ignore the returned future.
+  /// Closes the native options pointer.
   Future<void> close() {
     if (_closed) return Future.value();
     _closed = true;
 
-    // 1. Remove routing table entries first — prevents any late-arriving
-    //    native callbacks from adding events to controllers that are
-    //    about to close.
-    if (_disconnectedId != null) _lifecycleRoutes.remove(_disconnectedId);
-    if (_reconnectedId != null) _lifecycleRoutes.remove(_reconnectedId);
-    if (_closedId != null) _lifecycleRoutes.remove(_closedId);
-    if (_errorId != null) _errorRoutes.remove(_errorId);
-
-    // 2. Close stream controllers — delivers done event to listeners.
-    final controllerFutures = <Future<void>>[
-      if (_disconnectedController != null) _disconnectedController!.close(),
-      if (_reconnectedController != null) _reconnectedController!.close(),
-      if (_closedController != null) _closedController!.close(),
-      if (_errorController != null) _errorController!.close(),
-    ];
-
-    // 3. Destroy the native options pointer.
     if (_opts != null) {
       _finalizer.detach(this);
       natsOptions_Destroy(_opts!);
       _opts = null;
     }
 
-    return controllerFutures.isEmpty
-        ? Future.value()
-        : Future.wait(controllerFutures);
+    return Future.value();
   }
 
   void _ensureAlive() {
     if (_closed) {
-      throw StateError('NatsOptions has been closed');
+      throw StateError('NatsOptionsHandle has been closed');
     }
   }
 }
