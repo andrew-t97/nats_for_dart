@@ -147,15 +147,37 @@ void closeSharedLifecycleCallables() {
   _sharedErrorCallable = null;
 }
 
+/// Scrubs a client's four routing entries from the static maps. Invoked by
+/// [NatsClient._routesFinalizer] on GC when an instance is abandoned without
+/// [NatsClient.close] being called.
+void _scrubClientRoutes(
+  ({int disconnected, int reconnected, int closed, int error}) ids,
+) {
+  NatsClient._lifecycleRoutes.remove(ids.disconnected);
+  NatsClient._lifecycleRoutes.remove(ids.reconnected);
+  NatsClient._lifecycleRoutes.remove(ids.closed);
+  NatsClient._errorRoutes.remove(ids.error);
+}
+
 /// A Dart-friendly wrapper around the NATS C client library.
 ///
 /// Provides synchronous publish/subscribe over a single connection.
+///
+/// Close the client with [close] to free native resources straightaway;
+/// otherwise they are freed when the instance is garbage collected.
 final class NatsClient implements Finalizable {
   static final _finalizer = NativeFinalizer(
     Native.addressOf<NativeFunction<Void Function(Pointer<natsConnection>)>>(
       natsConnection_Destroy,
     ).cast(),
   );
+
+  /// Complements [_finalizer] by scrubbing Dart-side routing entries on GC;
+  /// [_finalizer] only reclaims the C pointer.
+  static final Finalizer<
+    ({int disconnected, int reconnected, int closed, int error})
+  >
+  _routesFinalizer = Finalizer(_scrubClientRoutes);
 
   Pointer<natsConnection>? _nc;
   bool _closed = false;
@@ -218,6 +240,13 @@ final class NatsClient implements Finalizable {
     _lifecycleRoutes[_reconnectedId] = _reconnectedController;
     _lifecycleRoutes[_closedId] = _closedController;
     _errorRoutes[_errorId] = _errorController;
+
+    _routesFinalizer.attach(this, (
+      disconnected: _disconnectedId,
+      reconnected: _reconnectedId,
+      closed: _closedId,
+      error: _errorId,
+    ), detach: this);
   }
 
   /// Registers this client's lifecycle callbacks with the supplied native
@@ -577,11 +606,15 @@ final class NatsClient implements Finalizable {
     }
     _activeAsyncSubscriptions.clear();
 
+    // Detach before scrubbing the maps below so the finalizer can never
+    // fire mid-teardown.
+    _routesFinalizer.detach(this);
+
     if (_nc != null) {
       final ncPtr = _nc!;
       _nc = null;
-      // Detach the finalizer before manually destroying to prevent
-      // double-free if GC runs after an explicit close.
+      // Detach the native finalizer before manually destroying to prevent
+      // a double-free if GC runs after an explicit close.
       _finalizer.detach(this);
       natsConnection_Close(ncPtr);
       natsConnection_Destroy(ncPtr);
