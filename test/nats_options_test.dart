@@ -111,6 +111,83 @@ void main() {
     });
   });
 
+  group('NatsOptions.validate', () {
+    test('default construction is valid', () {
+      const NatsOptions().validate();
+    });
+
+    test('user + password pair is valid', () {
+      const NatsOptions(user: 'alice', password: 'secret').validate();
+    });
+
+    test('token alone is valid', () {
+      const NatsOptions(token: 'tok').validate();
+    });
+
+    test('credentialsFile alone is valid', () {
+      const NatsOptions(credentialsFile: '/jwt').validate();
+    });
+
+    test('user without password throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(user: 'alice').validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('must be set together'),
+          ),
+        ),
+      );
+    });
+
+    test('password without user throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(password: 'secret').validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('must be set together'),
+          ),
+        ),
+      );
+    });
+
+    test('token with user/password throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(
+          token: 'tok',
+          user: 'alice',
+          password: 'secret',
+        ).validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('mutually exclusive'),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'credentialsSeedFile without credentialsFile throws ArgumentError',
+      () {
+        expect(
+          () => const NatsOptions(credentialsSeedFile: '/seed').validate(),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('seed file alone cannot identify'),
+            ),
+          ),
+        );
+      },
+    );
+  });
+
   group('NatsOptionsHandle.fromConfig validation', () {
     const url = 'nats://localhost:4222';
 
