@@ -62,6 +62,51 @@ Future<void> waitUntilTcpReachable(
   );
 }
 
+/// One-shot NATS monitoring health check. Returns `true` when the server's
+/// `/healthz` endpoint on `host:monitoringPort` responds with HTTP 200
+/// within [timeout]; otherwise `false`. `/healthz` is NATS' readiness
+/// endpoint — it signals that the server is accepting client connections,
+/// which a bare TCP probe cannot confirm.
+Future<bool> isMonitoringHealthy(
+  String host,
+  int monitoringPort, {
+  Duration timeout = const Duration(milliseconds: 500),
+}) async {
+  final client = HttpClient()..connectionTimeout = timeout;
+  try {
+    final request = await client.getUrl(
+      Uri.parse('http://$host:$monitoringPort/healthz'),
+    );
+    final response = await request.close();
+    await response.drain<void>();
+    return response.statusCode == 200;
+  } on Exception {
+    return false;
+  } finally {
+    client.close();
+  }
+}
+
+/// Polls [isMonitoringHealthy] until it succeeds or the retry budget is
+/// exhausted. Throws [NatsServerTimeoutException] tagged with [context]
+/// when the budget runs out.
+Future<void> waitUntilMonitoringHealthy(
+  String host,
+  int monitoringPort, {
+  Duration retryDelay = const Duration(milliseconds: 500),
+  int maxRetries = 30,
+  String context = 'NATS server',
+}) async {
+  for (var attempt = 1; attempt <= maxRetries; attempt++) {
+    if (await isMonitoringHealthy(host, monitoringPort)) return;
+    if (attempt < maxRetries) await Future<void>.delayed(retryDelay);
+  }
+  throw NatsServerTimeoutException(
+    '$context did not become ready via http://$host:$monitoringPort/healthz '
+    'after ${maxRetries * retryDelay.inMilliseconds}ms',
+  );
+}
+
 /// Removes a Docker container by name, forcing removal. Safe to call even
 /// when no container with that name exists — Docker treats a missing
 /// container as a no-op under `rm -f`.
