@@ -5,6 +5,7 @@
 /// TCP reachability probes, and container cleanup to the functions here.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 /// Returns `true` if `docker info` succeeds, meaning the Docker daemon is
@@ -121,4 +122,33 @@ class NatsServerTimeoutException implements Exception {
 
   @override
   String toString() => message;
+}
+
+/// Runs an async operation and bounds it with a timeout. Returns the awaited
+/// value if [operation] completes within [timeout]; otherwise throws
+/// [NatsServerTimeoutException] with [context] included in the message for
+/// debuggability.
+Future<T> runWithTimeout<T>(
+  Future<T> Function() operation, {
+  required Duration timeout,
+  required String context,
+}) async {
+  try {
+    return await operation().timeout(timeout);
+  } on TimeoutException {
+    throw NatsServerTimeoutException(
+      '$context did not complete within ${timeout.inMilliseconds}ms',
+    );
+  }
+}
+
+/// Asks the OS for a free TCP port on the loopback interface and returns it.
+/// The socket is closed before returning, so the port is immediately free to
+/// rebind by another process — callers are responsible for handling the
+/// resulting TOCTOU window (e.g. retrying with a fresh port on bind failure).
+Future<int> reserveEphemeralPort() async {
+  final socket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+  final port = socket.port;
+  await socket.close();
+  return port;
 }
