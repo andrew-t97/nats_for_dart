@@ -4,6 +4,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: detect-private-key
+        exclude: ^test/support/certs/
       - id: check-added-large-files
         args: ["--maxkb=1024"]
       - id: check-merge-conflict
