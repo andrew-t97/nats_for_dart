@@ -99,10 +99,10 @@ These features are required for secure, production-grade deployments.
 
 | Feature                    | Why it matters                                                                    |
 | -------------------------- | --------------------------------------------------------------------------------- |
-| TLS Enable/Disable         | Encrypted connections for any non-development deployment                          |
-| CA Certificates            | Server identity verification — prevents MITM attacks                              |
+| CA Certificates            | Server identity verification against private/internal PKI without skip-verify     |
 | Client Certificates (mTLS) | Mutual TLS authentication for zero-trust environments                             |
-| TLS Configuration          | Cipher selection, hostname verification, and skip-verify options                  |
+| Hostname Verification      | Strict hostname checks against the server certificate's SAN/CN                    |
+| Cipher Selection           | Restrict or tune the TLS cipher suites used by the client                         |
 | Message Headers            | Metadata, distributed tracing, and deduplication — used widely in NATS ecosystems |
 
 ### ✨ Coming Next
