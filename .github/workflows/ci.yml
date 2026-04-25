@@ -61,7 +61,20 @@ jobs:
         run: |
           brew install nats-server
           nats-server -js &
-          sleep 2
+          nats-server -c test/support/nats-tls-native.conf &
+          # Wait for TLS server monitoring endpoint to confirm readiness.
+          ready=false
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8223/healthz > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 0.5
+          done
+          if [ "$ready" != "true" ]; then
+            echo "::error::TLS nats-server did not become ready on http://localhost:8223/healthz within timeout"
+            exit 1
+          fi
 
       - name: Run tests
         run: dart test test/test_all.dart
@@ -78,22 +91,34 @@ jobs:
 
       - run: dart pub get
 
-      - name: Install and start nats-server
+      # Install + start servers + run tests in a single shell step. Splitting
+      # them caused the `Start-Process -NoNewWindow` children to be torn down
+      # at the step boundary on Windows runners, leaving nothing listening on
+      # 4222/4223 by the time the test step started.
+      - name: Install nats-server, start servers, and run tests
         run: |
           $latestTag = (Invoke-RestMethod "https://api.github.com/repos/nats-io/nats-server/releases/latest").tag_name
-          $version = $latestTag.TrimStart("v")
           $url = "https://github.com/nats-io/nats-server/releases/download/${latestTag}/nats-server-${latestTag}-windows-amd64.zip"
           Invoke-WebRequest -Uri $url -OutFile nats-server.zip
           Expand-Archive nats-server.zip -DestinationPath nats-server-bin
           $natsDir = Get-ChildItem -Path nats-server-bin -Directory | Select-Object -First 1
           $env:PATH = "$($natsDir.FullName);$env:PATH"
-          echo "$($natsDir.FullName)" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           Start-Process nats-server -ArgumentList "-js" -NoNewWindow
-          Start-Sleep -Seconds 2
+          Start-Process nats-server -ArgumentList "-c","test/support/nats-tls-native.conf" -NoNewWindow
+          # Wait for TLS server monitoring endpoint to confirm readiness.
+          $ready = $false
+          for ($i = 0; $i -lt 30; $i++) {
+            try {
+              $r = Invoke-WebRequest -Uri http://localhost:8223/healthz -UseBasicParsing -TimeoutSec 1
+              if ($r.StatusCode -eq 200) { $ready = $true; break }
+            } catch { Start-Sleep -Milliseconds 500 }
+          }
+          if (-not $ready) {
+            Write-Host "::error::TLS nats-server did not become ready on http://localhost:8223/healthz within timeout"
+            exit 1
+          }
+          dart test test/test_all.dart
         shell: pwsh
-
-      - name: Run tests
-        run: dart test test/test_all.dart
 
   publish-dry-run:
     name: Publish (dry run)

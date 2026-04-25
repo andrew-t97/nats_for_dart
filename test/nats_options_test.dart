@@ -27,6 +27,8 @@ void main() {
       expect(options.verbose, isNull);
       expect(options.pedantic, isNull);
       expect(options.noRandomize, isNull);
+      expect(options.tls, isNull);
+      expect(options.skipServerVerification, isNull);
       expect(options.pingInterval, isNull);
       expect(options.maxPingsOut, isNull);
       expect(options.ioBufSize, isNull);
@@ -75,6 +77,8 @@ void main() {
         verbose: true,
         pedantic: false,
         noRandomize: true,
+        tls: true,
+        skipServerVerification: true,
         pingInterval: Duration(minutes: 2),
         maxPingsOut: 3,
         ioBufSize: 65536,
@@ -94,6 +98,8 @@ void main() {
       expect(options.verbose, isTrue);
       expect(options.pedantic, isFalse);
       expect(options.noRandomize, isTrue);
+      expect(options.tls, isTrue);
+      expect(options.skipServerVerification, isTrue);
       expect(options.pingInterval, equals(const Duration(minutes: 2)));
       expect(options.maxPingsOut, equals(3));
       expect(options.ioBufSize, equals(65536));

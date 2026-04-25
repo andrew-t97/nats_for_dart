@@ -7,6 +7,7 @@ import 'jetstream_test.dart' as jetstream_test;
 import 'kv_test.dart' as kv_test;
 import 'request_reply_test.dart' as request_reply_test;
 import 'nats_options_test.dart' as nats_options_test;
+import 'tls_test.dart' as tls_test;
 
 void main() {
   // Each group runs its own init/close cycle sequentially
@@ -16,4 +17,5 @@ void main() {
   group('KeyValue Tests', kv_test.main);
   group('Request-Reply Tests', request_reply_test.main);
   group('NatsOptions Tests', nats_options_test.main);
+  group('TLS Tests', tls_test.main);
 }
