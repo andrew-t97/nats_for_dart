@@ -90,22 +90,31 @@ class EphemeralNatsServer {
   /// directly) so existing client connections observe a clean close rather
   /// than a TCP reset.
   Future<void> stop() async {
+    final stopwatch = Stopwatch()..start();
+    void mark(String label) {
+      print('[INSTR][stop +${stopwatch.elapsedMilliseconds}ms] $label');
+    }
+
     final containerName = _containerName;
     if (containerName != null) {
+      mark('docker stop begin: $containerName');
       await runWithTimeout(
         () => Process.run('docker', ['stop', containerName]),
         timeout: const Duration(seconds: 5),
         context: 'docker stop $containerName',
       );
+      mark('docker stop returned');
       await runWithTimeout(
         () => removeDockerContainer(containerName),
         timeout: const Duration(seconds: 5),
         context: 'docker rm -f $containerName',
       );
+      mark('docker rm returned');
       return;
     }
     final process = _nativeProcess;
     if (process != null) {
+      mark('native: SIGTERM pid=${process.pid}');
       process.kill(ProcessSignal.sigterm);
       try {
         await runWithTimeout(
@@ -113,11 +122,15 @@ class EphemeralNatsServer {
           timeout: const Duration(seconds: 5),
           context: 'nats-server pid=${process.pid} graceful exit',
         );
+        mark('native: graceful exit reaped');
       } on NatsServerTimeoutException {
+        mark('native: graceful timed out, escalating to SIGKILL');
         // SIGTERM ignored (or TerminateProcess returned without reaping on
         // Windows). Escalate to SIGKILL so the test does not hang.
         process.kill(ProcessSignal.sigkill);
+        mark('native: after SIGKILL kill call');
         await process.exitCode;
+        mark('native: SIGKILL reaped');
       }
     }
   }
@@ -173,6 +186,13 @@ class EphemeralNatsServer {
     required int port,
     required int monitoringPort,
   }) async {
+    final stopwatch = Stopwatch()..start();
+    void mark(String label) {
+      print('[INSTR][_startNative +${stopwatch.elapsedMilliseconds}ms] $label');
+    }
+
+    mark('begin (port=$port monitoring=$monitoringPort)');
+
     final Process process;
     try {
       process = await Process.start('nats-server', [
@@ -181,6 +201,7 @@ class EphemeralNatsServer {
         '-m',
         '$monitoringPort',
       ]);
+      mark('Process.start returned pid=${process.pid}');
     } on ProcessException catch (e) {
       throw StateError(
         '[EphemeralNatsServer] Failed to launch `nats-server` even though it '
@@ -208,17 +229,20 @@ class EphemeralNatsServer {
         monitoringPort,
         context: 'EphemeralNatsServer native pid=${process.pid}',
       );
+      mark('monitoring /healthz reachable');
       await waitUntilTcpReachable(
         _host,
         port,
         context: 'EphemeralNatsServer native pid=${process.pid} NATS port',
       );
+      mark('NATS TCP port reachable');
     })();
 
     final outcome = await Future.any([ready, exited]);
     if (outcome is StateError) {
       throw outcome;
     }
+    mark('start complete');
 
     return EphemeralNatsServer._(
       port: port,

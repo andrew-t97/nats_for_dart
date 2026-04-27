@@ -492,25 +492,43 @@ void main() {
     test(
       'onDisconnected fires without options when the server goes away',
       () async {
+        final stopwatch = Stopwatch()..start();
+        void mark(String label) {
+          print('[INSTR][test T+${stopwatch.elapsedMilliseconds}ms] $label');
+        }
+
+        mark('test body start');
+
         final ephemeral = await EphemeralNatsServer.start();
+        mark('after EphemeralNatsServer.start()');
         var ephemeralStopped = false;
         addTearDown(() async {
           if (!ephemeralStopped) await ephemeral.stop();
         });
 
         final client = NatsClient.connect(ephemeral.url);
-        addTearDown(() => client.close());
+        mark('after NatsClient.connect()');
+        addTearDown(() async {
+          mark('tearDown: client.close() begin');
+          await client.close();
+          mark('tearDown: client.close() end');
+        });
 
         final disconnected = Completer<void>();
         final subscription = client.onDisconnected.listen((_) {
-          if (!disconnected.isCompleted) disconnected.complete();
+          if (!disconnected.isCompleted) {
+            mark('onDisconnected callback fired');
+            disconnected.complete();
+          }
         });
         addTearDown(subscription.cancel);
 
         await ephemeral.stop();
+        mark('after ephemeral.stop()');
         ephemeralStopped = true;
 
         await disconnected.future.timeout(const Duration(seconds: 10));
+        mark('after disconnected.future awaited');
       },
     );
 
