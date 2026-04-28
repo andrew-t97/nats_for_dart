@@ -8,6 +8,9 @@ library;
 import 'dart:async';
 import 'dart:io';
 
+/// Default NATS Docker image used by all test fixtures.
+const String kDefaultNatsImage = 'nats:latest';
+
 /// Returns `true` if `docker info` succeeds, meaning the Docker daemon is
 /// reachable and we can launch containers. Returns `false` when the binary
 /// is missing or the daemon is not running — callers use this to decide
@@ -15,6 +18,17 @@ import 'dart:io';
 Future<bool> isDockerAvailable() async {
   try {
     final result = await Process.run('docker', ['info']);
+    return result.exitCode == 0;
+  } on ProcessException {
+    return false;
+  }
+}
+
+/// Returns `true` if `nats-server --version` succeeds on the current PATH.
+/// Sibling of [isDockerAvailable] for the native fallback path.
+Future<bool> isNatsServerOnPath() async {
+  try {
+    final result = await Process.run('nats-server', ['--version']);
     return result.exitCode == 0;
   } on ProcessException {
     return false;
@@ -113,6 +127,41 @@ Future<void> waitUntilMonitoringHealthy(
 /// container as a no-op under `rm -f`.
 Future<void> removeDockerContainer(String name) async {
   await Process.run('docker', ['rm', '-f', name]);
+}
+
+/// Removes any stale container with [containerName], runs `docker run` with
+/// [dockerRunArgs], maps a non-zero exit to a [StateError] tagged with
+/// [context], then waits for `/healthz` on `host:monitoringPort`.
+///
+/// Native-priority probing and docker-availability messaging stay in callers
+/// — their guidance copy is fixture-specific and shouldn't be merged here.
+Future<void> startDockerNatsContainer({
+  required String host,
+  required int monitoringPort,
+  required String containerName,
+  required List<String> dockerRunArgs,
+  required String context,
+  Duration retryDelay = const Duration(milliseconds: 500),
+  int maxRetries = 30,
+}) async {
+  await removeDockerContainer(containerName);
+
+  final result = await Process.run('docker', dockerRunArgs);
+  if (result.exitCode != 0) {
+    throw StateError(
+      '$context failed to start container.\n'
+      'stdout: ${result.stdout}\n'
+      'stderr: ${result.stderr}',
+    );
+  }
+
+  await waitUntilMonitoringHealthy(
+    host,
+    monitoringPort,
+    retryDelay: retryDelay,
+    maxRetries: maxRetries,
+    context: context,
+  );
 }
 
 /// Thrown when a test NATS server does not become reachable in time.

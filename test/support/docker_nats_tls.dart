@@ -23,7 +23,6 @@ class DockerNatsTls {
   static const _host = 'localhost';
   static const _port = 4223;
   static const _monitoringPort = 8223;
-  static const _image = 'nats:latest';
 
   // On-host fixture paths, resolved relative to the package root. `dart test`
   // sets CWD to the package root, so these are valid for every supported
@@ -38,10 +37,6 @@ class DockerNatsTls {
   // Docker commands
   static const _docker = 'docker';
   static const _stopArgs = ['stop', _containerName];
-
-  // Health check configuration
-  static const _maxRetries = 30;
-  static const _retryDelay = Duration(milliseconds: 500);
 
   static int _refCount = 0;
 
@@ -110,42 +105,30 @@ class DockerNatsTls {
       );
     }
 
-    await removeDockerContainer(_containerName);
-
     final certsHostAbs = _toDockerPath(_absolutePath(_certsHostDir));
     final configHostAbs = _toDockerPath(_absolutePath(_configHostPath));
 
-    final result = await Process.run(_docker, [
-      'run',
-      '-d',
-      '--name',
-      _containerName,
-      '-p',
-      '$_port:$_port',
-      '-p',
-      '$_monitoringPort:$_monitoringPort',
-      '-v',
-      '$certsHostAbs:$_certsContainerDir:ro',
-      '-v',
-      '$configHostAbs:$_configContainerPath:ro',
-      _image,
-      '-c',
-      _configContainerPath,
-    ]);
-
-    if (result.exitCode != 0) {
-      throw StateError(
-        '[DockerNatsTls] Failed to start container.\n'
-        'stdout: ${result.stdout}\n'
-        'stderr: ${result.stderr}',
-      );
-    }
-
-    await waitUntilMonitoringHealthy(
-      _host,
-      _monitoringPort,
-      retryDelay: _retryDelay,
-      maxRetries: _maxRetries,
+    await startDockerNatsContainer(
+      host: _host,
+      monitoringPort: _monitoringPort,
+      containerName: _containerName,
+      dockerRunArgs: [
+        'run',
+        '-d',
+        '--name',
+        _containerName,
+        '-p',
+        '$_port:$_port',
+        '-p',
+        '$_monitoringPort:$_monitoringPort',
+        '-v',
+        '$certsHostAbs:$_certsContainerDir:ro',
+        '-v',
+        '$configHostAbs:$_configContainerPath:ro',
+        kDefaultNatsImage,
+        '-c',
+        _configContainerPath,
+      ],
       context: '[DockerNatsTls] NATS server',
     );
   }
