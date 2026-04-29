@@ -79,6 +79,19 @@ final class NatsOptions {
   /// randomised order. `null` = use the native default.
   final bool? noRandomize;
 
+  /// When `true`, the client negotiates a TLS handshake with the server.
+  /// TLS is also implicitly enabled by `tls://` URLs, so this flag is
+  /// optional when the scheme already selects TLS. `null` = use the native
+  /// default.
+  final bool? tls;
+
+  /// When `true`, the client skips X.509 certificate verification during the
+  /// TLS handshake, accepting any server certificate. Intended for
+  /// self-signed or test servers; never enable in production. The native
+  /// library ignores this flag when TLS is not active. `null` = use the
+  /// native default.
+  final bool? skipServerVerification;
+
   /// Interval between client → server pings. `null` = use the native
   /// default.
   final Duration? pingInterval;
@@ -129,6 +142,8 @@ final class NatsOptions {
     this.verbose,
     this.pedantic,
     this.noRandomize,
+    this.tls,
+    this.skipServerVerification,
     this.pingInterval,
     this.maxPingsOut,
     this.ioBufSize,

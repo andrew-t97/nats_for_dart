@@ -331,6 +331,55 @@ natsStatus natsOptions_SetName(
   ffi.Pointer<ffi.Char> name,
 ) => natsStatus.fromValue(_natsOptions_SetName(opts, name));
 
+/// \brief Sets the secure mode.
+///
+/// Indicates to the server if the client wants a secure (SSL/TLS) connection.
+///
+/// The default is `false`.
+///
+/// \warning Once this option is set and if this #natsOptions object is passed
+/// to any #natsConnection_Connect call, and connections are still active,
+/// any other modification of the options related to TLS/SSL will return
+/// #NATS_ILLEGAL_STATE. You either need to create a new #natsOptions object
+/// and reconfigure it from scratch, or wait for the last connection that uses
+/// this #natsOptions object to be destroyed before altering the configuration.
+///
+/// @param opts the pointer to the #natsOptions object.
+/// @param secure `true` for a secure connection, `false` otherwise.
+@ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Bool)>(
+  symbol: 'natsOptions_SetSecure',
+)
+external int _natsOptions_SetSecure(ffi.Pointer<natsOptions> opts, bool secure);
+
+natsStatus natsOptions_SetSecure(ffi.Pointer<natsOptions> opts, bool secure) =>
+    natsStatus.fromValue(_natsOptions_SetSecure(opts, secure));
+
+/// \brief Switch server certificate verification.
+///
+/// By default, the server certificate is verified. You can disable the verification
+/// by passing <c>true</c> to this function.
+///
+/// \note Setting this to true will clear SSL verfication callback set via natsOptions_SetSSLVerificationCallback().
+///
+/// \warning This is fine for tests but use with caution since this is not secure.
+///
+/// \warning See warning in #natsOptions_SetSecure.
+///
+/// @param opts the pointer to the #natsOptions object.
+/// @param skip set it to <c>true</c> to disable - or skip - server certificate verification.
+@ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Bool)>(
+  symbol: 'natsOptions_SkipServerVerification',
+)
+external int _natsOptions_SkipServerVerification(
+  ffi.Pointer<natsOptions> opts,
+  bool skip,
+);
+
+natsStatus natsOptions_SkipServerVerification(
+  ffi.Pointer<natsOptions> opts,
+  bool skip,
+) => natsStatus.fromValue(_natsOptions_SkipServerVerification(opts, skip));
+
 /// \brief Sets the verbose mode.
 ///
 /// Sets the verbose mode. If `true`, sends are echoed by the server with

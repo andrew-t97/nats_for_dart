@@ -76,6 +76,8 @@ final class NatsOptionsHandle implements Finalizable {
       setIf(config.verbose, handle.setVerbose);
       setIf(config.pedantic, handle.setPedantic);
       setIf(config.noRandomize, handle.setNoRandomize);
+      setIf(config.tls, handle.setTls);
+      setIf(config.skipServerVerification, handle.setSkipServerVerification);
       setIf(config.pingInterval, handle.setPingInterval);
       setIf(config.maxPingsOut, handle.setMaxPingsOut);
       setIf(config.ioBufSize, handle.setIOBufSize);
@@ -241,6 +243,22 @@ final class NatsOptionsHandle implements Finalizable {
     checkStatus(
       natsOptions_SetNoRandomize(_opts!, noRandomize),
       'natsOptions_SetNoRandomize',
+    );
+  }
+
+  /// Enables or disables TLS for the connection.
+  void setTls(bool enable) {
+    _ensureAlive();
+    checkStatus(natsOptions_SetSecure(_opts!, enable), 'natsOptions_SetSecure');
+  }
+
+  /// Enables or disables X.509 server-certificate verification during the TLS
+  /// handshake.
+  void setSkipServerVerification(bool skip) {
+    _ensureAlive();
+    checkStatus(
+      natsOptions_SkipServerVerification(_opts!, skip),
+      'natsOptions_SkipServerVerification',
     );
   }
 

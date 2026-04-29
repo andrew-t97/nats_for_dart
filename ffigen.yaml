@@ -56,6 +56,8 @@ functions:
     - "natsOptions_SetVerbose"
     - "natsOptions_SetPedantic"
     - "natsOptions_SetNoRandomize"
+    - "natsOptions_SetSecure"
+    - "natsOptions_SkipServerVerification"
     - "natsOptions_SetTimeout"
     - "natsOptions_SetPingInterval"
     - "natsOptions_SetMaxPingsOut"
