@@ -392,7 +392,7 @@ void main() {
       () async {
         final client = await NatsClient.connectAsync(
           'nats://127.0.0.1:1',
-          options: NatsOptions(servers: [nats.url, 'nats://localhost:4223']),
+          options: NatsOptions(servers: [nats.url]),
         );
         addTearDown(() => client.close());
 
@@ -501,12 +501,16 @@ void main() {
         final client = NatsClient.connect(ephemeral.url);
         addTearDown(() => client.close());
 
-        final disconnected = client.onDisconnected.first;
+        final disconnected = Completer<void>();
+        final subscription = client.onDisconnected.listen((_) {
+          if (!disconnected.isCompleted) disconnected.complete();
+        });
+        addTearDown(subscription.cancel);
 
         await ephemeral.stop();
         ephemeralStopped = true;
 
-        await disconnected.timeout(const Duration(seconds: 10));
+        await disconnected.future.timeout(const Duration(seconds: 10));
       },
     );
 
