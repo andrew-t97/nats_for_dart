@@ -16,7 +16,6 @@ import 'nats_server_support.dart';
 
 class EphemeralNatsServer {
   static const _host = '127.0.0.1';
-  static const _image = 'nats:latest';
 
   final int port;
   final int monitoringPort;
@@ -47,7 +46,7 @@ class EphemeralNatsServer {
     // Native nats-server takes priority over Docker. Mirrors DockerNats:
     // Docker on windows-latest is flaky and `docker info` can hang long
     // enough to blow the test framework's 30s timeout.
-    final useNative = await _isNatsServerOnPath();
+    final useNative = await isNatsServerOnPath();
     if (!useNative && !await isDockerAvailable()) {
       throw StateError(
         '[EphemeralNatsServer] Neither `nats-server` is on PATH nor Docker '
@@ -75,15 +74,6 @@ class EphemeralNatsServer {
     throw StateError(
       '[EphemeralNatsServer] failed to start after 3 attempts: $lastError',
     );
-  }
-
-  static Future<bool> _isNatsServerOnPath() async {
-    try {
-      final result = await Process.run('nats-server', ['--version']);
-      return result.exitCode == 0;
-    } on ProcessException {
-      return false;
-    }
   }
 
   /// Stops the server. Sends SIGTERM (Docker: via `docker stop`; native:
@@ -127,33 +117,23 @@ class EphemeralNatsServer {
     required int monitoringPort,
     required String containerName,
   }) async {
-    await removeDockerContainer(containerName);
-
-    final result = await Process.run('docker', [
-      'run',
-      '-d',
-      '--name',
-      containerName,
-      '-p',
-      '$port:4222',
-      '-p',
-      '$monitoringPort:$monitoringPort',
-      _image,
-      '-m',
-      '$monitoringPort',
-    ]);
-
-    if (result.exitCode != 0) {
-      throw StateError(
-        '[EphemeralNatsServer] Failed to start container $containerName.\n'
-        'stdout: ${result.stdout}\n'
-        'stderr: ${result.stderr}',
-      );
-    }
-
-    await waitUntilMonitoringHealthy(
-      _host,
-      monitoringPort,
+    await startDockerNatsContainer(
+      host: _host,
+      monitoringPort: monitoringPort,
+      containerName: containerName,
+      dockerRunArgs: [
+        'run',
+        '-d',
+        '--name',
+        containerName,
+        '-p',
+        '$port:4222',
+        '-p',
+        '$monitoringPort:$monitoringPort',
+        kDefaultNatsImage,
+        '-m',
+        '$monitoringPort',
+      ],
       context: 'EphemeralNatsServer container $containerName',
     );
     await waitUntilTcpReachable(

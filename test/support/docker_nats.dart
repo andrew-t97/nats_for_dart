@@ -23,7 +23,6 @@ class DockerNats {
   static const _host = 'localhost';
   static const _port = 4222;
   static const _monitoringPort = 8222;
-  static const _image = 'nats:latest';
   static const _jetstreamFlag = '-js';
   static const _monitoringFlag = '-m';
   static const _monitoringPortStr = '$_monitoringPort';
@@ -41,15 +40,12 @@ class DockerNats {
     _portMapping,
     '-p',
     _monitoringPortMapping,
-    _image,
+    kDefaultNatsImage,
     _jetstreamFlag,
     _monitoringFlag,
     _monitoringPortStr,
   ];
   static const _stopArgs = ['stop', _containerName];
-  // Health check configuration
-  static const _maxRetries = 30;
-  static const _retryDelay = Duration(milliseconds: 500);
 
   static int _refCount = 0;
 
@@ -121,24 +117,11 @@ class DockerNats {
       );
     }
 
-    // Remove any stale container with the same name.
-    await removeDockerContainer(_containerName);
-
-    final result = await Process.run(_docker, _startArgs);
-
-    if (result.exitCode != 0) {
-      throw StateError(
-        '[DockerNats] Failed to start container.\n'
-        'stdout: ${result.stdout}\n'
-        'stderr: ${result.stderr}',
-      );
-    }
-
-    await waitUntilMonitoringHealthy(
-      _host,
-      _monitoringPort,
-      retryDelay: _retryDelay,
-      maxRetries: _maxRetries,
+    await startDockerNatsContainer(
+      host: _host,
+      monitoringPort: _monitoringPort,
+      containerName: _containerName,
+      dockerRunArgs: _startArgs,
       context: '[DockerNats] NATS server',
     );
   }
