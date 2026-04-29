@@ -95,22 +95,28 @@ class DockerNats {
   // Private helpers
   // ---------------------------------------------------------------------------
 
-  /// Starts the Docker container, cleaning up any stale one first.
+  /// Starts the NATS server fixture.
   ///
-  /// If the Docker binary is not installed, falls back to checking whether a
-  /// native NATS server is already listening on port [_port]. This supports
-  /// CI environments (e.g. macOS GitHub Actions) that pre-install nats-server
-  /// via a package manager instead of running Docker.
+  /// Resolution order, in priority:
+  ///   1. Native NATS server already listening on [_port] — adopted as-is and
+  ///      managed externally.
+  ///   2. Docker — start a fresh container.
+  ///   3. Neither — throw, with guidance for the developer.
+  ///
+  /// Native takes priority over Docker because the Windows CI runner
+  /// pre-starts native nats-server: Docker on `windows-latest` is flaky for
+  /// Linux containers (HNS network endpoint creation can fail with Win32
+  /// 0x20). Mirrors the priority order in `DockerNatsTls._startContainer()`.
   static Future<void> _startContainer() async {
+    if (await isTcpReachable(_host, _port)) {
+      _usingNative = true;
+      return;
+    }
+
     if (!await isDockerAvailable()) {
-      // No Docker — check for a native server instead.
-      if (await isTcpReachable(_host, _port)) {
-        _usingNative = true;
-        return;
-      }
       throw StateError(
-        '[DockerNats] Docker is not installed and no native NATS server '
-        'was detected on $_host:$_port. '
+        '[DockerNats] No NATS server detected on $_host:$_port and Docker '
+        'is not available. '
         'Either install Docker or start a NATS server with JetStream enabled.',
       );
     }
@@ -128,38 +134,12 @@ class DockerNats {
       );
     }
 
-    await _waitForReady();
-  }
-
-  /// Waits for NATS to be fully ready by polling its HTTP health endpoint.
-  static Future<void> _waitForReady() async {
-    for (var attempt = 1; attempt <= _maxRetries; attempt++) {
-      if (await _isServerHealthy()) return;
-      if (attempt < _maxRetries) {
-        await Future<void>.delayed(_retryDelay);
-      }
-    }
-
-    throw NatsServerTimeoutException(
-      '[DockerNats] NATS server did not become ready after '
-      '${_maxRetries * _retryDelay.inMilliseconds}ms.',
+    await waitUntilMonitoringHealthy(
+      _host,
+      _monitoringPort,
+      retryDelay: _retryDelay,
+      maxRetries: _maxRetries,
+      context: '[DockerNats] NATS server',
     );
-  }
-
-  /// Returns `true` if the NATS monitoring endpoint reports healthy.
-  static Future<bool> _isServerHealthy() async {
-    try {
-      final client = HttpClient()
-        ..connectionTimeout = const Duration(milliseconds: 500);
-      final request = await client.getUrl(
-        Uri.parse('http://$_host:$_monitoringPort/healthz'),
-      );
-      final response = await request.close();
-      await response.drain<void>();
-      client.close();
-      return response.statusCode == 200;
-    } on Exception {
-      return false;
-    }
   }
 }
