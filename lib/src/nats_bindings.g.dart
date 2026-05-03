@@ -354,6 +354,70 @@ external int _natsOptions_SetSecure(ffi.Pointer<natsOptions> opts, bool secure);
 natsStatus natsOptions_SetSecure(ffi.Pointer<natsOptions> opts, bool secure) =>
     natsStatus.fromValue(_natsOptions_SetSecure(opts, secure));
 
+/// \brief Loads the trusted CA certificates from a file.
+///
+/// Loads the trusted CA certificates from a file.
+///
+/// Note that the certificates are added to a SSL context for this #natsOptions
+/// object at the time of this call, so possible errors while loading the
+/// certificates will be reported now instead of when a connection is created.
+/// You can get extra information by calling #nats_GetLastError.
+///
+/// \warning See warning in #natsOptions_SetSecure.
+///
+/// @param opts the pointer to the #natsOptions object.
+/// @param fileName the file containing the CA certificates.
+@ffi.Native<
+  ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Pointer<ffi.Char>)
+>(symbol: 'natsOptions_LoadCATrustedCertificates')
+external int _natsOptions_LoadCATrustedCertificates(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> fileName,
+);
+
+natsStatus natsOptions_LoadCATrustedCertificates(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> fileName,
+) => natsStatus.fromValue(
+  _natsOptions_LoadCATrustedCertificates(opts, fileName),
+);
+
+/// \brief Loads the certificate chain from a file, using the given key.
+///
+/// The certificates must be in PEM format and must be sorted starting with
+/// the subject's certificate, followed by intermediate CA certificates if
+/// applicable, and ending at the highest level (root) CA.
+///
+/// The private key file format supported is also PEM.
+///
+/// See #natsOptions_LoadCATrustedCertificates regarding error reports.
+///
+/// \warning See warning in #natsOptions_SetSecure.
+///
+/// @param opts the pointer to the #natsOptions object.
+/// @param certsFileName the file containing the client certificates.
+/// @param keyFileName the file containing the client private key.
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsOptions>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'natsOptions_LoadCertificatesChain')
+external int _natsOptions_LoadCertificatesChain(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> certsFileName,
+  ffi.Pointer<ffi.Char> keyFileName,
+);
+
+natsStatus natsOptions_LoadCertificatesChain(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> certsFileName,
+  ffi.Pointer<ffi.Char> keyFileName,
+) => natsStatus.fromValue(
+  _natsOptions_LoadCertificatesChain(opts, certsFileName, keyFileName),
+);
+
 /// \brief Switch server certificate verification.
 ///
 /// By default, the server certificate is verified. You can disable the verification

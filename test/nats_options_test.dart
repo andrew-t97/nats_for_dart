@@ -6,6 +6,7 @@ import 'package:nats_for_dart/nats_for_dart.dart';
 import 'package:nats_for_dart/src/nats_options.dart' show NatsOptionsHandle;
 import 'package:test/test.dart';
 
+import 'support/cert_paths.dart';
 import 'support/docker_nats.dart';
 
 void main() {
@@ -192,6 +193,44 @@ void main() {
         );
       },
     );
+  });
+
+  group('NatsOptionsHandle TLS setters', () {
+    setUpAll(NatsLibrary.init);
+    tearDownAll(() => NatsLibrary.close(timeoutMs: 5000));
+
+    test('setClientCertificatesChain accepts a valid cert+key pair', () {
+      final handle = NatsOptionsHandle();
+      addTearDown(handle.close);
+      handle.setClientCertificatesChain(testClientCertPath, testClientKeyPath);
+    });
+
+    test('setClientCertificatesChain rejects missing files', () {
+      final handle = NatsOptionsHandle();
+      addTearDown(handle.close);
+      expect(
+        () => handle.setClientCertificatesChain(
+          '/nonexistent.crt',
+          '/nonexistent.key',
+        ),
+        throwsA(isA<NatsException>()),
+      );
+    });
+
+    test('setCaTrustedCertificates accepts a valid CA PEM', () {
+      final handle = NatsOptionsHandle();
+      addTearDown(handle.close);
+      handle.setCaTrustedCertificates(testCaCertPath);
+    });
+
+    test('setCaTrustedCertificates rejects a missing file', () {
+      final handle = NatsOptionsHandle();
+      addTearDown(handle.close);
+      expect(
+        () => handle.setCaTrustedCertificates('/nonexistent.crt'),
+        throwsA(isA<NatsException>()),
+      );
+    });
   });
 
   group('NatsOptionsHandle.fromConfig validation', () {
