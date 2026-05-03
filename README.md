@@ -14,6 +14,7 @@ Idiomatic Dart bindings for [NATS](https://nats.io/) — pub/sub, JetStream, and
 - **JetStream** — durable streams, consumers, publish with ack, and pull subscribe
 - **KeyValue store** — get, put, delete, watch, history, and optimistic concurrency with revision checks
 - **Connection lifecycle** — disconnect, reconnect, close, and async error event streams
+- **TLS / mTLS** — server-cert verification with hostname checks against the cert's SAN/CN (auto-derived from the URL, or overridden via `NatsOptions.expectedHostname` for IP-dialled or SNI-proxied connections); client cert/key for mutual TLS
 
 ## 📱 Supported platforms
 | Platform | Supported |
@@ -103,7 +104,6 @@ These features are required for secure, production-grade deployments.
 
 | Feature                    | Why it matters                                                                    |
 | -------------------------- | --------------------------------------------------------------------------------- |
-| Hostname Verification      | Strict hostname checks against the server certificate's SAN/CN                    |
 | Cipher Selection           | Restrict or tune the TLS cipher suites used by the client                         |
 | Message Headers            | Metadata, distributed tracing, and deduplication — used widely in NATS ecosystems |
 
