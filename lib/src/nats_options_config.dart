@@ -112,6 +112,21 @@ final class NatsOptions {
   /// server). `null` = use the native default (system trust store).
   final String? caCertPath;
 
+  /// Overrides the hostname used to verify the server certificate's
+  /// `subjectAltName` during the TLS handshake.
+  ///
+  /// Hostname verification is **always on** for TLS connections in this
+  /// library.
+  ///
+  /// Set this when the URL-derived hostname does not match a SAN on the
+  /// server certificate — for example, dialling by IP against a hostname-only
+  /// cert, going through an SNI-rewriting proxy, or addressing an internal
+  /// load-balancer hostname.
+  ///
+  /// Ignored when [skipServerVerification] is `true` (no verification means
+  /// no hostname check).
+  final String? expectedHostname;
+
   /// Interval between client → server pings. `null` = use the native
   /// default.
   final Duration? pingInterval;
@@ -173,6 +188,7 @@ final class NatsOptions {
     this.clientCertPath,
     this.clientKeyPath,
     this.caCertPath,
+    this.expectedHostname,
   });
 
   /// Validates this configuration's invariants.
@@ -203,6 +219,11 @@ final class NatsOptions {
       throw ArgumentError(
         'NatsOptions.clientCertPath and NatsOptions.clientKeyPath must be set '
         'together.',
+      );
+    }
+    if (expectedHostname != null && expectedHostname!.isEmpty) {
+      throw ArgumentError(
+        'NatsOptions.expectedHostname must be non-empty when set. Use null to keep the default URL-derived hostname.',
       );
     }
   }

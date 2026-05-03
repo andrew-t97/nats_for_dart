@@ -39,6 +39,7 @@ void main() {
       expect(options.clientCertPath, isNull);
       expect(options.clientKeyPath, isNull);
       expect(options.caCertPath, isNull);
+      expect(options.expectedHostname, isNull);
     });
 
     test('servers defaults to the shared const empty list', () {
@@ -92,6 +93,7 @@ void main() {
         clientCertPath: '/path/to/client-cert.pem',
         clientKeyPath: '/path/to/client-key.pem',
         caCertPath: '/path/to/ca-cert.pem',
+        expectedHostname: 'nats.internal.svc',
       );
 
       expect(options.name, equals('my-client'));
@@ -116,6 +118,7 @@ void main() {
       expect(options.clientCertPath, equals('/path/to/client-cert.pem'));
       expect(options.clientKeyPath, equals('/path/to/client-key.pem'));
       expect(options.caCertPath, equals('/path/to/ca-cert.pem'));
+      expect(options.expectedHostname, equals('nats.internal.svc'));
     });
 
     test('only some fields may be provided; the rest remain null', () {
@@ -239,6 +242,23 @@ void main() {
             (e) => e.message,
             'message',
             allOf(contains('clientCertPath'), contains('clientKeyPath')),
+          ),
+        ),
+      );
+    });
+
+    test('non-empty expectedHostname is valid', () {
+      const NatsOptions(expectedHostname: 'nats.internal.svc').validate();
+    });
+
+    test('empty expectedHostname throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(expectedHostname: '').validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('expectedHostname'),
           ),
         ),
       );
