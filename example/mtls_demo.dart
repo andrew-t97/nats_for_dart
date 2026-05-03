@@ -9,6 +9,12 @@
 /// useful when dialling by IP, going through an SNI-rewriting proxy,
 /// or addressing an internal load-balancer hostname.
 ///
+/// `tlsCiphers: 'HIGH:!aNULL'` restricts the TLS ≤ 1.2 negotiation to
+/// the LibreSSL `HIGH` cipher class minus anonymous (unauthenticated)
+/// suites — the canonical "tighten without breaking interop" example
+/// from the OpenSSL docs. TLS 1.3 cipher suites are negotiated
+/// separately and are not configurable through this field.
+///
 /// Prerequisites:
 ///   - `nats-server` running on localhost:4224 with the mTLS fixture config.
 ///     The integration-test fixture (`DockerNatsMtls`) starts and stops its
@@ -47,6 +53,7 @@ Future<void> main() async {
         clientKeyPath: 'test/support/certs/client-key.pem',
         caCertPath: 'test/support/certs/ca-cert.pem',
         expectedHostname: 'localhost',
+        tlsCiphers: 'HIGH:!aNULL',
       ),
     );
     print('Connected over mTLS!');
