@@ -67,6 +67,7 @@ functions:
     - "natsOptions_SetUserCredentialsFromFiles"
     - "natsOptions_LoadCATrustedCertificates"
     - "natsOptions_LoadCertificatesChain"
+    - "natsOptions_SetCiphers"
     - "jsOptions_Init"
     - "natsConnection_JetStream"
     - "jsCtx_Destroy"

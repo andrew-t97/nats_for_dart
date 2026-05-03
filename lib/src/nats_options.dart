@@ -79,6 +79,7 @@ final class NatsOptionsHandle implements Finalizable {
       setIf(config.tls, handle.setTls);
       setIf(config.skipServerVerification, handle.setSkipServerVerification);
       setIf(config.expectedHostname, handle.setExpectedHostname);
+      setIf(config.tlsCiphers, handle.setTlsCiphers);
       setIf(config.caCertPath, handle.setCaTrustedCertificates);
       setIf(config.clientCertPath, (certPath) {
         handle.setClientCertificatesChain(certPath, config.clientKeyPath!);
@@ -279,6 +280,21 @@ final class NatsOptionsHandle implements Finalizable {
       );
     } finally {
       calloc.free(hostnameNative);
+    }
+  }
+
+  /// Restricts the TLS ≤ 1.2 cipher allow-list to the OpenSSL-syntax
+  /// [ciphers] string.
+  void setTlsCiphers(String ciphers) {
+    _ensureAlive();
+    final ciphersNative = ciphers.toNativeUtf8();
+    try {
+      checkStatus(
+        natsOptions_SetCiphers(_opts!, ciphersNative.cast()),
+        'natsOptions_SetCiphers',
+      );
+    } finally {
+      calloc.free(ciphersNative);
     }
   }
 

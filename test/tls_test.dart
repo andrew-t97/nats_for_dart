@@ -70,5 +70,37 @@ void main() {
         throwsA(isA<NatsException>()),
       );
     });
+
+    test('tlsCiphers with a valid OpenSSL allow-list — handshake succeeds', () {
+      final client = NatsClient.connect(
+        nats.url,
+        options: const NatsOptions(
+          skipServerVerification: true,
+          tlsCiphers: 'HIGH:!aNULL',
+        ),
+      );
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.tls.ciphers');
+      addTearDown(sub.close);
+
+      client.publish('test.tls.ciphers', 'tls-ciphers-allow-list');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('tls-ciphers-allow-list'));
+    });
+
+    test('tlsCiphers with a malformed cipher string — connection rejected '
+        'with NatsException', () {
+      expect(
+        () => NatsClient.connect(
+          nats.url,
+          options: const NatsOptions(
+            skipServerVerification: true,
+            tlsCiphers: 'NOT_A_REAL_CIPHER_NAME_XYZ',
+          ),
+        ),
+        throwsA(isA<NatsException>()),
+      );
+    });
   });
 }
