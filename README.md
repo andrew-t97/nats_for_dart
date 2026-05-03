@@ -79,8 +79,12 @@ For async (Stream-based) subscriptions, see [`example/async_subscriber.dart`](ex
 | [`lifecycle_demo.dart`](example/lifecycle_demo.dart)       | Connection lifecycle events — stop/restart the server while running to observe | `dart run example/lifecycle_demo.dart`    |
 | [`jetstream_pub_sub.dart`](example/jetstream_pub_sub.dart) | JetStream stream creation, publish with ack, and pull subscribe                | `dart run example/jetstream_pub_sub.dart` |
 | [`kv_demo.dart`](example/kv_demo.dart)                     | KeyValue CRUD, optimistic update, watch, history, delete, and purge            | `dart run example/kv_demo.dart`           |
+| [`mtls_demo.dart`](example/mtls_demo.dart)                 | Mutual TLS pub/sub against an mTLS-enabled server                              | `dart run example/mtls_demo.dart`         |
 
-> `pubsub_sync.dart` and `async_subscriber.dart` require only a plain `nats-server`. All other examples require `nats-server -js` (JetStream enabled).
+**Server prerequisites by example:**
+> - `pubsub_sync.dart`, `async_subscriber.dart`, `lifecycle_demo.dart` — plain `nats-server`.
+> - `jetstream_pub_sub.dart`, `kv_demo.dart` — `nats-server -js` (JetStream enabled).
+> - `mtls_demo.dart` — an mTLS-enabled server on port 4224. Start one with `nats-server -c test/support/nats-mtls-native.conf`, or run the bundled config in Docker (see the example's doc-comment for the full command). The integration-test fixture's container is torn down at the end of `dart test` and isn't reusable for ad-hoc runs.
 
  ## 🤖 A note on AI assistance
 
@@ -99,8 +103,6 @@ These features are required for secure, production-grade deployments.
 
 | Feature                    | Why it matters                                                                    |
 | -------------------------- | --------------------------------------------------------------------------------- |
-| CA Certificates            | Server identity verification against private/internal PKI without skip-verify     |
-| Client Certificates (mTLS) | Mutual TLS authentication for zero-trust environments                             |
 | Hostname Verification      | Strict hostname checks against the server certificate's SAN/CN                    |
 | Cipher Selection           | Restrict or tune the TLS cipher suites used by the client                         |
 | Message Headers            | Metadata, distributed tracing, and deduplication — used widely in NATS ecosystems |
