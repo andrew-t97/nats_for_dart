@@ -41,5 +41,40 @@ void main() {
         throwsA(isA<NatsException>()),
       );
     });
+
+    test('full mutual handshake — client cert + key + CA round-trips a '
+        'message', () {
+      final client = NatsClient.connect(
+        nats.url,
+        options: const NatsOptions(
+          clientCertPath: 'test/support/certs/client-cert.pem',
+          clientKeyPath: 'test/support/certs/client-key.pem',
+          caCertPath: 'test/support/certs/ca-cert.pem',
+        ),
+      );
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.mtls.roundtrip');
+      addTearDown(sub.close);
+
+      client.publish('test.mtls.roundtrip', 'mtls-handshake');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('mtls-handshake'));
+    });
+
+    test('wrong CA — caCertPath that does not anchor the server cert fails '
+        'with NatsException', () {
+      expect(
+        () => NatsClient.connect(
+          nats.url,
+          options: const NatsOptions(
+            clientCertPath: 'test/support/certs/client-cert.pem',
+            clientKeyPath: 'test/support/certs/client-key.pem',
+            caCertPath: 'test/support/certs/client-cert.pem',
+          ),
+        ),
+        throwsA(isA<NatsException>()),
+      );
+    });
   });
 }
