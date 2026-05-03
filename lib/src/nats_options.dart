@@ -78,6 +78,10 @@ final class NatsOptionsHandle implements Finalizable {
       setIf(config.noRandomize, handle.setNoRandomize);
       setIf(config.tls, handle.setTls);
       setIf(config.skipServerVerification, handle.setSkipServerVerification);
+      setIf(config.caCertPath, handle.setCaTrustedCertificates);
+      setIf(config.clientCertPath, (certPath) {
+        handle.setClientCertificatesChain(certPath, config.clientKeyPath!);
+      });
       setIf(config.pingInterval, handle.setPingInterval);
       setIf(config.maxPingsOut, handle.setMaxPingsOut);
       setIf(config.ioBufSize, handle.setIOBufSize);

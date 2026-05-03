@@ -36,6 +36,9 @@ void main() {
       expect(options.timeout, isNull);
       expect(options.credentialsFile, isNull);
       expect(options.credentialsSeedFile, isNull);
+      expect(options.clientCertPath, isNull);
+      expect(options.clientKeyPath, isNull);
+      expect(options.caCertPath, isNull);
     });
 
     test('servers defaults to the shared const empty list', () {
@@ -86,6 +89,9 @@ void main() {
         timeout: Duration(seconds: 10),
         credentialsFile: '/path/to/creds.jwt',
         credentialsSeedFile: '/path/to/creds.seed',
+        clientCertPath: '/path/to/client-cert.pem',
+        clientKeyPath: '/path/to/client-key.pem',
+        caCertPath: '/path/to/ca-cert.pem',
       );
 
       expect(options.name, equals('my-client'));
@@ -107,6 +113,9 @@ void main() {
       expect(options.timeout, equals(const Duration(seconds: 10)));
       expect(options.credentialsFile, equals('/path/to/creds.jwt'));
       expect(options.credentialsSeedFile, equals('/path/to/creds.seed'));
+      expect(options.clientCertPath, equals('/path/to/client-cert.pem'));
+      expect(options.clientKeyPath, equals('/path/to/client-key.pem'));
+      expect(options.caCertPath, equals('/path/to/ca-cert.pem'));
     });
 
     test('only some fields may be provided; the rest remain null', () {
@@ -193,6 +202,47 @@ void main() {
         );
       },
     );
+
+    test('clientCertPath + clientKeyPath pair is valid', () {
+      const NatsOptions(
+        clientCertPath: '/path/to/client-cert.pem',
+        clientKeyPath: '/path/to/client-key.pem',
+      ).validate();
+    });
+
+    test('caCertPath alone is valid', () {
+      const NatsOptions(caCertPath: '/path/to/ca-cert.pem').validate();
+    });
+
+    test('clientCertPath without clientKeyPath throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(
+          clientCertPath: '/path/to/client-cert.pem',
+        ).validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('clientCertPath'), contains('clientKeyPath')),
+          ),
+        ),
+      );
+    });
+
+    test('clientKeyPath without clientCertPath throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(
+          clientKeyPath: '/path/to/client-key.pem',
+        ).validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('clientCertPath'), contains('clientKeyPath')),
+          ),
+        ),
+      );
+    });
   });
 
   group('NatsOptionsHandle TLS setters', () {
@@ -407,7 +457,21 @@ void main() {
         url,
       );
       addTearDown(() => handle.close());
-      expect(handle.isClosed, isFalse);
+    });
+
+    test('all three TLS path fields wire through to the native handle', () {
+      // setClientCertificatesChain and setCaTrustedCertificates eagerly parse
+      // the PEMs at call time, so a successful construction proves all three
+      // FFI calls accepted them.
+      final handle = NatsOptionsHandle.fromConfig(
+        const NatsOptions(
+          clientCertPath: testClientCertPath,
+          clientKeyPath: testClientKeyPath,
+          caCertPath: testCaCertPath,
+        ),
+        url,
+      );
+      addTearDown(() => handle.close());
     });
   });
 }

@@ -92,6 +92,26 @@ final class NatsOptions {
   /// native default.
   final bool? skipServerVerification;
 
+  /// Path to a PEM file containing the client certificate chain used during
+  /// the TLS handshake. Required for mutual TLS (mTLS) deployments where the
+  /// server is configured with `verify: true`.
+  ///
+  /// Must be set together with [clientKeyPath]; supplying one without the
+  /// other is a configuration error. `null` = use the native default (no
+  /// client certificate presented).
+  final String? clientCertPath;
+
+  /// Path to a PEM file containing the private key matching [clientCertPath].
+  /// See [clientCertPath]. `null` = use the native default.
+  final String? clientKeyPath;
+
+  /// Path to a PEM file containing the CA certificate(s) used as the trust
+  /// anchor when verifying the server's certificate during the TLS
+  /// handshake. Required when the server presents a certificate that is not
+  /// signed by a CA in the system trust store (e.g., a self-signed test
+  /// server). `null` = use the native default (system trust store).
+  final String? caCertPath;
+
   /// Interval between client → server pings. `null` = use the native
   /// default.
   final Duration? pingInterval;
@@ -150,6 +170,9 @@ final class NatsOptions {
     this.timeout,
     this.credentialsFile,
     this.credentialsSeedFile,
+    this.clientCertPath,
+    this.clientKeyPath,
+    this.caCertPath,
   });
 
   /// Validates this configuration's invariants.
@@ -174,6 +197,12 @@ final class NatsOptions {
       throw ArgumentError(
         'NatsOptions.credentialsSeedFile requires NatsOptions.credentialsFile '
         'to also be set — the seed file alone cannot identify the user.',
+      );
+    }
+    if ((clientCertPath != null) != (clientKeyPath != null)) {
+      throw ArgumentError(
+        'NatsOptions.clientCertPath and NatsOptions.clientKeyPath must be set '
+        'together.',
       );
     }
   }
