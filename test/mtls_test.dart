@@ -76,5 +76,45 @@ void main() {
         throwsA(isA<NatsException>()),
       );
     });
+
+    test('explicit expectedHostname matching the cert SAN — handshake '
+        'succeeds', () {
+      final client = NatsClient.connect(
+        nats.url,
+        options: const NatsOptions(
+          clientCertPath: 'test/support/certs/client-cert.pem',
+          clientKeyPath: 'test/support/certs/client-key.pem',
+          caCertPath: 'test/support/certs/ca-cert.pem',
+          expectedHostname: 'localhost',
+        ),
+      );
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.mtls.expected_hostname.match');
+      addTearDown(sub.close);
+
+      client.publish(
+        'test.mtls.expected_hostname.match',
+        'expected-hostname-match',
+      );
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('expected-hostname-match'));
+    });
+
+    test('explicit expectedHostname mismatching the cert — connection '
+        'rejected with NatsException', () {
+      expect(
+        () => NatsClient.connect(
+          nats.url,
+          options: const NatsOptions(
+            clientCertPath: 'test/support/certs/client-cert.pem',
+            clientKeyPath: 'test/support/certs/client-key.pem',
+            caCertPath: 'test/support/certs/ca-cert.pem',
+            expectedHostname: 'wrong.example.com',
+          ),
+        ),
+        throwsA(isA<NatsException>()),
+      );
+    });
   });
 }

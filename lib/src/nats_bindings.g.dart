@@ -418,6 +418,29 @@ natsStatus natsOptions_LoadCertificatesChain(
   _natsOptions_LoadCertificatesChain(opts, certsFileName, keyFileName),
 );
 
+/// \brief Sets the server certificate's expected hostname.
+///
+/// If set, the library will check that the hostname in the server
+/// certificate matches the given `hostname`. This will occur when a connection
+/// is created, not at the time of this call.
+///
+/// \warning See warning in #natsOptions_SetSecure.
+///
+/// @param opts the pointer to the #natsOptions object.
+/// @param hostname the expected server certificate hostname.
+@ffi.Native<
+  ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Pointer<ffi.Char>)
+>(symbol: 'natsOptions_SetExpectedHostname')
+external int _natsOptions_SetExpectedHostname(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> hostname,
+);
+
+natsStatus natsOptions_SetExpectedHostname(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> hostname,
+) => natsStatus.fromValue(_natsOptions_SetExpectedHostname(opts, hostname));
+
 /// \brief Switch server certificate verification.
 ///
 /// By default, the server certificate is verified. You can disable the verification
