@@ -45,6 +45,7 @@ void main() {
       expect(options.clientKeyPem, isNull);
       expect(options.expectedHostname, isNull);
       expect(options.tlsCiphers, isNull);
+      expect(options.tlsHandshakeFirst, isNull);
     });
 
     test('servers defaults to the shared const empty list', () {
@@ -103,6 +104,7 @@ void main() {
         clientKeyPem: clientKeyPemFixture,
         expectedHostname: 'nats.internal.svc',
         tlsCiphers: 'HIGH:!aNULL',
+        tlsHandshakeFirst: true,
       );
 
       expect(options.name, equals('my-client'));
@@ -132,6 +134,12 @@ void main() {
       expect(options.clientKeyPem, equals(clientKeyPemFixture));
       expect(options.expectedHostname, equals('nats.internal.svc'));
       expect(options.tlsCiphers, equals('HIGH:!aNULL'));
+      expect(options.tlsHandshakeFirst, isTrue);
+    });
+
+    test('tlsHandshakeFirst: false round-trips through the constructor', () {
+      const options = NatsOptions(tlsHandshakeFirst: false);
+      expect(options.tlsHandshakeFirst, isFalse);
     });
 
     test('only some fields may be provided; the rest remain null', () {
