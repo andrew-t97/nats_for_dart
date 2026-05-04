@@ -459,6 +459,37 @@ natsStatus natsOptions_LoadCertificatesChain(
   _natsOptions_LoadCertificatesChain(opts, certsFileName, keyFileName),
 );
 
+/// \brief Sets the client certificate and key.
+///
+/// Similar to #natsOptions_LoadCertificatesChain expect that instead
+/// of loading from file, this loads from the given memory locations.
+///
+/// @see natsOptions_LoadCertificatesChain
+///
+/// \warning See warning in #natsOptions_SetSecure.
+///
+/// @param opts the pointer to the #natsOptions object.
+/// @param cert the memory location containing the client certificates.
+/// @param key the memory location containing the client private key.
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsOptions>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'natsOptions_SetCertificatesChain')
+external int _natsOptions_SetCertificatesChain(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> cert,
+  ffi.Pointer<ffi.Char> key,
+);
+
+natsStatus natsOptions_SetCertificatesChain(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> cert,
+  ffi.Pointer<ffi.Char> key,
+) => natsStatus.fromValue(_natsOptions_SetCertificatesChain(opts, cert, key));
+
 /// \brief Sets the list of available ciphers.
 ///
 /// \note This function does not impact TLSv1.3 ciphersuites.

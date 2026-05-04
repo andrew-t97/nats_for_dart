@@ -17,3 +17,13 @@ const String testClientKeyPath = 'test/support/certs/client-key.pem';
 /// Reads the test CA cert at [testCaCertPath] as a PEM string, for tests
 /// that exercise in-memory CA trust (`NatsOptions.caCertPem`).
 String readTestCaCertPem() => File(testCaCertPath).readAsStringSync();
+
+/// Reads the test client cert at [testClientCertPath] as a PEM string, for
+/// tests that exercise in-memory client cert delivery
+/// (`NatsOptions.clientCertPem`).
+String readTestClientCertPem() => File(testClientCertPath).readAsStringSync();
+
+/// Reads the test client key at [testClientKeyPath] as a PEM string, for
+/// tests that exercise in-memory client key delivery
+/// (`NatsOptions.clientKeyPem`).
+String readTestClientKeyPem() => File(testClientKeyPath).readAsStringSync();
