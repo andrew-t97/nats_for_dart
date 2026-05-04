@@ -14,7 +14,11 @@ Idiomatic Dart bindings for [NATS](https://nats.io/) — pub/sub, JetStream, and
 - **JetStream** — durable streams, consumers, publish with ack, and pull subscribe
 - **KeyValue store** — get, put, delete, watch, history, and optimistic concurrency with revision checks
 - **Connection lifecycle** — disconnect, reconnect, close, and async error event streams
-- **TLS / mTLS** — server-cert verification with hostname checks against the cert's SAN/CN (auto-derived from the URL, or overridden via `NatsOptions.expectedHostname` for IP-dialled or SNI-proxied connections); CA trust anchor from a file path (`NatsOptions.caCertPath`) or a concatenated PEM string (`NatsOptions.caCertPem`) for secrets-manager workflows; client cert/key for mutual TLS; TLS ≤ 1.2 cipher allow-list via `NatsOptions.tlsCiphers` (OpenSSL syntax)
+- **TLS / mTLS**
+  - **Server-cert verification** — hostname checks against the cert's SAN/CN, auto-derived from the URL, or overridden via `NatsOptions.expectedHostname` for IP-dialled or SNI-proxied connections
+  - **CA trust anchor** — from a file path (`NatsOptions.caCertPath`) or a concatenated PEM string (`NatsOptions.caCertPem`) for secrets-manager workflows
+  - **Client cert/key (mutual TLS)** — from file paths (`NatsOptions.clientCertPath` + `NatsOptions.clientKeyPath`) or PEM strings (`NatsOptions.clientCertPem` + `NatsOptions.clientKeyPem`) for secrets-manager workflows
+  - **Cipher allow-list** — TLS ≤ 1.2 cipher selection via `NatsOptions.tlsCiphers` (OpenSSL syntax)
 
 ## 📱 Supported platforms
 | Platform | Supported |
