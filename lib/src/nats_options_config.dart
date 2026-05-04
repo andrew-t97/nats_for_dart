@@ -105,6 +105,28 @@ final class NatsOptions {
   /// See [clientCertPath]. `null` = use the native default.
   final String? clientKeyPath;
 
+  /// In-memory client certificate chain as a concatenated PEM string of one
+  /// or more `-----BEGIN CERTIFICATE-----` blocks.
+  ///
+  /// Use this when client cert bytes arrive in memory rather than on disk.
+  ///
+  /// Must be set together with [clientKeyPem]. Mutually exclusive with
+  /// [clientCertPath] / [clientKeyPath]. `null` (default) preserves the
+  /// path-based behaviour (no client certificate presented unless
+  /// [clientCertPath] is set).
+  final String? clientCertPem;
+
+  /// In-memory private key matching [clientCertPem], as a PEM string.
+  ///
+  /// Must be set together with [clientCertPem]. Mutually exclusive with
+  /// [clientCertPath] / [clientKeyPath]. `null` (default) preserves the
+  /// path-based behaviour.
+  ///
+  /// Private-key bytes are held in the Dart heap as `String` instances;
+  /// the same exposure surface applies to other secret-bearing fields like
+  /// [password] and [token].
+  final String? clientKeyPem;
+
   /// Path to a PEM file containing the CA certificate(s) used as the trust
   /// anchor when verifying the server's certificate during the TLS
   /// handshake. Required when the server presents a certificate that is not
@@ -209,6 +231,8 @@ final class NatsOptions {
     this.credentialsSeedFile,
     this.clientCertPath,
     this.clientKeyPath,
+    this.clientCertPem,
+    this.clientKeyPem,
     this.caCertPath,
     this.caCertPem,
     this.expectedHostname,
@@ -239,10 +263,38 @@ final class NatsOptions {
         'to also be set — the seed file alone cannot identify the user.',
       );
     }
+    final hasAnyClientCertPathField =
+        clientCertPath != null || clientKeyPath != null;
+    final hasAnyClientCertPemField =
+        clientCertPem != null || clientKeyPem != null;
+    if (hasAnyClientCertPathField && hasAnyClientCertPemField) {
+      throw ArgumentError(
+        'NatsOptions.clientCertPath/clientKeyPath and '
+        'NatsOptions.clientCertPem/clientKeyPem are mutually exclusive; '
+        'pick one client certificate delivery mode (file paths or '
+        'in-memory PEM strings).',
+      );
+    }
     if ((clientCertPath != null) != (clientKeyPath != null)) {
       throw ArgumentError(
         'NatsOptions.clientCertPath and NatsOptions.clientKeyPath must be set '
         'together.',
+      );
+    }
+    if ((clientCertPem != null) != (clientKeyPem != null)) {
+      throw ArgumentError(
+        'NatsOptions.clientCertPem and NatsOptions.clientKeyPem must be set '
+        'together.',
+      );
+    }
+    if (clientCertPem != null && clientCertPem!.isEmpty) {
+      throw ArgumentError(
+        'NatsOptions.clientCertPem must be non-empty when set. Use null to keep the path-based behaviour.',
+      );
+    }
+    if (clientKeyPem != null && clientKeyPem!.isEmpty) {
+      throw ArgumentError(
+        'NatsOptions.clientKeyPem must be non-empty when set. Use null to keep the path-based behaviour.',
       );
     }
     if (caCertPem != null && caCertPem!.isEmpty) {
