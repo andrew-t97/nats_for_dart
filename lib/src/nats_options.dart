@@ -81,6 +81,7 @@ final class NatsOptionsHandle implements Finalizable {
       setIf(config.expectedHostname, handle.setExpectedHostname);
       setIf(config.tlsCiphers, handle.setTlsCiphers);
       setIf(config.caCertPath, handle.setCaTrustedCertificates);
+      setIf(config.caCertPem, handle.setCaTrustedCertificatesPem);
       setIf(config.clientCertPath, (certPath) {
         handle.setClientCertificatesChain(certPath, config.clientKeyPath!);
       });
@@ -377,6 +378,22 @@ final class NatsOptionsHandle implements Finalizable {
       checkStatus(
         natsOptions_LoadCATrustedCertificates(_opts!, caNative.cast()),
         'natsOptions_LoadCATrustedCertificates',
+      );
+    } finally {
+      calloc.free(caNative);
+    }
+  }
+
+  /// In-memory sibling of [setCaTrustedCertificates]: trust anchor delivered
+  /// as a concatenated PEM string. See [NatsOptions.caCertPem] for the
+  /// caller-visible contract.
+  void setCaTrustedCertificatesPem(String caPem) {
+    _ensureAlive();
+    final caNative = caPem.toNativeUtf8();
+    try {
+      checkStatus(
+        natsOptions_SetCATrustedCertificates(_opts!, caNative.cast()),
+        'natsOptions_SetCATrustedCertificates',
       );
     } finally {
       calloc.free(caNative);

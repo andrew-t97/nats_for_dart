@@ -382,6 +382,47 @@ natsStatus natsOptions_LoadCATrustedCertificates(
   _natsOptions_LoadCATrustedCertificates(opts, fileName),
 );
 
+/// \brief Sets the trusted CA certificates from memory.
+///
+/// Similar to #natsOptions_LoadCATrustedCertificates expect that instead
+/// of loading from file, this loads from the given memory location.
+///
+/// If more than one certificate need to be provided, they need to be
+/// concatenated. For instance:
+///
+/// \code{.unparsed}
+/// const char *certs =
+/// "-----BEGIN CERTIFICATE-----\n"
+/// "MIIGjzCCBHegAwIBAgIJAKT2W9SKY7o4MA0GCSqGSIb3DQEBCwUAMIGLMQswCQYD\n"
+/// (...)
+/// "-----END CERTIFICATE-----\n"
+/// "-----BEGIN CERTIFICATE-----\n"
+/// "MIIXyz...\n"
+/// (...)
+/// "-----END CERTIFICATE-----\n"
+/// \endcode
+///
+/// @see natsOptions_LoadCATrustedCertificates
+///
+/// \warning See warning in #natsOptions_SetSecure.
+///
+/// @param opts the pointer to the #natsOptions object.
+/// @param certificates the string containing the concatenated CA certificates.
+@ffi.Native<
+  ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Pointer<ffi.Char>)
+>(symbol: 'natsOptions_SetCATrustedCertificates')
+external int _natsOptions_SetCATrustedCertificates(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> certificates,
+);
+
+natsStatus natsOptions_SetCATrustedCertificates(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> certificates,
+) => natsStatus.fromValue(
+  _natsOptions_SetCATrustedCertificates(opts, certificates),
+);
+
 /// \brief Loads the certificate chain from a file, using the given key.
 ///
 /// The certificates must be in PEM format and must be sorted starting with

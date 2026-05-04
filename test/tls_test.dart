@@ -12,6 +12,7 @@ library;
 import 'package:nats_for_dart/nats_for_dart.dart';
 import 'package:test/test.dart';
 
+import 'support/cert_paths.dart';
 import 'support/docker_nats_tls.dart';
 
 void main() {
@@ -98,6 +99,34 @@ void main() {
             skipServerVerification: true,
             tlsCiphers: 'NOT_A_REAL_CIPHER_NAME_XYZ',
           ),
+        ),
+        throwsA(isA<NatsException>()),
+      );
+    });
+
+    test('caCertPem with the test CA — handshake succeeds without '
+        'skipServerVerification', () {
+      final caPem = readTestCaCertPem();
+      final client = NatsClient.connect(
+        nats.url,
+        options: NatsOptions(tls: true, caCertPem: caPem),
+      );
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.tls.caCertPem');
+      addTearDown(sub.close);
+
+      client.publish('test.tls.caCertPem', 'tls-via-in-memory-ca');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('tls-via-in-memory-ca'));
+    });
+
+    test('caCertPem with a malformed PEM string — connection rejected '
+        'with NatsException', () {
+      expect(
+        () => NatsClient.connect(
+          nats.url,
+          options: const NatsOptions(tls: true, caCertPem: 'NOT_A_VALID_PEM'),
         ),
         throwsA(isA<NatsException>()),
       );
