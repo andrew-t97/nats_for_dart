@@ -4,9 +4,10 @@
 /// flags on [NatsOptions] flow through to the C library and cause the
 /// expected handshake behaviour against a TLS-enabled NATS server.
 ///
-/// Requires a TLS NATS server on localhost:4223. [DockerNatsTls] starts
-/// one automatically (Docker) or reuses a native server if one is already
-/// listening.
+/// Requires TLS NATS servers on localhost:4223 (handshake-second) and
+/// localhost:4225 (handshake-first). [DockerNatsTls] and
+/// [DockerNatsTlsHandshakeFirst] start them automatically (Docker) or reuse
+/// native servers if any are already listening.
 library;
 
 import 'package:nats_for_dart/nats_for_dart.dart';
@@ -14,6 +15,7 @@ import 'package:test/test.dart';
 
 import 'support/cert_paths.dart';
 import 'support/docker_nats_tls.dart';
+import 'support/docker_nats_tls_handshake_first.dart';
 
 void main() {
   late DockerNatsTls nats;
@@ -141,6 +143,51 @@ void main() {
             skipServerVerification: true,
             tlsHandshakeFirst: true,
           ),
+        ),
+        throwsA(isA<NatsException>()),
+      );
+    });
+  });
+
+  group('TLS handshake-first connection', () {
+    late DockerNatsTlsHandshakeFirst handshakeFirstNats;
+
+    setUpAll(() async {
+      handshakeFirstNats = await DockerNatsTlsHandshakeFirst.start();
+    });
+
+    tearDownAll(() async {
+      await handshakeFirstNats.stop();
+    });
+
+    test('tlsHandshakeFirst: true against handshake-first server — '
+        'round-trip succeeds', () {
+      final client = NatsClient.connect(
+        handshakeFirstNats.url,
+        options: const NatsOptions(
+          skipServerVerification: true,
+          tlsHandshakeFirst: true,
+        ),
+      );
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.tls.handshake_first.roundtrip');
+      addTearDown(sub.close);
+
+      client.publish(
+        'test.tls.handshake_first.roundtrip',
+        'handshake-first-roundtrip',
+      );
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('handshake-first-roundtrip'));
+    });
+
+    test('no tlsHandshakeFirst against handshake-first server — '
+        'connection rejected with NatsException', () {
+      expect(
+        () => NatsClient.connect(
+          handshakeFirstNats.url,
+          options: const NatsOptions(skipServerVerification: true),
         ),
         throwsA(isA<NatsException>()),
       );
