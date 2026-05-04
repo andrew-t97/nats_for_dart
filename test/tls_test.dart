@@ -131,5 +131,19 @@ void main() {
         throwsA(isA<NatsException>()),
       );
     });
+
+    test('tlsHandshakeFirst: true against handshake-second server — '
+        'connection rejected with NatsException', () {
+      expect(
+        () => NatsClient.connect(
+          nats.url,
+          options: const NatsOptions(
+            skipServerVerification: true,
+            tlsHandshakeFirst: true,
+          ),
+        ),
+        throwsA(isA<NatsException>()),
+      );
+    });
   });
 }

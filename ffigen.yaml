@@ -58,6 +58,7 @@ functions:
     - "natsOptions_SetNoRandomize"
     - "natsOptions_SetSecure"
     - "natsOptions_SkipServerVerification"
+    - "natsOptions_TLSHandshakeFirst"
     - "natsOptions_SetExpectedHostname"
     - "natsOptions_SetTimeout"
     - "natsOptions_SetPingInterval"
