@@ -127,6 +127,19 @@ final class NatsOptions {
   /// no hostname check).
   final String? expectedHostname;
 
+  /// OpenSSL-syntax allow-list of ciphers the client will accept during the
+  /// TLS handshake — for example, `'HIGH:!aNULL'`.
+  ///
+  /// **Scope: TLS ≤ 1.2 only.** TLS 1.3 cipher suites are **not** configurable
+  /// through this field; they remain at LibreSSL defaults as per NATS' server TLS
+  /// capabilities.
+  ///
+  /// The value is an *ordered* list — for TLS 1.2 server-preference
+  /// negotiation, position within the string matters. `null` (default)
+  /// preserves LibreSSL's permissive defaults. This field is ignored when
+  /// TLS is not active.
+  final String? tlsCiphers;
+
   /// Interval between client → server pings. `null` = use the native
   /// default.
   final Duration? pingInterval;
@@ -189,6 +202,7 @@ final class NatsOptions {
     this.clientKeyPath,
     this.caCertPath,
     this.expectedHostname,
+    this.tlsCiphers,
   });
 
   /// Validates this configuration's invariants.
@@ -224,6 +238,11 @@ final class NatsOptions {
     if (expectedHostname != null && expectedHostname!.isEmpty) {
       throw ArgumentError(
         'NatsOptions.expectedHostname must be non-empty when set. Use null to keep the default URL-derived hostname.',
+      );
+    }
+    if (tlsCiphers != null && tlsCiphers!.isEmpty) {
+      throw ArgumentError(
+        'NatsOptions.tlsCiphers must be non-empty when set. Use null to keep LibreSSL defaults.',
       );
     }
   }

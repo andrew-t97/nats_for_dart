@@ -40,6 +40,7 @@ void main() {
       expect(options.clientKeyPath, isNull);
       expect(options.caCertPath, isNull);
       expect(options.expectedHostname, isNull);
+      expect(options.tlsCiphers, isNull);
     });
 
     test('servers defaults to the shared const empty list', () {
@@ -94,6 +95,7 @@ void main() {
         clientKeyPath: '/path/to/client-key.pem',
         caCertPath: '/path/to/ca-cert.pem',
         expectedHostname: 'nats.internal.svc',
+        tlsCiphers: 'HIGH:!aNULL',
       );
 
       expect(options.name, equals('my-client'));
@@ -119,6 +121,7 @@ void main() {
       expect(options.clientKeyPath, equals('/path/to/client-key.pem'));
       expect(options.caCertPath, equals('/path/to/ca-cert.pem'));
       expect(options.expectedHostname, equals('nats.internal.svc'));
+      expect(options.tlsCiphers, equals('HIGH:!aNULL'));
     });
 
     test('only some fields may be provided; the rest remain null', () {
@@ -259,6 +262,23 @@ void main() {
             (e) => e.message,
             'message',
             contains('expectedHostname'),
+          ),
+        ),
+      );
+    });
+
+    test('non-empty tlsCiphers is valid', () {
+      const NatsOptions(tlsCiphers: 'HIGH:!aNULL').validate();
+    });
+
+    test('empty tlsCiphers throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(tlsCiphers: '').validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('tlsCiphers'),
           ),
         ),
       );
