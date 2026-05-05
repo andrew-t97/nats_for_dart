@@ -8,6 +8,12 @@
 /// container paths stay in sync via the recipe in `nats-tls.conf`.
 library;
 
+import 'dart:io';
+
 const String testCaCertPath = 'test/support/certs/ca-cert.pem';
 const String testClientCertPath = 'test/support/certs/client-cert.pem';
 const String testClientKeyPath = 'test/support/certs/client-key.pem';
+
+/// Reads the test CA cert at [testCaCertPath] as a PEM string, for tests
+/// that exercise in-memory CA trust (`NatsOptions.caCertPem`).
+String readTestCaCertPem() => File(testCaCertPath).readAsStringSync();

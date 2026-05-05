@@ -371,6 +371,22 @@ void main() {
         throwsA(isA<NatsException>()),
       );
     });
+
+    test('setCaTrustedCertificatesPem accepts a valid PEM string', () {
+      final handle = NatsOptionsHandle();
+      addTearDown(handle.close);
+      final caPem = readTestCaCertPem();
+      handle.setCaTrustedCertificatesPem(caPem);
+    });
+
+    test('setCaTrustedCertificatesPem rejects a malformed PEM string', () {
+      final handle = NatsOptionsHandle();
+      addTearDown(handle.close);
+      expect(
+        () => handle.setCaTrustedCertificatesPem('this is not a PEM'),
+        throwsA(isA<NatsException>()),
+      );
+    });
   });
 
   group('NatsOptionsHandle.fromConfig validation', () {
