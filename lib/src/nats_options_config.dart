@@ -112,6 +112,15 @@ final class NatsOptions {
   /// server). `null` = use the native default (system trust store).
   final String? caCertPath;
 
+  /// In-memory CA trust anchor as a concatenated PEM string of one or more
+  /// CA certificates (back-to-back `-----BEGIN CERTIFICATE-----` blocks).
+  ///
+  /// Use this when CA bytes arrive in memory rather than on disk.
+  ///
+  /// Mutually exclusive with [caCertPath]. `null` (default) preserves the
+  /// current behaviour (system trust store, or [caCertPath] if set).
+  final String? caCertPem;
+
   /// Overrides the hostname used to verify the server certificate's
   /// `subjectAltName` during the TLS handshake.
   ///
@@ -201,6 +210,7 @@ final class NatsOptions {
     this.clientCertPath,
     this.clientKeyPath,
     this.caCertPath,
+    this.caCertPem,
     this.expectedHostname,
     this.tlsCiphers,
   });
@@ -233,6 +243,17 @@ final class NatsOptions {
       throw ArgumentError(
         'NatsOptions.clientCertPath and NatsOptions.clientKeyPath must be set '
         'together.',
+      );
+    }
+    if (caCertPem != null && caCertPem!.isEmpty) {
+      throw ArgumentError(
+        'NatsOptions.caCertPem must be non-empty when set. Use null to keep the system trust store.',
+      );
+    }
+    if (caCertPath != null && caCertPem != null) {
+      throw ArgumentError(
+        'NatsOptions.caCertPath and NatsOptions.caCertPem are mutually exclusive; '
+        'pick one CA delivery mode (file path or in-memory PEM string).',
       );
     }
     if (expectedHostname != null && expectedHostname!.isEmpty) {

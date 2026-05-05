@@ -39,6 +39,7 @@ void main() {
       expect(options.clientCertPath, isNull);
       expect(options.clientKeyPath, isNull);
       expect(options.caCertPath, isNull);
+      expect(options.caCertPem, isNull);
       expect(options.expectedHostname, isNull);
       expect(options.tlsCiphers, isNull);
     });
@@ -94,6 +95,8 @@ void main() {
         clientCertPath: '/path/to/client-cert.pem',
         clientKeyPath: '/path/to/client-key.pem',
         caCertPath: '/path/to/ca-cert.pem',
+        caCertPem:
+            '-----BEGIN CERTIFICATE-----\nMIIBkTCCATegAwIBAgI...\n-----END CERTIFICATE-----\n',
         expectedHostname: 'nats.internal.svc',
         tlsCiphers: 'HIGH:!aNULL',
       );
@@ -120,6 +123,12 @@ void main() {
       expect(options.clientCertPath, equals('/path/to/client-cert.pem'));
       expect(options.clientKeyPath, equals('/path/to/client-key.pem'));
       expect(options.caCertPath, equals('/path/to/ca-cert.pem'));
+      expect(
+        options.caCertPem,
+        equals(
+          '-----BEGIN CERTIFICATE-----\nMIIBkTCCATegAwIBAgI...\n-----END CERTIFICATE-----\n',
+        ),
+      );
       expect(options.expectedHostname, equals('nats.internal.svc'));
       expect(options.tlsCiphers, equals('HIGH:!aNULL'));
     });
@@ -218,6 +227,47 @@ void main() {
 
     test('caCertPath alone is valid', () {
       const NatsOptions(caCertPath: '/path/to/ca-cert.pem').validate();
+    });
+
+    test('caCertPem alone is valid', () {
+      const NatsOptions(
+        caCertPem:
+            '-----BEGIN CERTIFICATE-----\nMIIBkTCC...\n-----END CERTIFICATE-----\n',
+      ).validate();
+    });
+
+    test('empty caCertPem throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(caCertPem: '').validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('caCertPem'),
+          ),
+        ),
+      );
+    });
+
+    test('caCertPath and caCertPem together throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(
+          caCertPath: '/path/to/ca-cert.pem',
+          caCertPem:
+              '-----BEGIN CERTIFICATE-----\nMIIBkTCC...\n-----END CERTIFICATE-----\n',
+        ).validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            allOf(
+              contains('caCertPath'),
+              contains('caCertPem'),
+              contains('mutually exclusive'),
+            ),
+          ),
+        ),
+      );
     });
 
     test('clientCertPath without clientKeyPath throws ArgumentError', () {
