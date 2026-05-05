@@ -4,6 +4,11 @@
 /// certificate signed by the test CA, then publishes and receives a
 /// round-trip message over the TLS channel.
 ///
+/// Hostname verification runs automatically for any TLS connection;
+/// passes `expectedHostname: 'localhost'` to override this. This is
+/// useful when dialling by IP, going through an SNI-rewriting proxy,
+/// or addressing an internal load-balancer hostname.
+///
 /// Prerequisites:
 ///   - `nats-server` running on localhost:4224 with the mTLS fixture config.
 ///     The integration-test fixture (`DockerNatsMtls`) starts and stops its
@@ -41,6 +46,7 @@ Future<void> main() async {
         clientCertPath: 'test/support/certs/client-cert.pem',
         clientKeyPath: 'test/support/certs/client-key.pem',
         caCertPath: 'test/support/certs/ca-cert.pem',
+        expectedHostname: 'localhost',
       ),
     );
     print('Connected over mTLS!');
