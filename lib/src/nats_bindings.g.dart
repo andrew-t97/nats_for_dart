@@ -418,6 +418,35 @@ natsStatus natsOptions_LoadCertificatesChain(
   _natsOptions_LoadCertificatesChain(opts, certsFileName, keyFileName),
 );
 
+/// \brief Sets the list of available ciphers.
+///
+/// \note This function does not impact TLSv1.3 ciphersuites.
+///
+/// Sets the list of available ciphers.
+/// Check https://www.openssl.org/docs/man1.1.1/man1/ciphers.html for the
+/// proper syntax. Here is an example:
+///
+/// > "-ALL:HIGH"
+///
+/// See #natsOptions_LoadCATrustedCertificates regarding error reports.
+///
+/// \warning See warning in #natsOptions_SetSecure.
+///
+/// @param opts the pointer to the #natsOptions object.
+/// @param ciphers the ciphers suite.
+@ffi.Native<
+  ffi.UnsignedInt Function(ffi.Pointer<natsOptions>, ffi.Pointer<ffi.Char>)
+>(symbol: 'natsOptions_SetCiphers')
+external int _natsOptions_SetCiphers(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> ciphers,
+);
+
+natsStatus natsOptions_SetCiphers(
+  ffi.Pointer<natsOptions> opts,
+  ffi.Pointer<ffi.Char> ciphers,
+) => natsStatus.fromValue(_natsOptions_SetCiphers(opts, ciphers));
+
 /// \brief Sets the server certificate's expected hostname.
 ///
 /// If set, the library will check that the hostname in the server
