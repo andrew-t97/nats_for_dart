@@ -7,6 +7,7 @@ import 'package:nats_for_dart/src/nats_options.dart' show NatsOptionsHandle;
 import 'package:test/test.dart';
 
 import 'support/cert_paths.dart';
+import 'support/certs/pem_fixtures.dart';
 import 'support/docker_nats.dart';
 
 void main() {
@@ -40,6 +41,8 @@ void main() {
       expect(options.clientKeyPath, isNull);
       expect(options.caCertPath, isNull);
       expect(options.caCertPem, isNull);
+      expect(options.clientCertPem, isNull);
+      expect(options.clientKeyPem, isNull);
       expect(options.expectedHostname, isNull);
       expect(options.tlsCiphers, isNull);
     });
@@ -95,8 +98,9 @@ void main() {
         clientCertPath: '/path/to/client-cert.pem',
         clientKeyPath: '/path/to/client-key.pem',
         caCertPath: '/path/to/ca-cert.pem',
-        caCertPem:
-            '-----BEGIN CERTIFICATE-----\nMIIBkTCCATegAwIBAgI...\n-----END CERTIFICATE-----\n',
+        caCertPem: caCertPemFixture,
+        clientCertPem: clientCertPemFixture,
+        clientKeyPem: clientKeyPemFixture,
         expectedHostname: 'nats.internal.svc',
         tlsCiphers: 'HIGH:!aNULL',
       );
@@ -123,12 +127,9 @@ void main() {
       expect(options.clientCertPath, equals('/path/to/client-cert.pem'));
       expect(options.clientKeyPath, equals('/path/to/client-key.pem'));
       expect(options.caCertPath, equals('/path/to/ca-cert.pem'));
-      expect(
-        options.caCertPem,
-        equals(
-          '-----BEGIN CERTIFICATE-----\nMIIBkTCCATegAwIBAgI...\n-----END CERTIFICATE-----\n',
-        ),
-      );
+      expect(options.caCertPem, equals(caCertPemFixture));
+      expect(options.clientCertPem, equals(clientCertPemFixture));
+      expect(options.clientKeyPem, equals(clientKeyPemFixture));
       expect(options.expectedHostname, equals('nats.internal.svc'));
       expect(options.tlsCiphers, equals('HIGH:!aNULL'));
     });
@@ -230,10 +231,7 @@ void main() {
     });
 
     test('caCertPem alone is valid', () {
-      const NatsOptions(
-        caCertPem:
-            '-----BEGIN CERTIFICATE-----\nMIIBkTCC...\n-----END CERTIFICATE-----\n',
-      ).validate();
+      const NatsOptions(caCertPem: caCertPemFixture).validate();
     });
 
     test('empty caCertPem throws ArgumentError', () {
@@ -253,8 +251,7 @@ void main() {
       expect(
         () => const NatsOptions(
           caCertPath: '/path/to/ca-cert.pem',
-          caCertPem:
-              '-----BEGIN CERTIFICATE-----\nMIIBkTCC...\n-----END CERTIFICATE-----\n',
+          caCertPem: caCertPemFixture,
         ).validate(),
         throwsA(
           isA<ArgumentError>().having(
@@ -299,6 +296,164 @@ void main() {
         ),
       );
     });
+
+    test('clientCertPem + clientKeyPem pair is valid', () {
+      const NatsOptions(
+        clientCertPem: clientCertPemFixture,
+        clientKeyPem: clientKeyPemFixture,
+      ).validate();
+    });
+
+    test('clientCertPem without clientKeyPem throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(clientCertPem: clientCertPemFixture).validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            allOf(
+              contains('clientCertPem'),
+              contains('clientKeyPem'),
+              contains('must be set together'),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('clientKeyPem without clientCertPem throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(clientKeyPem: clientKeyPemFixture).validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            allOf(
+              contains('clientCertPem'),
+              contains('clientKeyPem'),
+              contains('must be set together'),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('empty clientCertPem (paired) throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(
+          clientCertPem: '',
+          clientKeyPem: clientKeyPemFixture,
+        ).validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('clientCertPem'),
+          ),
+        ),
+      );
+    });
+
+    test('empty clientKeyPem (paired) throws ArgumentError', () {
+      expect(
+        () => const NatsOptions(
+          clientCertPem: clientCertPemFixture,
+          clientKeyPem: '',
+        ).validate(),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('clientKeyPem'),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'all four cert fields set (path pair + PEM pair) throws ArgumentError',
+      () {
+        expect(
+          () => const NatsOptions(
+            clientCertPath: '/path/to/client-cert.pem',
+            clientKeyPath: '/path/to/client-key.pem',
+            clientCertPem: clientCertPemFixture,
+            clientKeyPem: clientKeyPemFixture,
+          ).validate(),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              allOf(
+                contains('clientCertPath'),
+                contains('clientCertPem'),
+                contains('mutually exclusive'),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'clientCertPath + PEM pair (asymmetric) throws mutex ArgumentError',
+      () {
+        expect(
+          () => const NatsOptions(
+            clientCertPath: '/path/to/client-cert.pem',
+            clientCertPem: clientCertPemFixture,
+            clientKeyPem: clientKeyPemFixture,
+          ).validate(),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('mutually exclusive'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'clientKeyPath + PEM pair (asymmetric) throws mutex ArgumentError',
+      () {
+        expect(
+          () => const NatsOptions(
+            clientKeyPath: '/path/to/client-key.pem',
+            clientCertPem: clientCertPemFixture,
+            clientKeyPem: clientKeyPemFixture,
+          ).validate(),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('mutually exclusive'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'path pair + clientCertPem (asymmetric) throws mutex ArgumentError',
+      () {
+        expect(
+          () => const NatsOptions(
+            clientCertPath: '/path/to/client-cert.pem',
+            clientKeyPath: '/path/to/client-key.pem',
+            clientCertPem: clientCertPemFixture,
+          ).validate(),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              contains('mutually exclusive'),
+            ),
+          ),
+        );
+      },
+    );
 
     test('non-empty expectedHostname is valid', () {
       const NatsOptions(expectedHostname: 'nats.internal.svc').validate();
