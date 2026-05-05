@@ -63,8 +63,10 @@ jobs:
           nats-server -js &
           nats-server -c test/support/nats-tls-native.conf &
           nats-server -c test/support/nats-mtls-native.conf &
-          # Wait for TLS + mTLS server monitoring endpoints to confirm readiness.
-          for endpoint in http://localhost:8223/healthz http://localhost:8224/healthz; do
+          nats-server -c test/support/nats-tls-handshake-first-native.conf &
+          # Wait for TLS + mTLS + handshake-first server monitoring endpoints
+          # to confirm readiness.
+          for endpoint in http://localhost:8223/healthz http://localhost:8224/healthz http://localhost:8225/healthz; do
             ready=false
             for i in {1..30}; do
               if curl -fsS "$endpoint" > /dev/null; then
@@ -109,8 +111,10 @@ jobs:
           Start-Process nats-server -ArgumentList "-js" -NoNewWindow
           Start-Process nats-server -ArgumentList "-c","test/support/nats-tls-native.conf" -NoNewWindow
           Start-Process nats-server -ArgumentList "-c","test/support/nats-mtls-native.conf" -NoNewWindow
-          # Wait for TLS + mTLS server monitoring endpoints to confirm readiness.
-          foreach ($endpoint in @("http://localhost:8223/healthz","http://localhost:8224/healthz")) {
+          Start-Process nats-server -ArgumentList "-c","test/support/nats-tls-handshake-first-native.conf" -NoNewWindow
+          # Wait for TLS + mTLS + handshake-first server monitoring endpoints
+          # to confirm readiness.
+          foreach ($endpoint in @("http://localhost:8223/healthz","http://localhost:8224/healthz","http://localhost:8225/healthz")) {
             $ready = $false
             for ($i = 0; $i -lt 30; $i++) {
               try {

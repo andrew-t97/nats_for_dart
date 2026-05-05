@@ -10,8 +10,8 @@ import 'dart:io';
 import 'nats_server_support.dart';
 
 /// Per-fixture lifecycle state and Docker orchestration. Not part of the
-/// public test-support API — instantiated only by [DockerNatsTls] and
-/// [DockerNatsMtls].
+/// public test-support API — instantiated only by the sibling `DockerNatsTls*`
+/// wrappers.
 class DockerNatsTlsFixtureCore {
   static const _host = 'localhost';
   static const _certsHostDir = 'test/support/certs';
