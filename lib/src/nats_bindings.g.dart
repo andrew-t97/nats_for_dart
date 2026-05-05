@@ -354,6 +354,32 @@ external int _natsOptions_SetSecure(ffi.Pointer<natsOptions> opts, bool secure);
 natsStatus natsOptions_SetSecure(ffi.Pointer<natsOptions> opts, bool secure) =>
     natsStatus.fromValue(_natsOptions_SetSecure(opts, secure));
 
+/// \brief Performs TLS handshake first.
+///
+/// By default, the server will first send an INFO protocol in plain text
+/// to the client. After receiving this protocol, the client and server
+/// initiate the TLS handshake.
+///
+/// This option (and similar option exists in the server) changes this
+/// behavior and requires the TLS handshake to be performed before the
+/// INFO protocol is sent.
+///
+/// If the server is configured to require the client to perform
+/// the TLS handshake first, the client will fail to connect if
+/// not setting this option. Conversely, if the client is configured
+/// with this option but the server is not, the connection will fail.
+///
+/// \warning See warning in #natsOptions_SetSecure.
+///
+/// @param opts the pointer to the #natsOptions object.
+@ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsOptions>)>(
+  symbol: 'natsOptions_TLSHandshakeFirst',
+)
+external int _natsOptions_TLSHandshakeFirst(ffi.Pointer<natsOptions> opts);
+
+natsStatus natsOptions_TLSHandshakeFirst(ffi.Pointer<natsOptions> opts) =>
+    natsStatus.fromValue(_natsOptions_TLSHandshakeFirst(opts));
+
 /// \brief Loads the trusted CA certificates from a file.
 ///
 /// Loads the trusted CA certificates from a file.

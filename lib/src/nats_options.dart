@@ -78,6 +78,7 @@ final class NatsOptionsHandle implements Finalizable {
       setIf(config.noRandomize, handle.setNoRandomize);
       setIf(config.tls, handle.setTls);
       setIf(config.skipServerVerification, handle.setSkipServerVerification);
+      setIf(config.tlsHandshakeFirst, handle.setTlsHandshakeFirst);
       setIf(config.expectedHostname, handle.setExpectedHostname);
       setIf(config.tlsCiphers, handle.setTlsCiphers);
       setIf(config.caCertPath, handle.setCaTrustedCertificates);
@@ -269,6 +270,20 @@ final class NatsOptionsHandle implements Finalizable {
     checkStatus(
       natsOptions_SkipServerVerification(_opts!, skip),
       'natsOptions_SkipServerVerification',
+    );
+  }
+
+  /// Enables TLS-handshake-first mode, in which the TLS handshake fires
+  /// immediately on TCP connect instead of after the plaintext `INFO`
+  /// exchange.
+  void setTlsHandshakeFirst(bool enable) {
+    _ensureAlive();
+    // The native API is enable-only — there is no disable verb — so a
+    // `false` from the `setIf` call must be a no-op rather than a call.
+    if (!enable) return;
+    checkStatus(
+      natsOptions_TLSHandshakeFirst(_opts!),
+      'natsOptions_TLSHandshakeFirst',
     );
   }
 
