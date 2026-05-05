@@ -64,6 +64,8 @@ functions:
     - "natsOptions_SetIOBufSize"
     - "natsOptions_SetReconnectBufSize"
     - "natsOptions_SetUserCredentialsFromFiles"
+    - "natsOptions_LoadCATrustedCertificates"
+    - "natsOptions_LoadCertificatesChain"
     - "jsOptions_Init"
     - "natsConnection_JetStream"
     - "jsCtx_Destroy"

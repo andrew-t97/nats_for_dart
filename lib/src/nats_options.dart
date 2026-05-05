@@ -302,6 +302,51 @@ final class NatsOptionsHandle implements Finalizable {
     );
   }
 
+  /// Loads the client certificate chain and private key from PEM files.
+  ///
+  /// Used together with [setCaTrustedCertificates] for mTLS handshakes
+  /// where the server requires client authentication. Both files must
+  /// exist and be readable: the underlying nats.c call eagerly parses
+  /// them and surfaces failures as a [NatsException] now, not at
+  /// connect time.
+  void setClientCertificatesChain(String certPath, String keyPath) {
+    _ensureAlive();
+    final certNative = certPath.toNativeUtf8();
+    final keyNative = keyPath.toNativeUtf8();
+    try {
+      checkStatus(
+        natsOptions_LoadCertificatesChain(
+          _opts!,
+          certNative.cast(),
+          keyNative.cast(),
+        ),
+        'natsOptions_LoadCertificatesChain',
+      );
+    } finally {
+      calloc.free(certNative);
+      calloc.free(keyNative);
+    }
+  }
+
+  /// Loads the trusted CA certificates used to verify the server's
+  /// certificate during the TLS handshake.
+  ///
+  /// The file must exist and be readable: the underlying nats.c call
+  /// eagerly parses it and surfaces failures as a [NatsException] now,
+  /// not at connect time.
+  void setCaTrustedCertificates(String caPath) {
+    _ensureAlive();
+    final caNative = caPath.toNativeUtf8();
+    try {
+      checkStatus(
+        natsOptions_LoadCATrustedCertificates(_opts!, caNative.cast()),
+        'natsOptions_LoadCATrustedCertificates',
+      );
+    } finally {
+      calloc.free(caNative);
+    }
+  }
+
   /// Sets the path to a user credentials file (JWT + seed).
   ///
   /// [credentialsFile] is the path to the credentials file — either a
