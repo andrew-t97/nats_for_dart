@@ -19,6 +19,7 @@ Idiomatic Dart bindings for [NATS](https://nats.io/) — pub/sub, JetStream, and
   - **CA trust anchor** — from a file path (`NatsOptions.caCertPath`) or a concatenated PEM string (`NatsOptions.caCertPem`) for secrets-manager workflows
   - **Client cert/key (mutual TLS)** — from file paths (`NatsOptions.clientCertPath` + `NatsOptions.clientKeyPath`) or PEM strings (`NatsOptions.clientCertPem` + `NatsOptions.clientKeyPem`) for secrets-manager workflows
   - **Cipher allow-list** — TLS ≤ 1.2 cipher selection via `NatsOptions.tlsCiphers` (OpenSSL syntax)
+  - **TLS handshake-first** — initiate the TLS handshake immediately on TCP connect (no plaintext exchange) via `NatsOptions.tlsHandshakeFirst`, for downgrade-attack-resistant deployments paired with a `handshake_first: true` server
 
 ## 📱 Supported platforms
 | Platform | Supported |
