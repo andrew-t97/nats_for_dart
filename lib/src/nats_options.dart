@@ -78,6 +78,7 @@ final class NatsOptionsHandle implements Finalizable {
       setIf(config.noRandomize, handle.setNoRandomize);
       setIf(config.tls, handle.setTls);
       setIf(config.skipServerVerification, handle.setSkipServerVerification);
+      setIf(config.expectedHostname, handle.setExpectedHostname);
       setIf(config.caCertPath, handle.setCaTrustedCertificates);
       setIf(config.clientCertPath, (certPath) {
         handle.setClientCertificatesChain(certPath, config.clientKeyPath!);
@@ -264,6 +265,21 @@ final class NatsOptionsHandle implements Finalizable {
       natsOptions_SkipServerVerification(_opts!, skip),
       'natsOptions_SkipServerVerification',
     );
+  }
+
+  /// Overrides the hostname used to verify the server certificate's SAN
+  /// during the TLS handshake.
+  void setExpectedHostname(String hostname) {
+    _ensureAlive();
+    final hostnameNative = hostname.toNativeUtf8();
+    try {
+      checkStatus(
+        natsOptions_SetExpectedHostname(_opts!, hostnameNative.cast()),
+        'natsOptions_SetExpectedHostname',
+      );
+    } finally {
+      calloc.free(hostnameNative);
+    }
   }
 
   /// Sets the interval between client-to-server pings.
