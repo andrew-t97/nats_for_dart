@@ -92,6 +92,19 @@ final class NatsOptions {
   /// native default.
   final bool? skipServerVerification;
 
+  /// When `true`, the client initiates the TLS handshake immediately on TCP
+  /// connect, before any plaintext NATS protocol bytes are exchanged.
+  /// Defends against active downgrade attacks that strip `tls_required`
+  /// from the server's plaintext `INFO` line.
+  ///
+  /// Requires the server to be paired with `handshake_first: true` in its
+  /// `tls` block; a `true` here against a default-configured server fails
+  /// the connection deterministically rather than silently downgrading.
+  ///
+  /// `false` and `null` both leave the connection in the native default
+  /// (handshake-second) mode.
+  final bool? tlsHandshakeFirst;
+
   /// Path to a PEM file containing the client certificate chain used during
   /// the TLS handshake. Required for mutual TLS (mTLS) deployments where the
   /// server is configured with `verify: true`.
@@ -239,6 +252,7 @@ final class NatsOptions {
     this.noRandomize,
     this.tls,
     this.skipServerVerification,
+    this.tlsHandshakeFirst,
     this.pingInterval,
     this.maxPingsOut,
     this.ioBufSize,
