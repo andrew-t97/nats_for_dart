@@ -1,7 +1,8 @@
 /// Integration tests for mutual TLS (mTLS).
 ///
 /// Proves end-to-end that Dart-level [NatsOptions.clientCertPath],
-/// [NatsOptions.clientKeyPath] and [NatsOptions.caCertPath] flow through
+/// [NatsOptions.clientKeyPath], [NatsOptions.clientCertPem],
+/// [NatsOptions.clientKeyPem] and [NatsOptions.caCertPath] flow through
 /// to the C library and drive the expected handshake behaviour against an
 /// mTLS-enabled NATS server (`verify: true`).
 ///
@@ -13,6 +14,7 @@ library;
 import 'package:nats_for_dart/nats_for_dart.dart';
 import 'package:test/test.dart';
 
+import 'support/cert_paths.dart';
 import 'support/docker_nats_mtls.dart';
 
 void main() {
@@ -111,6 +113,41 @@ void main() {
             clientKeyPath: 'test/support/certs/client-key.pem',
             caCertPath: 'test/support/certs/ca-cert.pem',
             expectedHostname: 'wrong.example.com',
+          ),
+        ),
+        throwsA(isA<NatsException>()),
+      );
+    });
+
+    test('clientCertPem + clientKeyPem with the test cert/key — full mutual '
+        'handshake succeeds', () {
+      final client = NatsClient.connect(
+        nats.url,
+        options: NatsOptions(
+          clientCertPem: readTestClientCertPem(),
+          clientKeyPem: readTestClientKeyPem(),
+          caCertPath: testCaCertPath,
+        ),
+      );
+      addTearDown(() => client.close());
+
+      final sub = client.subscribeSync('test.mtls.pem.roundtrip');
+      addTearDown(sub.close);
+
+      client.publish('test.mtls.pem.roundtrip', 'mtls-pem-handshake');
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals('mtls-pem-handshake'));
+    });
+
+    test('clientCertPem with a malformed cert PEM — connection rejected with '
+        'NatsException', () {
+      expect(
+        () => NatsClient.connect(
+          nats.url,
+          options: NatsOptions(
+            clientCertPem: 'NOT_A_VALID_PEM',
+            clientKeyPem: readTestClientKeyPem(),
+            caCertPath: testCaCertPath,
           ),
         ),
         throwsA(isA<NatsException>()),

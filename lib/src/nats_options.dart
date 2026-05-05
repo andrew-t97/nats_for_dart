@@ -85,6 +85,9 @@ final class NatsOptionsHandle implements Finalizable {
       setIf(config.clientCertPath, (certPath) {
         handle.setClientCertificatesChain(certPath, config.clientKeyPath!);
       });
+      setIf(config.clientCertPem, (certPem) {
+        handle.setClientCertificatesChainPem(certPem, config.clientKeyPem!);
+      });
       setIf(config.pingInterval, handle.setPingInterval);
       setIf(config.maxPingsOut, handle.setMaxPingsOut);
       setIf(config.ioBufSize, handle.setIOBufSize);
@@ -339,13 +342,10 @@ final class NatsOptionsHandle implements Finalizable {
     );
   }
 
-  /// Loads the client certificate chain and private key from PEM files.
-  ///
-  /// Used together with [setCaTrustedCertificates] for mTLS handshakes
-  /// where the server requires client authentication. Both files must
-  /// exist and be readable: the underlying nats.c call eagerly parses
-  /// them and surfaces failures as a [NatsException] now, not at
-  /// connect time.
+  /// Path-based sibling of [setClientCertificatesChainPem]: client cert
+  /// chain and private key delivered as filesystem paths. See
+  /// [NatsOptions.clientCertPath] / [NatsOptions.clientKeyPath] for the
+  /// caller-visible contract.
   void setClientCertificatesChain(String certPath, String keyPath) {
     _ensureAlive();
     final certNative = certPath.toNativeUtf8();
@@ -365,12 +365,32 @@ final class NatsOptionsHandle implements Finalizable {
     }
   }
 
-  /// Loads the trusted CA certificates used to verify the server's
-  /// certificate during the TLS handshake.
-  ///
-  /// The file must exist and be readable: the underlying nats.c call
-  /// eagerly parses it and surfaces failures as a [NatsException] now,
-  /// not at connect time.
+  /// In-memory sibling of [setClientCertificatesChain]: client cert chain
+  /// and private key delivered as PEM strings. See
+  /// [NatsOptions.clientCertPem] / [NatsOptions.clientKeyPem] for the
+  /// caller-visible contract.
+  void setClientCertificatesChainPem(String certPem, String keyPem) {
+    _ensureAlive();
+    final certNative = certPem.toNativeUtf8();
+    final keyNative = keyPem.toNativeUtf8();
+    try {
+      checkStatus(
+        natsOptions_SetCertificatesChain(
+          _opts!,
+          certNative.cast(),
+          keyNative.cast(),
+        ),
+        'natsOptions_SetCertificatesChain',
+      );
+    } finally {
+      calloc.free(certNative);
+      calloc.free(keyNative);
+    }
+  }
+
+  /// Path-based sibling of [setCaTrustedCertificatesPem]: trust anchor
+  /// delivered as a filesystem path. See [NatsOptions.caCertPath] for the
+  /// caller-visible contract.
   void setCaTrustedCertificates(String caPath) {
     _ensureAlive();
     final caNative = caPath.toNativeUtf8();

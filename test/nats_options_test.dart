@@ -512,6 +512,30 @@ void main() {
       );
     });
 
+    test('setClientCertificatesChainPem accepts a valid cert+key PEM pair', () {
+      final handle = NatsOptionsHandle();
+      addTearDown(handle.close);
+      handle.setClientCertificatesChainPem(
+        readTestClientCertPem(),
+        readTestClientKeyPem(),
+      );
+    });
+
+    test(
+      'setClientCertificatesChainPem rejects a malformed cert PEM string',
+      () {
+        final handle = NatsOptionsHandle();
+        addTearDown(handle.close);
+        expect(
+          () => handle.setClientCertificatesChainPem(
+            'this is not a PEM',
+            readTestClientKeyPem(),
+          ),
+          throwsA(isA<NatsException>()),
+        );
+      },
+    );
+
     test('setCaTrustedCertificates accepts a valid CA PEM', () {
       final handle = NatsOptionsHandle();
       addTearDown(handle.close);

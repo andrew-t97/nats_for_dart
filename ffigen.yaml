@@ -68,6 +68,7 @@ functions:
     - "natsOptions_LoadCATrustedCertificates"
     - "natsOptions_SetCATrustedCertificates"
     - "natsOptions_LoadCertificatesChain"
+    - "natsOptions_SetCertificatesChain"
     - "natsOptions_SetCiphers"
     - "jsOptions_Init"
     - "natsConnection_JetStream"

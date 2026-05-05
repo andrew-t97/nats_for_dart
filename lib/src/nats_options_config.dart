@@ -99,6 +99,10 @@ final class NatsOptions {
   /// Must be set together with [clientKeyPath]; supplying one without the
   /// other is a configuration error. `null` = use the native default (no
   /// client certificate presented).
+  ///
+  /// Unreadable files and malformed PEM data surface as a `NatsException`
+  /// during connect, before the TLS handshake — the underlying nats.c call
+  /// eagerly parses both files when the options are applied.
   final String? clientCertPath;
 
   /// Path to a PEM file containing the private key matching [clientCertPath].
@@ -114,6 +118,10 @@ final class NatsOptions {
   /// [clientCertPath] / [clientKeyPath]. `null` (default) preserves the
   /// path-based behaviour (no client certificate presented unless
   /// [clientCertPath] is set).
+  ///
+  /// Malformed PEM data surfaces as a `NatsException` during connect,
+  /// before the TLS handshake — the underlying nats.c call eagerly parses
+  /// both PEM strings when the options are applied.
   final String? clientCertPem;
 
   /// In-memory private key matching [clientCertPem], as a PEM string.
@@ -132,6 +140,10 @@ final class NatsOptions {
   /// handshake. Required when the server presents a certificate that is not
   /// signed by a CA in the system trust store (e.g., a self-signed test
   /// server). `null` = use the native default (system trust store).
+  ///
+  /// Unreadable files and malformed PEM data surface as a `NatsException`
+  /// during connect, before the TLS handshake — the underlying nats.c call
+  /// eagerly parses the file when the options are applied.
   final String? caCertPath;
 
   /// In-memory CA trust anchor as a concatenated PEM string of one or more
@@ -141,6 +153,10 @@ final class NatsOptions {
   ///
   /// Mutually exclusive with [caCertPath]. `null` (default) preserves the
   /// current behaviour (system trust store, or [caCertPath] if set).
+  ///
+  /// Malformed PEM data surfaces as a `NatsException` during connect,
+  /// before the TLS handshake — the underlying nats.c call eagerly parses
+  /// the PEM string when the options are applied.
   final String? caCertPem;
 
   /// Overrides the hostname used to verify the server certificate's
