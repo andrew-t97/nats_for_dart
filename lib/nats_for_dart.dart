@@ -9,6 +9,7 @@ export 'src/nats_client.dart' show NatsClient;
 export 'src/nats_error.dart' show NatsError;
 export 'src/nats_exceptions.dart' show NatsException, NatsNoRespondersException;
 export 'src/nats_library.dart' show NatsLibrary;
+export 'src/nats_headers.dart' show NatsHeaders;
 export 'src/nats_message.dart' show NatsMessage;
 export 'src/nats_options_config.dart' show NatsOptions;
 export 'src/nats_sync_subscription.dart' show NatsSyncSubscription;
