@@ -8,6 +8,7 @@ import 'kv_test.dart' as kv_test;
 import 'request_reply_test.dart' as request_reply_test;
 import 'nats_options_test.dart' as nats_options_test;
 import 'nats_headers_test.dart' as nats_headers_test;
+import 'headers_test.dart' as headers_test;
 import 'tls_test.dart' as tls_test;
 import 'mtls_test.dart' as mtls_test;
 
@@ -20,6 +21,7 @@ void main() {
   group('Request-Reply Tests', request_reply_test.main);
   group('NatsOptions Tests', nats_options_test.main);
   group('NatsHeaders Tests', nats_headers_test.main);
+  group('Headers Pub/Sub Tests', headers_test.main);
   group('TLS Tests', tls_test.main);
   group('mTLS Tests', mtls_test.main);
 }

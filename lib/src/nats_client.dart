@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:isolate';
 import 'dart:typed_data';
@@ -6,11 +7,13 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:meta/meta.dart';
 
+import 'internal/headers_codec.dart';
 import 'jetstream_context.dart';
 import 'nats_async_subscription.dart';
 import 'nats_bindings.g.dart';
 import 'nats_error.dart';
 import 'nats_exceptions.dart';
+import 'nats_headers.dart';
 import 'nats_message.dart';
 import 'nats_options.dart';
 import 'nats_options_config.dart';
@@ -402,41 +405,78 @@ final class NatsClient implements Finalizable {
   }
 
   /// Publishes a string [message] on the given [subject].
-  void publish(String subject, String message) {
+  ///
+  /// Supply [headers] to attach NATS message headers. Headerless calls
+  /// take a fast path that bypasses the headers FFI surface entirely.
+  void publish(String subject, String message, {NatsHeaders? headers}) {
     _ensureOpen();
-    final subjectNative = subject.toNativeUtf8();
-    final messageNative = message.toNativeUtf8();
-    try {
-      final status = natsConnection_PublishString(
-        _nc!,
-        subjectNative.cast(),
-        messageNative.cast(),
-      );
-      checkStatus(status, 'natsConnection_PublishString');
-    } finally {
-      calloc.free(subjectNative);
-      calloc.free(messageNative);
+    if (headers == null || headers.isEmpty) {
+      final subjectNative = subject.toNativeUtf8();
+      final messageNative = message.toNativeUtf8();
+      try {
+        final status = natsConnection_PublishString(
+          _nc!,
+          subjectNative.cast(),
+          messageNative.cast(),
+        );
+        checkStatus(status, 'natsConnection_PublishString');
+      } finally {
+        calloc.free(subjectNative);
+        calloc.free(messageNative);
+      }
+      return;
     }
+    publishBytes(
+      subject,
+      Uint8List.fromList(utf8.encode(message)),
+      headers: headers,
+    );
   }
 
   /// Publishes raw [data] bytes on the given [subject].
-  void publishBytes(String subject, Uint8List data) {
+  ///
+  /// Supply [headers] to attach NATS message headers. Headerless calls
+  /// take a fast path that bypasses the headers FFI surface entirely.
+  void publishBytes(String subject, Uint8List data, {NatsHeaders? headers}) {
     _ensureOpen();
+    if (headers == null || headers.isEmpty) {
+      final subjectNative = subject.toNativeUtf8();
+      final dataPtr = malloc<Uint8>(data.length);
+      try {
+        dataPtr.asTypedList(data.length).setAll(0, data);
+        final status = natsConnection_Publish(
+          _nc!,
+          subjectNative.cast(),
+          dataPtr.cast(),
+          data.length,
+        );
+        checkStatus(status, 'natsConnection_Publish');
+      } finally {
+        calloc.free(subjectNative);
+        malloc.free(dataPtr);
+      }
+      return;
+    }
     final subjectNative = subject.toNativeUtf8();
-    final dataPtr = malloc<Uint8>(data.length);
     try {
-      dataPtr.asTypedList(data.length).setAll(0, data);
-      final status = natsConnection_Publish(
-        _nc!,
-        subjectNative.cast(),
-        dataPtr.cast(),
-        data.length,
+      _publishMsgWithHeaders(
+        subjectPtr: subjectNative.cast(),
+        data: data,
+        headers: headers,
       );
-      checkStatus(status, 'natsConnection_Publish');
     } finally {
       calloc.free(subjectNative);
-      malloc.free(dataPtr);
     }
+  }
+
+  /// Whether the connected server advertises message-headers support.
+  ///
+  /// Only meaningful after the connection is established. The value can
+  /// flip after a reconnect to a different cluster, so do not cache it
+  /// across connection-lifecycle events.
+  bool get serverSupportsHeaders {
+    _ensureOpen();
+    return natsConnection_HasHeaderSupport(_nc!) == natsStatus.NATS_OK;
   }
 
   /// Flushes the connection, ensuring all published messages have been sent.
@@ -649,20 +689,30 @@ final class NatsClient implements Finalizable {
     String subject,
     String message, {
     Duration timeout = const Duration(seconds: 5),
+    NatsHeaders? headers,
   }) {
     return _requestImpl(subject, (subjectPtr, inboxPtr) {
-      final messageNative = message.toNativeUtf8();
-      try {
-        final status = natsConnection_PublishRequestString(
-          _nc!,
-          subjectPtr,
-          inboxPtr,
-          messageNative.cast(),
-        );
-        checkStatus(status, 'natsConnection_PublishRequestString');
-      } finally {
-        calloc.free(messageNative);
+      if (headers == null || headers.isEmpty) {
+        final messageNative = message.toNativeUtf8();
+        try {
+          final status = natsConnection_PublishRequestString(
+            _nc!,
+            subjectPtr,
+            inboxPtr,
+            messageNative.cast(),
+          );
+          checkStatus(status, 'natsConnection_PublishRequestString');
+        } finally {
+          calloc.free(messageNative);
+        }
+        return;
       }
+      _publishMsgWithHeaders(
+        subjectPtr: subjectPtr,
+        replyPtr: inboxPtr,
+        data: Uint8List.fromList(utf8.encode(message)),
+        headers: headers,
+      );
     }, timeout: timeout);
   }
 
@@ -673,23 +723,71 @@ final class NatsClient implements Finalizable {
     String subject,
     Uint8List data, {
     Duration timeout = const Duration(seconds: 5),
+    NatsHeaders? headers,
   }) {
     return _requestImpl(subject, (subjectPtr, inboxPtr) {
-      final dataPtr = malloc<Uint8>(data.length);
-      try {
-        dataPtr.asTypedList(data.length).setAll(0, data);
-        final status = natsConnection_PublishRequest(
-          _nc!,
-          subjectPtr,
-          inboxPtr,
-          dataPtr.cast(),
-          data.length,
-        );
-        checkStatus(status, 'natsConnection_PublishRequest');
-      } finally {
-        malloc.free(dataPtr);
+      if (headers == null || headers.isEmpty) {
+        final dataPtr = malloc<Uint8>(data.length);
+        try {
+          dataPtr.asTypedList(data.length).setAll(0, data);
+          final status = natsConnection_PublishRequest(
+            _nc!,
+            subjectPtr,
+            inboxPtr,
+            dataPtr.cast(),
+            data.length,
+          );
+          checkStatus(status, 'natsConnection_PublishRequest');
+        } finally {
+          malloc.free(dataPtr);
+        }
+        return;
       }
+      _publishMsgWithHeaders(
+        subjectPtr: subjectPtr,
+        replyPtr: inboxPtr,
+        data: data,
+        headers: headers,
+      );
     }, timeout: timeout);
+  }
+
+  /// Builds a `natsMsg` with [headers] attached and publishes it via
+  /// `natsConnection_PublishMsg`. Both [subjectPtr] and [replyPtr] are
+  /// caller-owned; omit [replyPtr] when no reply-to is set.
+  void _publishMsgWithHeaders({
+    required Pointer<Char> subjectPtr,
+    Pointer<Char>? replyPtr,
+    required Uint8List data,
+    required NatsHeaders headers,
+  }) {
+    final dataBytes = _NativeBytes.from(data);
+    final msgPtrPtr = calloc<Pointer<natsMsg>>();
+    try {
+      checkStatus(
+        natsMsg_Create(
+          msgPtrPtr,
+          subjectPtr,
+          replyPtr ?? nullptr,
+          dataBytes.ptr.cast(),
+          dataBytes.length,
+        ),
+        'natsMsg_Create',
+      );
+      final msgPtr = msgPtrPtr.value;
+      try {
+        writeHeadersToMsg(msgPtr, headers);
+        checkStatus(
+          natsConnection_PublishMsg(_nc!, msgPtr),
+          'natsConnection_PublishMsg',
+        );
+      } finally {
+        natsMsg_Destroy(msgPtr);
+      }
+    } finally {
+      calloc.free(msgPtrPtr);
+      dataBytes.free();
+    }
   }
 
   /// Shared implementation for [request] and [requestBytes].
@@ -743,29 +841,58 @@ final class NatsClient implements Finalizable {
   /// Sends a string [response] back to the sender of [message].
   ///
   /// Convenience method for request-reply responders. Publishes [response]
-  /// to the [NatsMessage.replyTo] subject.
+  /// to the [NatsMessage.replyTo] subject. Supply [headers] to attach
+  /// reply headers.
   ///
   /// Throws [ArgumentError] if [message] has no [NatsMessage.replyTo].
-  void respond(NatsMessage message, String response) {
+  void respond(NatsMessage message, String response, {NatsHeaders? headers}) {
     if (message.replyTo == null) {
       throw ArgumentError('Cannot respond: message has no replyTo subject');
     }
-    publish(message.replyTo!, response);
+    publish(message.replyTo!, response, headers: headers);
   }
 
   /// Sends raw [data] bytes back to the sender of [message].
   ///
   /// Binary variant of [respond]. See [respond] for details.
-  void respondBytes(NatsMessage message, Uint8List data) {
+  void respondBytes(
+    NatsMessage message,
+    Uint8List data, {
+    NatsHeaders? headers,
+  }) {
     if (message.replyTo == null) {
       throw ArgumentError('Cannot respond: message has no replyTo subject');
     }
-    publishBytes(message.replyTo!, data);
+    publishBytes(message.replyTo!, data, headers: headers);
   }
 
   void _ensureOpen() {
     if (_closed) {
       throw StateError('NatsClient is already closed');
     }
+  }
+}
+
+/// Owns a native byte buffer copied from a [Uint8List].
+///
+/// Empty input yields `nullptr` with `length == 0`; non-empty input allocates
+/// via `malloc` and copies the bytes. [free] is a no-op for the empty case,
+/// so callers always pair construction with [free] without conditional logic.
+class _NativeBytes {
+  final Pointer<Uint8> ptr;
+  final int length;
+  _NativeBytes._(this.ptr, this.length);
+
+  static final _empty = _NativeBytes._(nullptr, 0);
+
+  factory _NativeBytes.from(Uint8List data) {
+    if (data.isEmpty) return _empty;
+    final ptr = malloc<Uint8>(data.length);
+    ptr.asTypedList(data.length).setAll(0, data);
+    return _NativeBytes._(ptr, data.length);
+  }
+
+  void free() {
+    if (length > 0) malloc.free(ptr);
   }
 }
