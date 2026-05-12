@@ -61,6 +61,26 @@ void main() {
       expect(ack2.sequence, equals(2));
     });
 
+    test('publishString round-trips non-ASCII payload as UTF-8', () {
+      js.addStream(
+        JsStreamConfig(
+          name: 'TEST_JS',
+          subjects: ['test.js.>'],
+          storage: StorageType.memory,
+        ),
+      );
+
+      const payload = 'café ☕ — Σ';
+      js.publishString('test.js.utf8', payload);
+
+      final syncSub = js.subscribeSync('test.js.utf8');
+      addTearDown(syncSub.close);
+
+      final msg = syncSub.nextMessage(timeout: const Duration(seconds: 5));
+      expect(msg.dataAsString, equals(payload));
+      msg.ack();
+    });
+
     test('pull subscribe fetches messages', () {
       js.addStream(
         JsStreamConfig(

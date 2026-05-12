@@ -8,6 +8,7 @@ import 'package:ffi/ffi.dart';
 import 'package:meta/meta.dart';
 
 import 'internal/headers_codec.dart';
+import 'internal/native_bytes.dart';
 import 'jetstream_context.dart';
 import 'nats_async_subscription.dart';
 import 'nats_bindings.g.dart';
@@ -761,7 +762,7 @@ final class NatsClient implements Finalizable {
     required Uint8List data,
     required NatsHeaders headers,
   }) {
-    final dataBytes = _NativeBytes.from(data);
+    final dataBytes = NativeBytes.from(data);
     final msgPtrPtr = calloc<Pointer<natsMsg>>();
     try {
       checkStatus(
@@ -870,29 +871,5 @@ final class NatsClient implements Finalizable {
     if (_closed) {
       throw StateError('NatsClient is already closed');
     }
-  }
-}
-
-/// Owns a native byte buffer copied from a [Uint8List].
-///
-/// Empty input yields `nullptr` with `length == 0`; non-empty input allocates
-/// via `malloc` and copies the bytes. [free] is a no-op for the empty case,
-/// so callers always pair construction with [free] without conditional logic.
-class _NativeBytes {
-  final Pointer<Uint8> ptr;
-  final int length;
-  _NativeBytes._(this.ptr, this.length);
-
-  static final _empty = _NativeBytes._(nullptr, 0);
-
-  factory _NativeBytes.from(Uint8List data) {
-    if (data.isEmpty) return _empty;
-    final ptr = malloc<Uint8>(data.length);
-    ptr.asTypedList(data.length).setAll(0, data);
-    return _NativeBytes._(ptr, data.length);
-  }
-
-  void free() {
-    if (length > 0) malloc.free(ptr);
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:typed_data';
 
@@ -8,9 +9,12 @@ import 'package:meta/meta.dart';
 import 'ack_policy.dart';
 import 'deliver_policy.dart';
 import 'discard_policy.dart';
+import 'internal/headers_codec.dart';
+import 'internal/native_bytes.dart';
 import 'js_message.dart';
 import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
+import 'nats_headers.dart';
 import 'replay_policy.dart';
 import 'retention_policy.dart';
 import 'storage_type.dart';
@@ -547,36 +551,89 @@ final class JetStreamContext {
   // ── Publishing ──────────────────────────────────────────────────────
 
   /// Publishes raw [data] to the given [subject] via JetStream.
-  JsPubAckResult publish(String subject, Uint8List data) {
+  ///
+  /// When [headers] is non-null and non-empty, the message is published via
+  /// `js_PublishMsg` carrying the headers; otherwise the headerless fast
+  /// path through `js_Publish` is taken (zero extra allocation).
+  ///
+  /// Set `Nats-Msg-Id` for server-side deduplication and
+  /// `Nats-Expected-Last-Sequence` for optimistic publish.
+  JsPubAckResult publish(
+    String subject,
+    Uint8List data, {
+    NatsHeaders? headers,
+  }) {
     _ensureOpen();
     final subjectNative = subject.toNativeUtf8();
-    final dataPtr = malloc<Uint8>(data.length);
+    final dataBytes = NativeBytes.from(data);
     final pubAckPtrPtr = calloc<Pointer<jsPubAck>>();
     final errCode = calloc<UnsignedInt>();
     try {
-      dataPtr.asTypedList(data.length).setAll(0, data);
-      final status = js_Publish(
-        pubAckPtrPtr,
-        _js!,
-        subjectNative.cast(),
-        dataPtr.cast(),
-        data.length,
-        nullptr, // default pub options
-        errCode,
-      );
-      checkStatus(status, 'js_Publish');
-      return _extractPubAck(pubAckPtrPtr.value);
+      if (headers == null || headers.isEmpty) {
+        final status = js_Publish(
+          pubAckPtrPtr,
+          _js!,
+          subjectNative.cast(),
+          dataBytes.ptr.cast(),
+          dataBytes.length,
+          nullptr,
+          errCode,
+        );
+        checkStatus(status, 'js_Publish');
+        return _extractPubAck(pubAckPtrPtr.value);
+      }
+
+      final msgPtrPtr = calloc<Pointer<natsMsg>>();
+      try {
+        checkStatus(
+          natsMsg_Create(
+            msgPtrPtr,
+            subjectNative.cast(),
+            nullptr,
+            dataBytes.ptr.cast(),
+            dataBytes.length,
+          ),
+          'natsMsg_Create',
+        );
+        final msgPtr = msgPtrPtr.value;
+        try {
+          writeHeadersToMsg(msgPtr, headers);
+          final status = js_PublishMsg(
+            pubAckPtrPtr,
+            _js!,
+            msgPtr,
+            nullptr,
+            errCode,
+          );
+          checkStatus(status, 'js_PublishMsg');
+          return _extractPubAck(pubAckPtrPtr.value);
+        } finally {
+          natsMsg_Destroy(msgPtr);
+        }
+      } finally {
+        calloc.free(msgPtrPtr);
+      }
     } finally {
       calloc.free(errCode);
       calloc.free(pubAckPtrPtr);
-      malloc.free(dataPtr);
+      dataBytes.free();
       calloc.free(subjectNative);
     }
   }
 
   /// Publishes a string [message] to the given [subject] via JetStream.
-  JsPubAckResult publishString(String subject, String message) {
-    return publish(subject, Uint8List.fromList(message.codeUnits));
+  ///
+  /// See [publish] for header semantics.
+  JsPubAckResult publishString(
+    String subject,
+    String message, {
+    NatsHeaders? headers,
+  }) {
+    return publish(
+      subject,
+      Uint8List.fromList(utf8.encode(message)),
+      headers: headers,
+    );
   }
 
   JsPubAckResult _extractPubAck(Pointer<jsPubAck> pubAckPtr) {

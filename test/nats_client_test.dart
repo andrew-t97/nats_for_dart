@@ -48,6 +48,33 @@ void main() {
       expect(msg.dataAsString, equals(payload));
     });
 
+    test('publish round-trips non-ASCII string as UTF-8 (fast path)', () {
+      final sub = client.subscribeSync('test.utf8.fast');
+      addTearDown(sub.close);
+
+      const payload = 'café ☕ — Σ';
+      client.publish('test.utf8.fast', payload);
+
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals(payload));
+    });
+
+    test('publish round-trips non-ASCII string as UTF-8 (headers path)', () {
+      final sub = client.subscribeSync('test.utf8.headers');
+      addTearDown(sub.close);
+
+      const payload = 'café ☕ — Σ';
+      client.publish(
+        'test.utf8.headers',
+        payload,
+        headers: NatsHeaders.from({'X-Tag': 'utf8'}),
+      );
+
+      final msg = sub.nextMessage(timeout: const Duration(seconds: 2));
+      expect(msg.dataAsString, equals(payload));
+      expect(msg.headers.firstOrNull('X-Tag'), equals('utf8'));
+    });
+
     test('publish and receive raw bytes', () {
       final sub = client.subscribeSync('test.bytes');
       addTearDown(sub.close);
