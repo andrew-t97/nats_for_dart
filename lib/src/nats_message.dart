@@ -5,7 +5,9 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:meta/meta.dart';
 
+import 'internal/headers_codec.dart';
 import 'nats_bindings.g.dart';
+import 'nats_headers.dart';
 
 /// A message received from a NATS subscription.
 ///
@@ -22,7 +24,10 @@ final class NatsMessage {
   /// The reply-to subject, if present.
   final String? replyTo;
 
-  NatsMessage._(this.subject, this.data, this.replyTo);
+  /// The message headers; always non-null. Empty for headerless messages.
+  final NatsHeaders headers;
+
+  NatsMessage._(this.subject, this.data, this.replyTo, this.headers);
 
   /// Convenience getter that decodes [data] as a UTF-8 string.
   String get dataAsString => utf8.decode(data);
@@ -32,7 +37,8 @@ final class NatsMessage {
   @override
   String toString() {
     final reply = replyTo != null ? ', replyTo: $replyTo' : '';
-    return 'NatsMessage(subject: $subject$reply, data: $dataAsString)';
+    final hdrs = headers.isEmpty ? '' : ', headers: ${headers.keys.toList()}';
+    return 'NatsMessage(subject: $subject$reply$hdrs, data: $dataAsString)';
   }
 
   /// Creates a [NatsMessage] by eagerly copying data out of a native
@@ -49,13 +55,16 @@ final class NatsMessage {
     final dataPtr = natsMsg_GetData(msgPtr);
     final data = Uint8List.fromList(dataPtr.cast<Uint8>().asTypedList(dataLen));
 
-    // Eagerly copy the reply-to subject if present.
     final replyPtr = natsMsg_GetReply(msgPtr);
     final replyTo = replyPtr == nullptr
         ? null
         : replyPtr.cast<Utf8>().toDartString();
 
+    // Headers must be read before natsMsg_Destroy — the inner key/value
+    // strings are owned by the message.
+    final headers = readHeadersFromMsg(msgPtr);
+
     natsMsg_Destroy(msgPtr);
-    return NatsMessage._(subject, data, replyTo);
+    return NatsMessage._(subject, data, replyTo, headers);
   }
 }

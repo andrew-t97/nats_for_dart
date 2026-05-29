@@ -1092,6 +1092,234 @@ external ffi.Pointer<ffi.Char> natsMsg_GetData(ffi.Pointer<natsMsg> msg);
 @ffi.Native<ffi.Int Function(ffi.Pointer<natsMsg>)>()
 external int natsMsg_GetDataLength(ffi.Pointer<natsMsg> msg);
 
+/// \brief Set the header entries associated with `key` to the single element `value`.
+///
+/// It will replace any existing value associated with `key`.
+///
+/// \warning Prior to v3.0.0, the `key` was stored in its canonical form, this is no
+/// longer the case. Header keys are now case sensitive.
+///
+/// \warning Headers are not thread-safe, that is, you must not set/add/get values or
+/// delete keys for the same message from different threads. The internal structure
+/// of `natsMsg` may possible be altered during this call.
+///
+/// @param msg the pointer to the #natsMsg object.
+/// @param key the key under which the `value` will be stored. It can't ne `NULL` or empty.
+/// @param value the string to store under the given `key`. The value can be `NULL` or empty string.
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsMsg>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'natsMsgHeader_Set')
+external int _natsMsgHeader_Set(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Char> key,
+  ffi.Pointer<ffi.Char> value,
+);
+
+natsStatus natsMsgHeader_Set(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Char> key,
+  ffi.Pointer<ffi.Char> value,
+) => natsStatus.fromValue(_natsMsgHeader_Set(msg, key, value));
+
+/// \brief Add `value` to the header associated with `key`.
+///
+/// It will append to any existing values associated with `key`.
+///
+/// \warning Prior to v3.0.0, the `key` was stored in its canonical form, this is no
+/// longer the case. Header keys are now case sensitive.
+///
+/// \warning Headers are not thread-safe, that is, you must not set/add/get values or
+/// delete keys for the same message from different threads. The internal structure
+/// of `natsMsg` may possible be altered during this call.
+///
+/// @param msg the pointer to the #natsMsg object.
+/// @param key the key under which the `value` will be stored. It can't ne `NULL` or empty.
+/// @param value the string to add to the values associated with the given `key`. The value can be `NULL` or empty string.
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsMsg>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Char>,
+  )
+>(symbol: 'natsMsgHeader_Add')
+external int _natsMsgHeader_Add(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Char> key,
+  ffi.Pointer<ffi.Char> value,
+);
+
+natsStatus natsMsgHeader_Add(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Char> key,
+  ffi.Pointer<ffi.Char> value,
+) => natsStatus.fromValue(_natsMsgHeader_Add(msg, key, value));
+
+/// \brief Get the header entry associated with `key`.
+///
+/// If more than one entry for the `key` is available, the first is returned.
+/// The returned value is owned by the library and MUST not be freed or altered.
+///
+/// \warning Prior to v3.0.0, the `key` was stored in its canonical form, this is no
+/// longer the case. Header keys are now case sensitive.
+///
+/// \warning Headers are not thread-safe, that is, you must not set/add/get values or
+/// delete keys for the same message from different threads. The internal structure
+/// of `natsMsg` may possible be altered during this call.
+///
+/// @param msg the pointer to the #natsMsg object.
+/// @param key the key for which the value is requested.
+/// @param value the memory location where the library will store the pointer to the first
+/// value (if more than one is found) associated with the `key`.
+/// @return #NATS_NOT_FOUND if `key` is not present in the headers.
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsMsg>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Pointer<ffi.Char>>,
+  )
+>(symbol: 'natsMsgHeader_Get')
+external int _natsMsgHeader_Get(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Char> key,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> value,
+);
+
+natsStatus natsMsgHeader_Get(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Char> key,
+  ffi.Pointer<ffi.Pointer<ffi.Char>> value,
+) => natsStatus.fromValue(_natsMsgHeader_Get(msg, key, value));
+
+/// \brief Get all header values associated with `key`.
+///
+/// The returned strings are own by the library and MUST not be freed or altered.
+/// However, the returned array `values` MUST be freed by the user.
+///
+/// \code{.c}
+/// const char* *values = NULL;
+/// int         count   = 0;
+///
+/// s = natsMsgHeader_Values(msg, "My-Key", &values, &count);
+/// if (s == NATS_OK)
+/// {
+/// // do something with the values
+///
+/// // then free the array of pointers.
+/// free((void*) values);
+/// }
+/// \endcode
+///
+/// \warning Prior to v3.0.0, the `key` was stored in its canonical form, this is no
+/// longer the case. Header keys are now case sensitive.
+///
+/// \warning Headers are not thread-safe, that is, you must not set/add/get values or
+/// delete keys for the same message from different threads. The internal structure
+/// of `natsMsg` may possible be altered during this call.
+///
+/// @param msg the pointer to the #natsMsg object.
+/// @param key the key for which the values are requested.
+/// @param values the memory location where the library will store the pointer to the array
+/// of values.
+/// @param count the memory location where the library will store the number of values returned.
+/// @return #NATS_NOT_FOUND if `key` is not present in the headers.
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsMsg>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<ffi.Pointer<ffi.Pointer<ffi.Char>>>,
+    ffi.Pointer<ffi.Int>,
+  )
+>(symbol: 'natsMsgHeader_Values')
+external int _natsMsgHeader_Values(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Char> key,
+  ffi.Pointer<ffi.Pointer<ffi.Pointer<ffi.Char>>> values,
+  ffi.Pointer<ffi.Int> count,
+);
+
+natsStatus natsMsgHeader_Values(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Char> key,
+  ffi.Pointer<ffi.Pointer<ffi.Pointer<ffi.Char>>> values,
+  ffi.Pointer<ffi.Int> count,
+) => natsStatus.fromValue(_natsMsgHeader_Values(msg, key, values, count));
+
+/// \brief Get all header keys.
+///
+/// The returned strings are own by the library and MUST not be freed or altered.
+/// However, the returned array `keys` MUST be freed by the user.
+///
+/// \code{.c}
+/// const char* *keys = NULL;
+/// int         count   = 0;
+///
+/// s = natsMsgHeader_Keys(msg, &keys, &count);
+/// if (s == NATS_OK)
+/// {
+/// // do something with the keys
+///
+/// // then free the array of pointers.
+/// free((void*) keys);
+/// }
+/// \endcode
+///
+/// \warning Headers are not thread-safe, that is, you must not set/add/get values or
+/// delete keys for the same message from different threads. The internal structure
+/// of `natsMsg` may possible be altered during this call.
+///
+/// @param msg the pointer to the #natsMsg object.
+/// @param keys the memory location where the library will store the pointer to the array
+/// of keys.
+/// @param count the memory location where the library will store the number of keys returned.
+/// @return #NATS_NOT_FOUND if no key is present.
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    ffi.Pointer<natsMsg>,
+    ffi.Pointer<ffi.Pointer<ffi.Pointer<ffi.Char>>>,
+    ffi.Pointer<ffi.Int>,
+  )
+>(symbol: 'natsMsgHeader_Keys')
+external int _natsMsgHeader_Keys(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Pointer<ffi.Pointer<ffi.Char>>> keys,
+  ffi.Pointer<ffi.Int> count,
+);
+
+natsStatus natsMsgHeader_Keys(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Pointer<ffi.Pointer<ffi.Char>>> keys,
+  ffi.Pointer<ffi.Int> count,
+) => natsStatus.fromValue(_natsMsgHeader_Keys(msg, keys, count));
+
+/// \brief Delete the value(s) associated with `key`.
+///
+/// \warning Prior to v3.0.0, the `key` was stored in its canonical form, this is no
+/// longer the case. Header keys are now case sensitive.
+///
+/// \warning Headers are not thread-safe, that is, you must not set/add/get values or
+/// delete keys for the same message from different threads. The internal structure
+/// of `natsMsg` may possible be altered during this call.
+///
+/// @param msg the pointer to the #natsMsg object.
+/// @param key the key to delete from the headers map.
+/// @return #NATS_NOT_FOUND if `key` is not present in the headers.
+@ffi.Native<
+  ffi.UnsignedInt Function(ffi.Pointer<natsMsg>, ffi.Pointer<ffi.Char>)
+>(symbol: 'natsMsgHeader_Delete')
+external int _natsMsgHeader_Delete(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Char> key,
+);
+
+natsStatus natsMsgHeader_Delete(
+  ffi.Pointer<natsMsg> msg,
+  ffi.Pointer<ffi.Char> key,
+) => natsStatus.fromValue(_natsMsgHeader_Delete(msg, key));
+
 /// \brief Indicates if this message is a "no responders" message from the server.
 ///
 /// Starting with the NATS Server v2.2.0+ and the C client v2.2.0+ releases, which
@@ -1238,6 +1466,20 @@ natsStatus natsConnection_FlushTimeout(
   int timeout,
 ) => natsStatus.fromValue(_natsConnection_FlushTimeout(nc, timeout));
 
+/// \brief Returns if the connection to current server supports headers.
+///
+/// Returns NATS_OK if the server this client is currently connected to
+/// supports headers, NATS_NO_SERVER_SUPPORT otherwise.
+///
+/// @param nc the pointer to the #natsConnection object.
+@ffi.Native<ffi.UnsignedInt Function(ffi.Pointer<natsConnection>)>(
+  symbol: 'natsConnection_HasHeaderSupport',
+)
+external int _natsConnection_HasHeaderSupport(ffi.Pointer<natsConnection> nc);
+
+natsStatus natsConnection_HasHeaderSupport(ffi.Pointer<natsConnection> nc) =>
+    natsStatus.fromValue(_natsConnection_HasHeaderSupport(nc));
+
 /// \brief Closes the connection.
 ///
 /// Closes the connection to the server. This call will release all blocking
@@ -1321,6 +1563,28 @@ natsStatus natsConnection_PublishString(
   ffi.Pointer<ffi.Char> str,
 ) => natsStatus.fromValue(_natsConnection_PublishString(nc, subj, str));
 
+/// \brief Publishes a message on a subject.
+///
+/// Publishes the #natsMsg, which includes the subject, an optional reply and
+/// optional data.
+///
+/// @see #natsMsg_Create()
+///
+/// @param nc the pointer to the #natsConnection object.
+/// @param msg the pointer to the #natsMsg object to send.
+@ffi.Native<
+  ffi.UnsignedInt Function(ffi.Pointer<natsConnection>, ffi.Pointer<natsMsg>)
+>(symbol: 'natsConnection_PublishMsg')
+external int _natsConnection_PublishMsg(
+  ffi.Pointer<natsConnection> nc,
+  ffi.Pointer<natsMsg> msg,
+);
+
+natsStatus natsConnection_PublishMsg(
+  ffi.Pointer<natsConnection> nc,
+  ffi.Pointer<natsMsg> msg,
+) => natsStatus.fromValue(_natsConnection_PublishMsg(nc, msg));
+
 /// \brief Publishes data on a subject expecting replies on the given reply.
 ///
 /// Publishes the data argument to the given subject expecting a response on
@@ -1396,6 +1660,43 @@ natsStatus natsConnection_PublishRequestString(
   ffi.Pointer<ffi.Char> str,
 ) => natsStatus.fromValue(
   _natsConnection_PublishRequestString(nc, subj, reply, str),
+);
+
+/// \brief Sends a request based on the given `requestMsg` and waits for a reply.
+///
+/// Similar to #natsConnection_Request but uses `requestMsg` to extract subject,
+/// and payload to send.
+///
+/// \warning See warning about no responders in #natsConnection_Request().
+///
+/// @param replyMsg the location where to store the pointer to the received
+/// #natsMsg reply.
+/// @param nc the pointer to the #natsConnection object.
+/// @param requestMsg the message used for the request.
+/// @param timeout in milliseconds, before this call returns #NATS_TIMEOUT
+/// if no response is received in this alloted time.
+@ffi.Native<
+  ffi.UnsignedInt Function(
+    ffi.Pointer<ffi.Pointer<natsMsg>>,
+    ffi.Pointer<natsConnection>,
+    ffi.Pointer<natsMsg>,
+    ffi.Int64,
+  )
+>(symbol: 'natsConnection_RequestMsg')
+external int _natsConnection_RequestMsg(
+  ffi.Pointer<ffi.Pointer<natsMsg>> replyMsg,
+  ffi.Pointer<natsConnection> nc,
+  ffi.Pointer<natsMsg> requestMsg,
+  int timeout,
+);
+
+natsStatus natsConnection_RequestMsg(
+  ffi.Pointer<ffi.Pointer<natsMsg>> replyMsg,
+  ffi.Pointer<natsConnection> nc,
+  ffi.Pointer<natsMsg> requestMsg,
+  int timeout,
+) => natsStatus.fromValue(
+  _natsConnection_RequestMsg(replyMsg, nc, requestMsg, timeout),
 );
 
 /// \brief Creates an asynchronous subscription.
