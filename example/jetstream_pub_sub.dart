@@ -4,7 +4,7 @@
 
 import 'package:nats_for_dart/nats_for_dart.dart';
 
-void main() {
+Future<void> main() async {
   NatsLibrary.init();
 
   final client = NatsClient.connect('nats://localhost:4222');
@@ -48,7 +48,7 @@ void main() {
     print('\nStream deleted. Done!');
   } finally {
     js.close();
-    client.close();
+    await client.close();
     NatsLibrary.close(timeoutMs: 5000);
   }
 }

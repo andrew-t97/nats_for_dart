@@ -12,6 +12,55 @@ import 'package:meta/meta.dart';
 /// const singleton, allocation-free), [NatsHeaders.from] for the common
 /// case of a literal map, or [NatsHeaders.fromEntries] when repeated-key
 /// ordering matters and a map literal would silently drop duplicates.
+///
+/// ## Key case-sensitivity
+///
+/// Header keys are treated as case-sensitive byte sequences end-to-end:
+/// the codec writes exactly what was provided and reads back exactly what
+/// the server delivered. The NATS server does not normalise case, so
+/// `X-Trace-Id` and `x-trace-id` are two different headers. Pick a
+/// canonical spelling at the call site and stick to it.
+///
+/// This matters most for the server-recognised JetStream keys covered
+/// below — `Nats-Msg-Id` and `Nats-Expected-Last-Sequence` must be
+/// spelled exactly; a misspelling silently degrades to an unknown user
+/// header rather than raising an error.
+///
+/// ## Multi-value ordering
+///
+/// When the same key is added more than once, values are preserved in
+/// Add-order. `getAll(key)` returns them in that order on the receiving
+/// side. Use [NatsHeaders.fromEntries] to author multi-value headers:
+///
+/// ```dart
+/// final h = NatsHeaders.fromEntries([
+///   MapEntry('Accept', 'text/plain'),
+///   MapEntry('Accept', 'application/json'),
+/// ]);
+/// h.getAll('Accept'); // ['text/plain', 'application/json']
+/// ```
+///
+/// ## JetStream conventions
+///
+/// Two server-recognised header keys unlock the most common JetStream
+/// patterns:
+///
+/// - **`Nats-Msg-Id`** — server-side deduplication. If two publishes
+///   carry the same `Nats-Msg-Id` within the stream's dedup window, the
+///   server stores only the first and acks the second with
+///   `JsPubAckResult.duplicate == true`. Useful for idempotent retries.
+/// - **`Nats-Expected-Last-Sequence`** — optimistic publish. The server
+///   rejects the publish unless the named sequence matches the stream's
+///   current last sequence, enabling compare-and-set semantics over a
+///   sequence cursor.
+///
+/// ## Immutability
+///
+/// A `NatsHeaders` instance is fully immutable: there are no mutating
+/// methods, [toMap] returns an `UnmodifiableMapView`, and [getAll]
+/// returns an unmodifiable list. Two instances with the same key-value
+/// content are equal (`==`) regardless of key insertion order, while
+/// per-key value order is significant for equality.
 @immutable
 final class NatsHeaders {
   static const MapEquality<String, List<String>> _entriesEquality =

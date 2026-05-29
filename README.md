@@ -11,6 +11,7 @@ Idiomatic Dart bindings for [NATS](https://nats.io/) — pub/sub, JetStream, and
 
 - **Pub/sub** — synchronous and asynchronous subscriptions, wildcard subjects (`foo.*`, `foo.>`)
 - **Request-reply** — single-call request/response pattern
+- **Message headers** — HTTP-style `name: value` metadata on publish/request/respond and JetStream publish, with multi-value Add semantics; enables distributed tracing, `Nats-Msg-Id` deduplication, and `Nats-Expected-Last-Sequence` optimistic publish
 - **JetStream** — durable streams, consumers, publish with ack, and pull subscribe
 - **KeyValue store** — get, put, delete, watch, history, and optimistic concurrency with revision checks
 - **Connection lifecycle** — disconnect, reconnect, close, and async error event streams
@@ -84,12 +85,13 @@ For async (Stream-based) subscriptions, see [`example/async_subscriber.dart`](ex
 | [`async_subscriber.dart`](example/async_subscriber.dart)   | Async subscription via Dart `Stream` with wildcard subject                     | `dart run example/async_subscriber.dart`  |
 | [`lifecycle_demo.dart`](example/lifecycle_demo.dart)       | Connection lifecycle events — stop/restart the server while running to observe | `dart run example/lifecycle_demo.dart`    |
 | [`jetstream_pub_sub.dart`](example/jetstream_pub_sub.dart) | JetStream stream creation, publish with ack, and pull subscribe                | `dart run example/jetstream_pub_sub.dart` |
+| [`headers_demo.dart`](example/headers_demo.dart)           | Message headers — tracing header round-trip, then JetStream `Nats-Msg-Id` dedup | `dart run example/headers_demo.dart`      |
 | [`kv_demo.dart`](example/kv_demo.dart)                     | KeyValue CRUD, optimistic update, watch, history, delete, and purge            | `dart run example/kv_demo.dart`           |
 | [`mtls_demo.dart`](example/mtls_demo.dart)                 | Mutual TLS pub/sub against an mTLS-enabled server                              | `dart run example/mtls_demo.dart`         |
 
 **Server prerequisites by example:**
 > - `pubsub_sync.dart`, `async_subscriber.dart`, `lifecycle_demo.dart` — plain `nats-server`.
-> - `jetstream_pub_sub.dart`, `kv_demo.dart` — `nats-server -js` (JetStream enabled).
+> - `jetstream_pub_sub.dart`, `headers_demo.dart`, `kv_demo.dart` — `nats-server -js` (JetStream enabled).
 > - `mtls_demo.dart` — an mTLS-enabled server on port 4224. Start one with `nats-server -c test/support/nats-mtls-native.conf`, or run the bundled config in Docker (see the example's doc-comment for the full command). The integration-test fixture's container is torn down at the end of `dart test` and isn't reusable for ad-hoc runs.
 
  ## 🤖 A note on AI assistance
@@ -102,14 +104,6 @@ For async (Stream-based) subscriptions, see [`example/async_subscriber.dart`](ex
 ## 🗺️ Roadmap
 
 `nats_for_dart` v0.1.0 covers the core use cases. The following tracks progress toward production readiness and full parity with the NATS C client.
-
-### 🔐 Production Essentials
-
-These features are required for secure, production-grade deployments.
-
-| Feature                    | Why it matters                                                                    |
-| -------------------------- | --------------------------------------------------------------------------------- |
-| Message Headers            | Metadata, distributed tracing, and deduplication — used widely in NATS ecosystems |
 
 ### ✨ Coming Next
 
