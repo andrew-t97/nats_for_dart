@@ -256,4 +256,121 @@ void main() {
       expect(msg.dataAsString, equals('no-headers'));
     });
   });
+
+  group('JetStream headers', () {
+    late NatsClient client;
+    late JetStreamContext js;
+
+    setUp(() {
+      client = NatsClient.connect(nats.url);
+      js = client.jetStream();
+    });
+
+    tearDown(() async {
+      try {
+        js.deleteStream('TEST_HEADERS');
+      } catch (_) {}
+      js.close();
+      await client.close();
+    });
+
+    void addTestStream() {
+      js.addStream(
+        JsStreamConfig(
+          name: 'TEST_HEADERS',
+          subjects: ['test.jsheaders.>'],
+          storage: StorageType.memory,
+        ),
+      );
+    }
+
+    test('Nats-Msg-Id deduplication — second publish marked duplicate', () {
+      addTestStream();
+
+      final headers = NatsHeaders.from({'Nats-Msg-Id': 'unique-msg-id-1'});
+
+      final ack1 = js.publishString(
+        'test.jsheaders.dedup',
+        'first',
+        headers: headers,
+      );
+      expect(ack1.duplicate, isFalse);
+      expect(ack1.sequence, equals(1));
+
+      final ack2 = js.publishString(
+        'test.jsheaders.dedup',
+        'second',
+        headers: headers,
+      );
+      expect(ack2.duplicate, isTrue);
+      expect(ack2.sequence, equals(1));
+    });
+
+    test('pull subscribe receives headers on JsMessage', () {
+      addTestStream();
+
+      final headers = NatsHeaders.from({
+        'X-Trace-Id': 'js-trace-1',
+        'X-Tag': ['alpha', 'beta'],
+      });
+      js.publishString('test.jsheaders.pull', 'payload', headers: headers);
+
+      final pullSub = js.pullSubscribe('test.jsheaders.pull', 'header-puller');
+      addTearDown(pullSub.close);
+
+      final messages = pullSub.fetch(1, timeout: const Duration(seconds: 5));
+      expect(messages, hasLength(1));
+
+      final received = messages.single;
+      expect(received.headers.firstOrNull('X-Trace-Id'), equals('js-trace-1'));
+      expect(received.headers.getAll('X-Tag'), equals(['alpha', 'beta']));
+      expect(received.dataAsString, equals('payload'));
+      received.ack();
+    });
+
+    test('Nats-Expected-Last-Sequence mismatch — publish throws', () {
+      addTestStream();
+
+      js.publishString('test.jsheaders.seq', 'first');
+
+      final wrongSeq = NatsHeaders.from({'Nats-Expected-Last-Sequence': '999'});
+      expect(
+        () =>
+            js.publishString('test.jsheaders.seq', 'second', headers: wrongSeq),
+        throwsA(isA<NatsException>()),
+      );
+    });
+
+    test('JS publish without headers — fast-path regression pin', () {
+      addTestStream();
+
+      final ack = js.publishString('test.jsheaders.fast', 'plain');
+      expect(ack.stream, equals('TEST_HEADERS'));
+      expect(ack.sequence, equals(1));
+      expect(ack.duplicate, isFalse);
+    });
+
+    test('JS publishBytes carries headers', () {
+      addTestStream();
+
+      final headers = NatsHeaders.from({'X-Encoding': 'binary'});
+      final ack = js.publish(
+        'test.jsheaders.bytes',
+        Uint8List.fromList(utf8.encode('binary-payload')),
+        headers: headers,
+      );
+      expect(ack.sequence, equals(1));
+
+      final pullSub = js.pullSubscribe('test.jsheaders.bytes', 'bytes-puller');
+      addTearDown(pullSub.close);
+
+      final messages = pullSub.fetch(1, timeout: const Duration(seconds: 5));
+      expect(messages, hasLength(1));
+      expect(
+        messages.single.headers.firstOrNull('X-Encoding'),
+        equals('binary'),
+      );
+      messages.single.ack();
+    });
+  });
 }

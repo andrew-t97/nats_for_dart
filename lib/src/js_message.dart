@@ -5,8 +5,10 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:meta/meta.dart';
 
+import 'internal/headers_codec.dart';
 import 'nats_bindings.g.dart';
 import 'nats_exceptions.dart';
+import 'nats_headers.dart';
 
 /// A JetStream message that supports acknowledgement operations.
 ///
@@ -37,6 +39,10 @@ final class JsMessage implements Finalizable {
   /// The reply-to subject, if present.
   final String? replyTo;
 
+  /// The message headers. Defaults to [NatsHeaders.empty] when none were
+  /// transmitted. Eagerly copied at construction; safe to access after ack.
+  final NatsHeaders headers;
+
   Pointer<natsMsg>? _msgPtr;
   bool _destroyed = false;
   final JsMessageMetadata _cachedMetadata;
@@ -45,6 +51,7 @@ final class JsMessage implements Finalizable {
     required this.subject,
     required this.data,
     this.replyTo,
+    required this.headers,
     required Pointer<natsMsg> msgPtr,
     required JsMessageMetadata cachedMetadata,
   }) : _msgPtr = msgPtr,
@@ -111,11 +118,13 @@ final class JsMessage implements Finalizable {
         : replyPtr.cast<Utf8>().toDartString();
 
     final metadata = _extractMetadata(msgPtr);
+    final headers = readHeadersFromMsg(msgPtr);
 
     return JsMessage._(
       subject: subject,
       data: data,
       replyTo: replyTo,
+      headers: headers,
       msgPtr: msgPtr,
       cachedMetadata: metadata,
     );
