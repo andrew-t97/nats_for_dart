@@ -101,8 +101,11 @@ jobs:
       # at the step boundary on Windows runners, leaving nothing listening on
       # 4222/4223 by the time the test step started.
       - name: Install nats-server, start servers, and run tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $latestTag = (Invoke-RestMethod "https://api.github.com/repos/nats-io/nats-server/releases/latest").tag_name
+          $headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN" }
+          $latestTag = (Invoke-RestMethod -Headers $headers "https://api.github.com/repos/nats-io/nats-server/releases/latest").tag_name
           $url = "https://github.com/nats-io/nats-server/releases/download/${latestTag}/nats-server-${latestTag}-windows-amd64.zip"
           Invoke-WebRequest -Uri $url -OutFile nats-server.zip
           Expand-Archive nats-server.zip -DestinationPath nats-server-bin
