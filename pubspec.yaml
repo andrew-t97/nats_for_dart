@@ -1,6 +1,6 @@
 name: nats_for_dart
 description: Dart FFI bindings for the NATS C client — core pub/sub, JetStream, and KeyValue store.
-version: 0.2.0
+version: 0.3.0
 repository: https://github.com/andrew-t97/nats_for_dart
 homepage: https://github.com/andrew-t97/nats_for_dart
 issue_tracker: https://github.com/andrew-t97/nats_for_dart/issues
@@ -16,11 +16,11 @@ environment:
   sdk: ^3.10.8
 
 dependencies:
-  ffi: ^2.0.0
+  ffi: ^2.2.0
   meta: ^1.10.0
   collection: ^1.18.0
-  code_assets: ^1.0.0
-  hooks: ^1.0.0
+  code_assets: ^2.1.0
+  hooks: ^2.2.0
   logging: ^1.3.0
 
 dev_dependencies:

@@ -35,7 +35,7 @@ Add the package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  nats_for_dart: ^0.2.0
+  nats_for_dart: ^0.3.0
 ```
 
 Then run:

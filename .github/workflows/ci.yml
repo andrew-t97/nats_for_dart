@@ -31,14 +31,18 @@ jobs:
         run: dart doc --dry-run
 
   test-ubuntu:
-    name: Tests (Ubuntu / Docker)
+    name: Tests (Ubuntu / Docker, Dart ${{ matrix.sdk }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk: ["3.10.8", stable]
     steps:
       - uses: actions/checkout@v6
 
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: "3.10.8"
+          sdk: ${{ matrix.sdk }}
 
       - run: dart pub get
 
@@ -53,7 +57,7 @@ jobs:
 
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: "3.10.8"
+          sdk: stable
 
       - run: dart pub get
 
@@ -92,7 +96,7 @@ jobs:
 
       - uses: dart-lang/setup-dart@v1
         with:
-          sdk: "3.10.8"
+          sdk: stable
 
       - run: dart pub get
 
