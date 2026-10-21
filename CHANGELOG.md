@@ -4,6 +4,10 @@
 
 - Requires `package:hooks` `^2.2.0` and `package:code_assets` `^2.1.0` (previously `^1.0.0`). This lets `nats_for_dart` resolve alongside other native-asset packages built on hooks 2.x in current Flutter apps; projects pinned to hooks 1.x must upgrade.
 
+### Fixed
+
+- Flutter macOS release builds no longer fail with `lipo: ... have the same architectures (arm64)`.
+
 ## 0.2.0
 
 ### Breaking changes
