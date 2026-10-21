@@ -13,11 +13,12 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
   _validateVendoredSources(input);
 
   final targetOS = input.config.code.targetOS;
+  final targetArchitecture = input.config.code.targetArchitecture;
 
   // Map Dart architecture to the arch subdirectory name used by CMakeLists.txt.
   // Passed explicitly because cmake's CMAKE_SYSTEM_PROCESSOR detection is
   // unreliable when invoked as a subprocess without a full MSVC environment.
-  final archDir = switch (input.config.code.targetArchitecture) {
+  final archDir = switch (targetArchitecture) {
     Architecture.x64 => 'amd64',
     Architecture.arm64 => 'aarch64',
     Architecture.ia32 => 'i386',
@@ -25,6 +26,10 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
       'Unsupported architecture for cmake build: ${unsupported.name}',
     ),
   };
+
+  final platformCmakeArgs = targetOS == OS.macOS
+      ? _macOSCmakeArgs(input.config.code)
+      : const <String>[];
 
   final cmake = await _findCmake();
   if (cmake == null) {
@@ -46,6 +51,7 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
     input.packageRoot.toFilePath(),
     cmakeBuildDir.path,
     archDir,
+    platformCmakeArgs,
   );
   await _buildCmake(cmake, cmakeBuildDir.path);
 
@@ -58,6 +64,20 @@ Future<void> _build(BuildInput input, BuildOutputBuilder output) async {
   final libFile = cmakeBuildDir.uri.resolve('lib/$libName');
 
   _registerOutput(input: input, output: output, libFile: libFile);
+}
+
+List<String> _macOSCmakeArgs(CodeConfig codeConfig) {
+  final appleArchitecture = switch (codeConfig.targetArchitecture) {
+    Architecture.arm64 => 'arm64',
+    Architecture.x64 => 'x86_64',
+    final unsupported => throw StateError(
+      'Unsupported architecture for macOS: ${unsupported.name}',
+    ),
+  };
+  return [
+    '-DCMAKE_OSX_ARCHITECTURES=$appleArchitecture',
+    '-DCMAKE_OSX_DEPLOYMENT_TARGET=${codeConfig.macOS.targetVersion}',
+  ];
 }
 
 void _validateVendoredSources(BuildInput input) {
@@ -87,6 +107,7 @@ Future<void> _configureCmake(
   String sourceRoot,
   String buildDir,
   String archDir,
+  List<String> platformCmakeArgs,
 ) async {
   await _runProcess(cmake, [
     '-S',
@@ -95,6 +116,7 @@ Future<void> _configureCmake(
     buildDir,
     '-DCMAKE_BUILD_TYPE=Release',
     '-DNATS_ARCH_DIR=$archDir',
+    ...platformCmakeArgs,
   ]);
 }
 
