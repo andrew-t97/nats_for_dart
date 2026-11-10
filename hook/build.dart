@@ -74,9 +74,12 @@ List<String> _macOSCmakeArgs(CodeConfig codeConfig) {
       'Unsupported architecture for macOS: ${unsupported.name}',
     ),
   };
+  final deploymentVersion = codeConfig.macOS.deploymentVersion;
+  final deploymentTarget =
+      '${deploymentVersion.major}.${deploymentVersion.minor}.${deploymentVersion.patch}';
   return [
     '-DCMAKE_OSX_ARCHITECTURES=$appleArchitecture',
-    '-DCMAKE_OSX_DEPLOYMENT_TARGET=${codeConfig.macOS.targetVersion}',
+    '-DCMAKE_OSX_DEPLOYMENT_TARGET=$deploymentTarget',
   ];
 }
 
