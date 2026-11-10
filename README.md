@@ -97,13 +97,13 @@ For async (Stream-based) subscriptions, see [`example/async_subscriber.dart`](ex
  ## 🤖 A note on AI assistance
 
  This package was developed with heavy use of AI tooling (Claude Code). The implementation has been
- reviewed carefully, but given the early stage (`v0.1.0`) and the nature of AI-assisted development, you
-  should feel comfortable scrutinising any part of the code. If something looks wrong, surprising, or
+ reviewed carefully, but given the early stage of the library and the nature of AI-assisted development, you
+ should feel comfortable scrutinising any part of the code. If something looks wrong, surprising, or
  suboptimal — it very well might be. Issues and PRs are welcome. 🙏
 
 ## 🗺️ Roadmap
 
-`nats_for_dart` v0.1.0 covers the core use cases. The following tracks progress toward production readiness and full parity with the NATS C client.
+`nats_for_dart` covers the core use cases. The following tracks progress toward production readiness and full parity with the NATS C client.
 
 ### ✨ Coming Next
 
